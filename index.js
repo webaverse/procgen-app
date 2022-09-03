@@ -363,7 +363,7 @@ export default e => {
       });
 
       try {
-        const result = await instance.generateTerrainChunk(chunk.min, chunk.lod, {
+        const result = await instance.generateTerrainChunk(chunk.min, chunk.lod, chunk.lodArray, {
           signal,
         });
         // console.log('got chunk add result, add to geometry pool', chunk, result);
