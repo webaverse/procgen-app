@@ -144,10 +144,7 @@ export default e => {
       this.allocator = allocator;
       this.geometryBindings = new Map();
     }
-    addChunk(chunk, chunkData) {
-      // non-empty chunk
-      // const {chunkData, geometryBuffer} = renderData;
-
+    addChunk(chunk, chunkResult) {
       const _mapOffsettedIndices = (
         srcIndices,
         dstIndices,
@@ -160,7 +157,7 @@ export default e => {
         }
       };
       const _renderTerrainMeshDataToGeometry = (
-        chunkData,
+        terrainGeometry,
         geometry,
         geometryBinding
       ) => {
@@ -175,7 +172,7 @@ export default e => {
         let indexOffset = geometryBinding.getIndexOffset();
 
         _mapOffsettedIndices(
-          chunkData.indices,
+          terrainGeometry.indices,
           geometry.index.array,
           indexOffset,
           positionOffset
@@ -183,56 +180,56 @@ export default e => {
 
         geometry.attributes.position.update(
           positionOffset,
-          chunkData.positions.length,
-          chunkData.positions,
+          terrainGeometry.positions.length,
+          terrainGeometry.positions,
           0
         );
         geometry.attributes.normal.update(
           normalOffset,
-          chunkData.normals.length,
-          chunkData.normals,
+          terrainGeometry.normals.length,
+          terrainGeometry.normals,
           0
         );
         /* geometry.attributes.biomes.update(
           biomesOffset,
-          chunkData.biomes.length,
-          chunkData.biomes,
+          terrainGeometry.biomes.length,
+          terrainGeometry.biomes,
           0
         ); */
         /* geometry.attributes.biomesWeights.update(
           biomesWeightsOffset,
-          chunkData.biomesWeights.length,
-          chunkData.biomesWeights,
+          terrainGeometry.biomesWeights.length,
+          terrainGeometry.biomesWeights,
           0
         ); */
         // console.log('biomes', geometry.attributes.biomesUvs1, geometry.attributes.biomesUvs2);
         geometry.attributes.biomesUvs1.update(
           biomesUvs1Offset,
-          chunkData.biomesUvs1.length,
-          chunkData.biomesUvs1,
+          terrainGeometry.biomesUvs1.length,
+          terrainGeometry.biomesUvs1,
           0
         );
         /* geometry.attributes.biomesUvs2.update(
           biomesUvs2Offset,
-          chunkData.biomesUvs2.length,
-          chunkData.biomesUvs2,
+          terrainGeometry.biomesUvs2.length,
+          terrainGeometry.biomesUvs2,
           0
         );
         geometry.attributes.skylights.update(
           skylightsOffset,
-          chunkData.skylights.length,
-          chunkData.skylights,
+          terrainGeometry.skylights.length,
+          terrainGeometry.skylights,
           0
         );
         geometry.attributes.aos.update(
           aosOffset,
-          chunkData.aos.length,
-          chunkData.aos,
+          terrainGeometry.aos.length,
+          terrainGeometry.aos,
           0
         ); */
-        geometry.index.update(indexOffset, chunkData.indices.length);
+        geometry.index.update(indexOffset, terrainGeometry.indices.length);
       };
-      const _handleMesh = () => {
+      const _handleTerrainMesh = terrainGeometry => {
         const chunkSize = this.instance.chunkSize * chunk.lod;
 
         const boundingBox = localBox; // XXX
@@ -253,17 +250,17 @@ export default e => {
         // console.log(localVector3D.x + ", " + localVector3D2.x);
 
         const geometryBinding = this.allocator.alloc(
-          chunkData.positions.length,
-          chunkData.indices.length,
+          terrainGeometry.positions.length,
+          terrainGeometry.indices.length,
           boundingBox,
           min,
           max,
           // this.appMatrix,
-          // chunkData.peeks
+          // terrainGeometry.peeks
         );
         // console.log(localVector3D);
         _renderTerrainMeshDataToGeometry(
-          chunkData,
+          terrainGeometry,
           this.allocator.geometry,
           geometryBinding
         );
@@ -271,7 +268,7 @@ export default e => {
         const key = procGenManager.getNodeHash(chunk);
         this.geometryBindings.set(key, geometryBinding);
       };
-      _handleMesh();
+      _handleTerrainMesh(chunkResult.terrainGeometry);
 
       /* const _handlePhysics = async () => {
         if (geometryBuffer) {
@@ -363,7 +360,7 @@ export default e => {
       });
 
       try {
-        const result = await instance.generateTerrainChunk(chunk.min, chunk.lod, chunk.lodArray, {
+        const result = await instance.generateChunk(chunk.min, chunk.lod, chunk.lodArray, {
           signal,
         });
         // console.log('got chunk add result, add to geometry pool', chunk, result);
