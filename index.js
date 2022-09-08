@@ -83,7 +83,7 @@ export default e => {
     // lod tracker
 
     const lodTracker = await instance.createLodChunkTracker({
-      lods: 3,
+      lods: 7,
       lod1Range: 2,
       // debug: true,
     });
