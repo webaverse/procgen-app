@@ -37,12 +37,12 @@ class GPUTask {
   }
 }
 class GPUTaskManager {
-  static numTasksPerTick = 32;
+  static numTasksPerTick = 16;
   constructor() {
     this.queue = [];
   }
   transact(fn) {
-    const task = new GPUTask(fn);
+    const task = new GPUTask(fn, this);
     this.queue.push(task);
     return task;
   }
