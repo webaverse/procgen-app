@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import metaversefile from 'metaversefile';
-import {bufferSize} from './constants.js';
+import {bufferSize, WORLD_BASE_HEIGHT, MIN_WORLD_HEIGHT, MAX_WORLD_HEIGHT} from './constants.js';
 
 const {useInstancing, useProcGenManager} = metaversefile;
 const {BatchedMesh, GeometryAllocator} = useInstancing();
@@ -17,10 +17,7 @@ const localBox = new THREE.Box3();
 export class TerrainMesh extends BatchedMesh {
   constructor({
     instance,
-    // physics,
-    // biomeUvDataTexture,
-    // atlasTextures,
-    // appMatrix
+    gpuTaskManager,
   }) {
     const allocator = new GeometryAllocator(
       [
@@ -78,172 +75,196 @@ export class TerrainMesh extends BatchedMesh {
     super(geometry, material);
 
     this.instance = instance;
+    this.gpuTaskManager = gpuTaskManager;
 
     this.allocator = allocator;
+    this.gpuTasks = new Map();
     this.geometryBindings = new Map();
   }
   addChunk(chunk, chunkResult) {
-    const _mapOffsettedIndices = (
-      srcIndices,
-      dstIndices,
-      dstOffset,
-      positionOffset
-    ) => {
-      const positionIndex = positionOffset / 3;
-      for (let i = 0; i < srcIndices.length; i++) {
-        dstIndices[dstOffset + i] = srcIndices[i] + positionIndex;
-      }
-    };
-    const _renderTerrainMeshDataToGeometry = (
-      terrainGeometry,
-      geometry,
-      geometryBinding
-    ) => {
-      let positionOffset = geometryBinding.getAttributeOffset('position');
-      let normalOffset = geometryBinding.getAttributeOffset('normal');
-      // let biomesOffset = geometryBinding.getAttributeOffset('biomes');
-      // let biomesWeightsOffset = geometryBinding.getAttributeOffset('biomesWeights');
-      let biomesUvs1Offset = geometryBinding.getAttributeOffset('biomesUvs1');
-      // let biomesUvs2Offset = geometryBinding.getAttributeOffset('biomesUvs2');
-      // let skylightsOffset = geometryBinding.getAttributeOffset('skylights');
-      // let aosOffset = geometryBinding.getAttributeOffset('aos');
-      let indexOffset = geometryBinding.getIndexOffset();
-
-      _mapOffsettedIndices(
-        terrainGeometry.indices,
-        geometry.index.array,
-        indexOffset,
+    const key = procGenManager.getNodeHash(chunk);
+    const task = this.gpuTaskManager.transact(() => {
+      const _mapOffsettedIndices = (
+        srcIndices,
+        dstIndices,
+        dstOffset,
         positionOffset
-      );
-
-      geometry.attributes.position.update(
-        positionOffset,
-        terrainGeometry.positions.length,
-        terrainGeometry.positions,
-        0
-      );
-      geometry.attributes.normal.update(
-        normalOffset,
-        terrainGeometry.normals.length,
-        terrainGeometry.normals,
-        0
-      );
-      /* geometry.attributes.biomes.update(
-        biomesOffset,
-        terrainGeometry.biomes.length,
-        terrainGeometry.biomes,
-        0
-      ); */
-      /* geometry.attributes.biomesWeights.update(
-        biomesWeightsOffset,
-        terrainGeometry.biomesWeights.length,
-        terrainGeometry.biomesWeights,
-        0
-      ); */
-      // console.log('biomes', geometry.attributes.biomesUvs1, geometry.attributes.biomesUvs2);
-      geometry.attributes.biomesUvs1.update(
-        biomesUvs1Offset,
-        terrainGeometry.biomesUvs1.length,
-        terrainGeometry.biomesUvs1,
-        0
-      );
-      /* geometry.attributes.biomesUvs2.update(
-        biomesUvs2Offset,
-        terrainGeometry.biomesUvs2.length,
-        terrainGeometry.biomesUvs2,
-        0
-      );
-      geometry.attributes.skylights.update(
-        skylightsOffset,
-        terrainGeometry.skylights.length,
-        terrainGeometry.skylights,
-        0
-      );
-      geometry.attributes.aos.update(
-        aosOffset,
-        terrainGeometry.aos.length,
-        terrainGeometry.aos,
-        0
-      ); */
-      geometry.index.update(indexOffset, terrainGeometry.indices.length);
-    };
-    const _handleTerrainMesh = terrainGeometry => {
-      const chunkSize = this.instance.chunkSize * chunk.lod;
-
-      const boundingBox = localBox; // XXX
-      /* localSphere.center.set(
-          (chunk.min.x + 0.5) * chunkSize,
-          (chunk.min.y + 0.5) * chunkSize,
-          (chunk.min.z + 0.5) * chunkSize
-        )
-        .applyMatrix4(this.matrixWorld);
-      localSphere.radius = chunkRadius; */
-
-      const min = localVector3D.set(chunk.min.x, chunk.min.y, chunk.min.z)
-        .multiplyScalar(chunkSize);
-      const max = localVector3D2.set(chunk.min.x, chunk.min.y, chunk.min.z)
-        .addScalar(chunk.lod)
-        .multiplyScalar(chunkSize);
-
-      // console.log(localVector3D.x + ", " + localVector3D2.x);
-
-      const geometryBinding = this.allocator.alloc(
-        terrainGeometry.positions.length,
-        terrainGeometry.indices.length,
-        boundingBox,
-        min,
-        max,
-        // this.appMatrix,
-        // terrainGeometry.peeks
-      );
-      // console.log(localVector3D);
-      _renderTerrainMeshDataToGeometry(
+      ) => {
+        const positionIndex = positionOffset / 3;
+        for (let i = 0; i < srcIndices.length; i++) {
+          dstIndices[dstOffset + i] = srcIndices[i] + positionIndex;
+        }
+      };
+      const _renderTerrainMeshDataToGeometry = (
         terrainGeometry,
-        this.allocator.geometry,
+        geometry,
         geometryBinding
-      );
+      ) => {
+        let positionOffset = geometryBinding.getAttributeOffset('position');
+        let normalOffset = geometryBinding.getAttributeOffset('normal');
+        // let biomesOffset = geometryBinding.getAttributeOffset('biomes');
+        // let biomesWeightsOffset = geometryBinding.getAttributeOffset('biomesWeights');
+        let biomesUvs1Offset = geometryBinding.getAttributeOffset('biomesUvs1');
+        // let biomesUvs2Offset = geometryBinding.getAttributeOffset('biomesUvs2');
+        // let skylightsOffset = geometryBinding.getAttributeOffset('skylights');
+        // let aosOffset = geometryBinding.getAttributeOffset('aos');
+        let indexOffset = geometryBinding.getIndexOffset();
 
-      const key = procGenManager.getNodeHash(chunk);
-      this.geometryBindings.set(key, geometryBinding);
-    };
-    _handleTerrainMesh(chunkResult.terrainGeometry);
-
-    /* const _handlePhysics = async () => {
-      if (geometryBuffer) {
-        this.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-        const physicsObject = this.physics.addCookedGeometry(
-          geometryBuffer,
-          localVector,
-          localQuaternion,
-          localVector2
+        _mapOffsettedIndices(
+          terrainGeometry.indices,
+          geometry.index.array,
+          indexOffset,
+          positionOffset
         );
-        this.physicsObjects.push(physicsObject);
-        this.physicsObjectToChunkMap.set(physicsObject, chunk);
 
-        const onchunkremove = () => {
-          this.physics.removeGeometry(physicsObject);
+        geometry.attributes.position.update(
+          positionOffset,
+          terrainGeometry.positions.length,
+          terrainGeometry.positions,
+          0
+        );
+        geometry.attributes.normal.update(
+          normalOffset,
+          terrainGeometry.normals.length,
+          terrainGeometry.normals,
+          0
+        );
+        /* geometry.attributes.biomes.update(
+          biomesOffset,
+          terrainGeometry.biomes.length,
+          terrainGeometry.biomes,
+          0
+        ); */
+        /* geometry.attributes.biomesWeights.update(
+          biomesWeightsOffset,
+          terrainGeometry.biomesWeights.length,
+          terrainGeometry.biomesWeights,
+          0
+        ); */
+        // console.log('biomes', geometry.attributes.biomesUvs1, geometry.attributes.biomesUvs2);
+        geometry.attributes.biomesUvs1.update(
+          biomesUvs1Offset,
+          terrainGeometry.biomesUvs1.length,
+          terrainGeometry.biomesUvs1,
+          0
+        );
+        /* geometry.attributes.biomesUvs2.update(
+          biomesUvs2Offset,
+          terrainGeometry.biomesUvs2.length,
+          terrainGeometry.biomesUvs2,
+          0
+        );
+        geometry.attributes.skylights.update(
+          skylightsOffset,
+          terrainGeometry.skylights.length,
+          terrainGeometry.skylights,
+          0
+        );
+        geometry.attributes.aos.update(
+          aosOffset,
+          terrainGeometry.aos.length,
+          terrainGeometry.aos,
+          0
+        ); */
+        geometry.index.update(indexOffset, terrainGeometry.indices.length);
+      };
+      const _handleTerrainMesh = terrainGeometry => {
+        const {chunkSize} = this.instance;
 
-          const index = this.physicsObjects.indexOf(physicsObject);
-          this.physicsObjects.splice(index, 1);
-          this.physicsObjectToChunkMap.delete(physicsObject);
+        const boundingBox = localBox.set(
+          localVector3D.set(
+            chunk.min.x * chunkSize,
+            -WORLD_BASE_HEIGHT + MIN_WORLD_HEIGHT,
+            chunk.min.y * chunkSize
+          ),
+          localVector3D2.set(
+            (chunk.min.x + chunk.lod) * chunkSize,
+            -WORLD_BASE_HEIGHT + MAX_WORLD_HEIGHT,
+            (chunk.min.y + chunk.lod) * chunkSize
+          )
+        );
+        /* localSphere.center.set(
+            (chunk.min.x + 0.5) * chunkSize,
+            (chunk.min.y + 0.5) * chunkSize,
+            (chunk.min.z + 0.5) * chunkSize
+          )
+          .applyMatrix4(this.matrixWorld);
+        localSphere.radius = chunkRadius; */
 
-          tracker.offChunkRemove(chunk, onchunkremove);
-        };
-        tracker.onChunkRemove(chunk, onchunkremove);
-      }
-    };
-    _handlePhysics(); */
+        // const min = localVector3D.set(chunk.min.x, chunk.min.y, chunk.min.z)
+        //   .multiplyScalar(chunkSize);
+        // const max = localVector3D2.set(chunk.min.x, chunk.min.y, chunk.min.z)
+        //   .addScalar(chunk.lod)
+        //   .multiplyScalar(chunkSize);
+
+        // console.log(localVector3D.x + ", " + localVector3D2.x);
+
+        // XXX defer this to one per frame
+        const geometryBinding = this.allocator.alloc(
+          terrainGeometry.positions.length,
+          terrainGeometry.indices.length,
+          boundingBox,
+          // min,
+          // max,
+          // this.appMatrix,
+          // terrainGeometry.peeks
+        );
+        // console.log(localVector3D);
+        _renderTerrainMeshDataToGeometry(
+          terrainGeometry,
+          this.allocator.geometry,
+          geometryBinding
+        );
+
+        this.geometryBindings.set(key, geometryBinding);
+      };
+      _handleTerrainMesh(chunkResult.terrainGeometry);
+
+      /* const _handlePhysics = async () => {
+        if (geometryBuffer) {
+          this.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+          const physicsObject = this.physics.addCookedGeometry(
+            geometryBuffer,
+            localVector,
+            localQuaternion,
+            localVector2
+          );
+          this.physicsObjects.push(physicsObject);
+          this.physicsObjectToChunkMap.set(physicsObject, chunk);
+
+          const onchunkremove = () => {
+            this.physics.removeGeometry(physicsObject);
+
+            const index = this.physicsObjects.indexOf(physicsObject);
+            this.physicsObjects.splice(index, 1);
+            this.physicsObjectToChunkMap.delete(physicsObject);
+
+            tracker.offChunkRemove(chunk, onchunkremove);
+          };
+          tracker.onChunkRemove(chunk, onchunkremove);
+        }
+      };
+      _handlePhysics(); */
+    });
+    this.gpuTasks.set(key, task);
   }
   removeChunk(chunk) {
     const key = procGenManager.getNodeHash(chunk);
-    // console.log('chunk remove', key, chunk.min.toArray().join(','));
-    const geometryBinding = this.geometryBindings.get(key);
-    /* if (!geometryBinding) {
-      debugger;
-    } */
-
-    this.allocator.free(geometryBinding);
-
-    this.geometryBindings.delete(key);
+    {
+      // console.log('chunk remove', key, chunk.min.toArray().join(','));
+      const geometryBinding = this.geometryBindings.get(key);
+      if (geometryBinding) {
+        /* if (!geometryBinding) {
+          debugger;
+        } */
+        this.allocator.free(geometryBinding);
+        this.geometryBindings.delete(key);
+      }
+    }
+    {
+      const task = this.gpuTasks.get(key);
+      task.cancel();
+      this.gpuTasks.delete(key);
+    }
   }
 }

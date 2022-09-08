@@ -5,6 +5,7 @@ const {useApp, useFrame, useCamera, useLocalPlayer, useProcGenManager, useInstan
 
 import {Generation} from './generation.js';
 import {TerrainMesh} from './terrain-mesh.js';
+import {WaterMesh} from './water-mesh.js';
 
 // locals
 
@@ -15,13 +16,62 @@ const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
 
+// classes
+
+class GPUTask {
+  constructor(fn, parent) {
+    this.fn = fn;
+    this.parent = parent;
+
+    this.live = true;
+  }
+  run() {
+    this.live = false;
+    this.fn();
+  }
+  cancel() {
+    if (this.live) {
+      this.live = false;
+      this.parent.removeTask(this);
+    }
+  }
+}
+class GPUTaskManager {
+  static numTasksPerTick = 32;
+  constructor() {
+    this.queue = [];
+  }
+  transact(fn) {
+    const task = new GPUTask(fn);
+    this.queue.push(task);
+    return task;
+  }
+  update() {
+    for (let i = 0; i < GPUTaskManager.numTasksPerTick; i++) {
+      if (this.queue.length > 0) {
+        const task = this.queue.shift();
+        task.run();
+      } else {
+        break;
+      }
+    }
+  }
+  removeTask(task) {
+    const index = this.queue.indexOf(task);
+    /* if (index === -1) {
+      debugger;
+    } */
+    this.queue.splice(index, 1);
+  }
+}
+
 // main
 
 export default e => {
   const app = useApp();
   const camera = useCamera();
   const procGenManager = useProcGenManager();
-  const physics = usePhysics();
+  // const physics = usePhysics();
 
   // locals
 
@@ -33,24 +83,40 @@ export default e => {
   e.waitUntil((async () => {
     const instance = procGenManager.getInstance();
 
+    // lod tracker
+
     const lodTracker = await instance.createLodChunkTracker({
       lods: 3,
       lod1Range: 2,
-      debug: true,
+      // debug: true,
     });
-    app.add(lodTracker.debugMesh);
-    lodTracker.debugMesh.position.y = 0.1;
-    lodTracker.debugMesh.updateMatrixWorld();
+    // app.add(lodTracker.debugMesh);
+    // lodTracker.debugMesh.position.y = 0.1;
+    // lodTracker.debugMesh.updateMatrixWorld();
+
+    // meshes
+
+    const gpuTaskManager = new GPUTaskManager();
 
     const terrainMesh = new TerrainMesh({
       instance,
+      gpuTaskManager,
     });
     terrainMesh.frustumCulled = false;
     app.add(terrainMesh);
     terrainMesh.updateMatrixWorld();
 
-    lodTracker.onChunkAdd(async chunk => {
+    const waterMesh = new WaterMesh({
+      instance,
+      gpuTaskManager,
+    });
+    waterMesh.frustumCulled = false;
+    app.add(waterMesh);
+    waterMesh.updateMatrixWorld();
 
+    // genration events handling
+
+    lodTracker.onChunkAdd(async chunk => {
       const abortController = new AbortController();
       const {signal} = abortController;
 
@@ -63,13 +129,13 @@ export default e => {
       generations.set(key, generation);
 
       generation.addEventListener('geometryadd', e => {
-        // console.log('got geometry add', e.data);
         const {geometry} = e.data;
         terrainMesh.addChunk(chunk, geometry);
+        waterMesh.addChunk(chunk, geometry);
       });
       generation.addEventListener('geometryremove', e => {
-        // const {geometry} = e.data;
         terrainMesh.removeChunk(chunk);
+        waterMesh.removeChunk(chunk);
       });
 
       try {
@@ -100,31 +166,38 @@ export default e => {
 
       generations.delete(key);
     });
+
+    // frame handling
     
     frameCb = () => {
-      const localPlayer = useLocalPlayer();
+      const _updateLodTracker = () => {
+        const localPlayer = useLocalPlayer();
 
-      const appMatrixWorldInverse = localMatrix2.copy(app.matrixWorld).invert();
-      localMatrix
-        .copy(localPlayer.matrixWorld)
-        .premultiply(appMatrixWorldInverse)
-        .decompose(localVector, localQuaternion, localVector2);
-      const playerPosition = localVector;
+        const appMatrixWorldInverse = localMatrix2.copy(app.matrixWorld).invert();
+        localMatrix
+          .copy(localPlayer.matrixWorld)
+          .premultiply(appMatrixWorldInverse)
+          .decompose(localVector, localQuaternion, localVector2);
+        const playerPosition = localVector;
 
-      localMatrix
-        .copy(camera.matrixWorld)
-        .premultiply(appMatrixWorldInverse)
-        .decompose(localVector2, localQuaternion, localVector3);
-      const cameraPosition = localVector2;
-      const cameraQuaternion = localQuaternion;
+        localMatrix
+          .copy(camera.matrixWorld)
+          .premultiply(appMatrixWorldInverse)
+          .decompose(localVector2, localQuaternion, localVector3);
+        const cameraPosition = localVector2;
+        const cameraQuaternion = localQuaternion;
 
-      lodTracker.update(playerPosition);
-      instance.setCamera(
-        playerPosition,
-        cameraPosition,
-        cameraQuaternion,
-        camera.projectionMatrix
-      );
+        lodTracker.update(playerPosition);
+        instance.setCamera(
+          playerPosition,
+          cameraPosition,
+          cameraQuaternion,
+          camera.projectionMatrix
+        );
+      };
+      _updateLodTracker();
+
+      gpuTaskManager.update();
     };
   })());
 
