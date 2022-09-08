@@ -58,9 +58,6 @@ class GPUTaskManager {
   }
   removeTask(task) {
     const index = this.queue.indexOf(task);
-    /* if (index === -1) {
-      debugger;
-    } */
     this.queue.splice(index, 1);
   }
 }
