@@ -48,7 +48,7 @@ export class TerrainMesh extends BatchedMesh {
         }, */
         {
           name: 'seed',
-          Type: Int32Array,
+          Type: Float32Array,
           itemSize: 1,
         },
         /* {
