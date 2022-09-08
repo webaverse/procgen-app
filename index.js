@@ -37,7 +37,7 @@ class GPUTask {
   }
 }
 class GPUTaskManager {
-  static numTasksPerTick = 16;
+  static numTasksPerTick = 4;
   constructor() {
     this.queue = [];
   }
