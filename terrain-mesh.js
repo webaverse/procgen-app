@@ -220,7 +220,7 @@ export class TerrainMesh extends BatchedMesh {
             float groundSharpness = 0.025;
 
             diffuseColor *= triplanarTexture(vPosition, vNormal, uGroundColor, groundScale, groundSharpness);
-            normal += triplanarNormal(vPosition, vNormal, uGroundNormal, groundScale, groundSharpness).xyz;
+            normal *= triplanarNormal(vPosition, vNormal, uGroundNormal, groundScale, groundSharpness).xyz;
           `;
 
         // extend shaders
