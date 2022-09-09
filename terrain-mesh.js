@@ -52,11 +52,11 @@ export class TerrainMesh extends BatchedMesh {
           Type: Float32Array,
           itemSize: 4,
         }, */
-        {
+        /* {
           name: 'seed',
           Type: Float32Array,
           itemSize: 1,
-        },
+        }, */
         /* {
           name: 'skylights',
           Type: Uint8Array,
@@ -282,7 +282,7 @@ export class TerrainMesh extends BatchedMesh {
         // let biomesWeightsOffset = geometryBinding.getAttributeOffset('biomesWeights');
         let biomesUvs1Offset = geometryBinding.getAttributeOffset('biomesUvs1');
         // let biomesUvs2Offset = geometryBinding.getAttributeOffset('biomesUvs2');
-        let seedsOffset = geometryBinding.getAttributeOffset('seed');
+        // let seedsOffset = geometryBinding.getAttributeOffset('seed');
         // let skylightsOffset = geometryBinding.getAttributeOffset('skylights');
         // let aosOffset = geometryBinding.getAttributeOffset('aos');
         let indexOffset = geometryBinding.getIndexOffset();
@@ -331,12 +331,12 @@ export class TerrainMesh extends BatchedMesh {
           terrainGeometry.biomesUvs2,
           0
         ); */
-        geometry.attributes.seed.update(
+        /* geometry.attributes.seed.update(
           seedsOffset,
           terrainGeometry.seeds.length,
           terrainGeometry.seeds,
           0
-        );
+        ); */
         /* geometry.attributes.skylights.update(
           skylightsOffset,
           terrainGeometry.skylights.length,
