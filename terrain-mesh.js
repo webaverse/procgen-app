@@ -80,9 +80,9 @@ export class TerrainMesh extends BatchedMesh {
       }
     );
 
-    const { geometry } = allocator;
+    const {geometry} = allocator;
 
-    const groundColorTexture = textureLoader.load(
+    /* const groundColorTexture = textureLoader.load(
       baseUrl + 'assets/textures/rock_06_diff_8k.jpg'
     );
     groundColorTexture.encoding = THREE.sRGBEncoding;
@@ -246,7 +246,9 @@ export class TerrainMesh extends BatchedMesh {
 
         return shader;
       },
-    });
+    }); */
+
+    const material = new THREE.MeshNormalMaterial();
 
     super(geometry, material);
 
