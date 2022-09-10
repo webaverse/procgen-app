@@ -82,14 +82,14 @@ export class TerrainMesh extends BatchedMesh {
 
     const {geometry} = allocator;
 
-    /* const groundColorTexture = textureLoader.load(
-      baseUrl + 'assets/textures/rock_06_diff_8k.jpg'
+    const groundColorTexture = textureLoader.load(
+      baseUrl + 'assets/textures/2k/rock_06_diff_2k.jpg'
     );
     groundColorTexture.encoding = THREE.sRGBEncoding;
     groundColorTexture.wrapS = groundColorTexture.wrapT = THREE.RepeatWrapping;
 
     const groundNormalTexture = textureLoader.load(
-      baseUrl + 'assets/textures/rock_06_nor_dx_8k.jpg'
+      baseUrl + 'assets/textures/2k/rock_06_nor_dx_2k.jpg'
     );
     groundNormalTexture.wrapS = groundNormalTexture.wrapT = THREE.RepeatWrapping;
 
@@ -107,6 +107,7 @@ export class TerrainMesh extends BatchedMesh {
     };
 
     const material = new THREE.MeshStandardMaterial({
+      normalMap: new THREE.Texture(),
       onBeforeCompile: (shader) => {
         // ? by installing glsl-literal extension in vscode you can get syntax highlighting for glsl
         const glsl = (x) => x;
@@ -115,24 +116,41 @@ export class TerrainMesh extends BatchedMesh {
           shader.uniforms[k] = materialUniforms[k];
         }
 
-        // vertex shader imports
-        const vertexShaderImports = glsl`
+        // vertex shader 
+        const uvParseVertex = glsl`
+            #include <uv_pars_vertex>
+            varying mat3 vNormalMatrix;
             varying vec3 vPosition;
+            // varying vec2 vUv;
+            varying vec3 vObjectNormal;
           `;
 
-        // vertex shader
-        const vertexShader = glsl`
+        const worldPosVertex = glsl`
+           #include <worldpos_vertex>
+
            vPosition = transformed;
+           vNormalMatrix = normalMatrix;
+          //  vUv = uv;
+           vObjectNormal = normal;
           `;
 
-        // fragment shader imports
-        const fragmentShaderImports = glsl`
+        // fragment shader 
+        const mapParseFragment = glsl`
+            #include <map_pars_fragment>
+
             varying vec3 vPosition;
+            varying mat3 vNormalMatrix;
+            // varying vec2 vUv;
+            varying vec3 vObjectNormal;
             uniform sampler2D uGroundColor;
             uniform sampler2D uGroundNormal;
             uniform sampler2D uNoiseTexture;
 
             float sum( vec3 v ) { return v.x+v.y+v.z; }
+
+            vec4 hash4(vec2 p) {
+              return fract(sin(vec4(1.0 + dot(p, vec2(37.0, 17.0)), 2.0 + dot(p, vec2(11.0, 47.0)), 3.0 + dot(p, vec2(41.0, 29.0)), 4.0 + dot(p, vec2(23.0, 31.0)))) * 103.0);
+            }
 
             // ! based on this article : https://iquilezles.org/articles/texturerepetition
             vec4 textureNoTile( sampler2D samp, in vec2 uv  ) {
@@ -144,8 +162,8 @@ export class TerrainMesh extends BatchedMesh {
               float ib = floor(l);
               f = min(f, 1.0-f)*2.0;
 
-              vec2 offa = sin(vec2(3.0,7.0)*ia); // can replace with any other hash
-              vec2 offb = sin(vec2(3.0,7.0)*ib); // can replace with any other hash
+              vec2 offa = vec2(hash4(vec2(300.0,7.0)*ia)); // can replace with any other hash
+              vec2 offb = vec2(hash4(vec2(300.0,7.0)*ib)); // can replace with any other hash
 
               vec4 cola = texture2D(samp, vec2(uv + offa));
               vec4 colb = texture2D(samp, vec2(uv + offb));
@@ -213,42 +231,50 @@ export class TerrainMesh extends BatchedMesh {
             }
           `;
 
-        // fragment shader
-        const fragmentShader = glsl`
+        const normalFragmentMaps = glsl`
+            #include <normal_fragment_maps>
             // triplanar settings
             float groundScale = 0.025;
-            float groundSharpness = 0.025;
+            float groundSharpness = 10.5;
 
-            diffuseColor *= triplanarTexture(vPosition, vNormal, uGroundColor, groundScale, groundSharpness);
-            normal *= triplanarNormal(vPosition, vNormal, uGroundNormal, groundScale, groundSharpness).xyz;
+            vec4 triplanarDiffColor = triplanarTexture(vPosition, vObjectNormal, uGroundColor, groundScale, groundSharpness);
+            vec3 triplanarNormalColor = triplanarNormal(vPosition, vObjectNormal, uGroundNormal, groundScale, groundSharpness).xyz * 2.0 - 1.0;
+
+            diffuseColor *= triplanarDiffColor;
+            // diffuseColor *= vec4(vObjectNormal.xz, 0.5, 1.);
+            // normal = triplanarNormalColor;
+            // normal = perturbN2Arb(-vViewPosition, normal, triplanarNormalColor, faceDirection);
+            // diffuseColor.xyz = normalize( vNormalMatrix * triplanarNormalColor );
+            normal = normalize( vNormalMatrix * triplanarNormalColor ) * 10.0;
+		        // normal = normalize(vTBN * triplanarNormalColor);
           `;
 
         // extend shaders
         shader.vertexShader = shader.vertexShader.replace(
-          `#include <uv_pars_vertex>`,
-          vertexShaderImports
+          '#include <uv_pars_vertex>',
+          uvParseVertex
         );
 
         shader.vertexShader = shader.vertexShader.replace(
-          `#include <worldpos_vertex>`,
-          vertexShader
+          '#include <worldpos_vertex>',
+          worldPosVertex
         );
 
         shader.fragmentShader = shader.fragmentShader.replace(
           '#include <map_pars_fragment>',
-          fragmentShaderImports
+          mapParseFragment
         );
 
         shader.fragmentShader = shader.fragmentShader.replace(
           '#include <normal_fragment_maps>',
-          fragmentShader
+          normalFragmentMaps
         );
 
         return shader;
       },
-    }); */
+    });
 
-    const material = new THREE.MeshNormalMaterial();
+    // const material = new THREE.MeshNormalMaterial();
 
     super(geometry, material);
 
