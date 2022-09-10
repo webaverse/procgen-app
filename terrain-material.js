@@ -171,12 +171,7 @@ const loadTerrainMaterial = async () => {
             vec3 triplanarNormalColor = triplanarNormal(vPosition, vObjectNormal, uGroundNormal, groundScale, groundSharpness).xyz * 2.0 - 1.0;
 
             diffuseColor *= triplanarDiffColor;
-            // diffuseColor *= vec4(vObjectNormal.xz, 0.5, 1.);
-            // normal = triplanarNormalColor;
-            // normal = perturbN2Arb(-vViewPosition, normal, triplanarNormalColor, faceDirection);
-            // diffuseColor.xyz = normalize( vNormalMatrix * triplanarNormalColor );
             normal = normalize( vNormalMatrix * triplanarNormalColor ) * 10.0;
-		        // normal = normalize(vTBN * triplanarNormalColor);
           `;
 
       // extend shaders

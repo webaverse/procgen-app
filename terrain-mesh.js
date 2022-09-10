@@ -79,6 +79,7 @@ export class TerrainMesh extends BatchedMesh {
 
     const {geometry} = allocator;
 
+    // loading the material
     (async () => {
       const material = await loadTerrainMaterial();
       this.material = material;
