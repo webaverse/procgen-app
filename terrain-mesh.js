@@ -79,15 +79,15 @@ export class TerrainMesh extends BatchedMesh {
 
     const {geometry} = allocator;
 
-    // loading the material
-    (async () => {
-      const material = await loadTerrainMaterial();
-      this.material = material;
-    })();
-
-    // const material = new THREE.MeshNormalMaterial();
-
     super(geometry);
+
+    // loading the material
+    // (async () => {
+    //   const material = await loadTerrainMaterial();
+    //   this.material = material;
+    // })();
+
+    this.material = new THREE.MeshNormalMaterial();
 
     this.instance = instance;
     this.gpuTaskManager = gpuTaskManager;
