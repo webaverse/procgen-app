@@ -46,15 +46,22 @@ const loadTerrainMaterial = async () => {
   );
   rockNormalMap.encoding = THREE.LinearEncoding;
 
+  const grassDiffMap = await _loadTexture('assets/textures/grass/grass.png');
+  grassDiffMap.encoding = THREE.sRGBEncoding;
+
+  const rockMap = await _loadTexture('assets/textures/grass/rock.png');
+  rockMap.encoding = THREE.sRGBEncoding;
+
   const noiseTexture = await _loadTexture('assets/textures/simplex-noise.png');
   noiseTexture.encoding = THREE.LinearEncoding;
 
   // define material uniforms here
   const materialUniforms = {
-    uDiffMap: { value: rockDiffMap },
+    uDiffMap: { value: rockMap },
     uRoughnessMap: { value: rockRoughnessMap },
     uNormalMap: { value: rockNormalMap },
     uAoMap: { value: rockAoMap },
+    uGrassDiff: { value: grassDiffMap},
     uNoiseTexture: { value: noiseTexture },
   };
 
@@ -97,11 +104,13 @@ const loadTerrainMaterial = async () => {
         uniform sampler2D uRoughnessMap;
         uniform sampler2D uNormalMap;
         uniform sampler2D uAoMap;
+
+        uniform sampler2D uGrassDiff;
   
         uniform sampler2D uNoiseTexture;
   
         float TRI_SCALE = 0.05;
-        float TRI_SHARPNESS = 10.0;
+        float TRI_SHARPNESS = 0.5;
   
         float sum( vec3 v ) { return v.x+v.y+v.z; }
   
@@ -190,21 +199,33 @@ const loadTerrainMaterial = async () => {
 
       const mapFragment = glsl`
         #include <map_fragment>
+
+        float slope = max(0.f, 1.f - vObjectNormal.y);
  
         vec4 triplanarDiffColor = triplanarMap(vPosition, vObjectNormal, uDiffMap);
-        diffuseColor *= triplanarDiffColor;
+
+        // float grass = slope / 15.0;
+        // float rock = 1.0 - slope / 15.0;
+        float fade = clamp(slope + 0.5, 0., 1.);
+        float grass = 1.0 - fade;
+        float rock = fade;
+
+        vec4 grassColor = triplanarMap(vPosition, vObjectNormal, uGrassDiff);
+        diffuseColor *= (rock * triplanarDiffColor + grass * grassColor);
       `;
       const roughnessMapFragment = glsl`
         #include <roughnessmap_fragment>
 
-        vec4 texelRoughness = triplanarMap(vPosition, vObjectNormal, uRoughnessMap);
-        roughnessFactor *= texelRoughness.g;
+        // vec4 texelRoughness = triplanarMap(vPosition, vObjectNormal, uRoughnessMap);
+        // roughnessFactor *= texelRoughness.g;
       `;
       const normalFragmentMaps = glsl`
         #include <normal_fragment_maps>
 
         vec3 triplanarNormalColor = triplanarNormal(vPosition, vObjectNormal, uNormalMap).xyz;
-        normal = normalize(vNormalMatrix * triplanarNormalColor);
+        if(slope >= 0.15){
+          normal = normalize(vNormalMatrix * triplanarNormalColor);
+        }
       `;
 
       const aoMapFragment = glsl`
