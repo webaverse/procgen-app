@@ -6,6 +6,7 @@ const {useApp, useFrame, useCamera, useLocalPlayer, useProcGenManager, useInstan
 import {Generation} from './generation.js';
 import {TerrainMesh} from './terrain-mesh.js';
 import {WaterMesh} from './water-mesh.js';
+import {CaveMesh} from './cave-mesh.js';
 
 // locals
 
@@ -95,7 +96,7 @@ export default e => {
 
     const gpuTaskManager = new GPUTaskManager();
 
-    const terrainMesh = new TerrainMesh({
+    /* const terrainMesh = new TerrainMesh({
       instance,
       gpuTaskManager,
     });
@@ -109,7 +110,15 @@ export default e => {
     });
     waterMesh.frustumCulled = false;
     app.add(waterMesh);
-    waterMesh.updateMatrixWorld();
+    waterMesh.updateMatrixWorld(); */
+
+    const caveMesh = new CaveMesh({
+      instance,
+      gpuTaskManager,
+    });
+    caveMesh.frustumCulled = false;
+    app.add(caveMesh);
+    caveMesh.updateMatrixWorld();
 
     // genration events handling
 
@@ -127,12 +136,14 @@ export default e => {
 
       generation.addEventListener('geometryadd', e => {
         const {geometry} = e.data;
-        terrainMesh.addChunk(chunk, geometry);
-        waterMesh.addChunk(chunk, geometry);
+        // terrainMesh.addChunk(chunk, geometry);
+        // waterMesh.addChunk(chunk, geometry);
+        caveMesh.addChunk(chunk, geometry);
       });
       generation.addEventListener('geometryremove', e => {
-        terrainMesh.removeChunk(chunk);
-        waterMesh.removeChunk(chunk);
+        // terrainMesh.removeChunk(chunk);
+        // waterMesh.removeChunk(chunk);
+        caveMesh.removeChunk(chunk);
       });
 
       try {
