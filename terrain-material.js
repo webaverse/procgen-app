@@ -47,13 +47,13 @@ const loadTerrainMaterial = async () => {
   rockNormalMap.encoding = THREE.LinearEncoding;
 
   const grassDiffMap = await _loadTexture('assets/textures/grass/grass4.png');
-  grassDiffMap.encoding = THREE.sRGBEncoding;
+  // grassDiffMap.encoding = THREE.sRGBEncoding;
 
   const grassNormalMap = await _loadTexture('assets/textures/grass/grass4n.png');
   grassNormalMap.encoding = THREE.LinearEncoding;
 
   const rockMap = await _loadTexture('assets/textures/grass/rock7.png');
-  rockMap.encoding = THREE.sRGBEncoding;
+  // rockMap.encoding = THREE.sRGBEncoding;
 
   const rockNormal = await _loadTexture('assets/textures/grass/rock6n.png');
   rockMap.encoding = THREE.LinearEncoding;
