@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+// import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import metaversefile from 'metaversefile';
 import {
   bufferSize,
@@ -6,7 +7,7 @@ import {
   MIN_WORLD_HEIGHT,
   MAX_WORLD_HEIGHT,
 } from './constants.js';
-import loadTerrainMaterial from './terrain-material.js';
+// import {GLTFExporter} from 'three/examples/jsm/exporters/GLTFExporter.js';
 
 const {useInstancing, useProcGenManager, useLoaders} = metaversefile;
 const {BatchedMesh, GeometryAllocator} = useInstancing();
@@ -239,6 +240,45 @@ export class TerrainMesh extends BatchedMesh {
         );
 
         this.geometryBindings.set(key, geometryBinding);
+
+        /* function downloadFile(file, filename) {
+          const blobURL = URL.createObjectURL(file);
+          const tempLink = document.createElement('a');
+          tempLink.style.display = 'none';
+          tempLink.href = blobURL;
+          tempLink.setAttribute('download', filename);
+        
+          document.body.appendChild(tempLink);
+          tempLink.click();
+          document.body.removeChild(tempLink);
+        }
+        geometryBinding._positions = terrainGeometry.positions.slice();
+        geometryBinding._indices = terrainGeometry.indices.slice();
+        globalThis.terrainExport = () => {
+          const geometries = [];
+          for (const v of this.geometryBindings.values()) {
+            // console.log('got v', v._positions, v._indices);
+            const {_positions, _indices} = v;
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(_positions, 3));
+            geometry.setIndex(new THREE.BufferAttribute(_indices, 1));
+            
+            geometries.push(geometry);
+          }
+          const geometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
+          const material = new THREE.MeshStandardMaterial({
+            color: 0x808080,
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          const scene = new THREE.Scene();
+          scene.add(mesh);
+          const exporter = new GLTFExporter();
+          exporter.parse(mesh, (gltf) => {
+            downloadFile(new Blob([gltf], {type: 'application/octet-stream'}), 'terrain.glb');
+          }, {
+            binary: true,
+          });
+        }; */
       };
       _handleTerrainMesh(chunkResult.terrainGeometry);
 
