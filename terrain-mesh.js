@@ -346,7 +346,7 @@ export class TerrainMesh extends BatchedMesh {
 
       if (physicsObject) {
         this.physics.removeGeometry(physicsObject);
-        this.physicsObjectsMap.delete(physicsObject);
+        this.physicsObjectsMap.delete(key);
       }
     }
     {
