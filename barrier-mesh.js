@@ -31,6 +31,16 @@ export class BarrierMesh extends BatchedMesh {
           Type: Float32Array,
           itemSize: 3,
         },
+        {
+          name: 'uv',
+          Type: Float32Array,
+          itemSize: 2,
+        },
+        {
+          name: 'position2D',
+          Type: Float32Array,
+          itemSize: 2,
+        },
       ],
       {
         bufferSize,
@@ -40,7 +50,76 @@ export class BarrierMesh extends BatchedMesh {
     );
 
     const {geometry} = allocator;
-    const material = new THREE.MeshNormalMaterial();
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+      },
+      vertexShader: `\
+        varying vec2 vUv;
+        varying vec3 vPosition;
+
+        void main() {
+          vUv = uv;
+          vPosition = position;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `\
+        precision highp float;
+        precision highp int;
+
+        #define PI 3.1415926535897932384626433832795
+
+        varying vec3 vPosition;
+        varying vec2 vUv;
+
+        // const vec3 lineColor1 = vec3(${new THREE.Color(0x66bb6a).toArray().join(', ')});
+        const vec3 lineColor1 = vec3(${new THREE.Color(0x42a5f5).toArray().join(', ')});
+        // const vec3 lineColor2 = vec3(${new THREE.Color(0x9575cd).toArray().join(', ')});
+
+        /* float edgeFactor(vec3 bary, float width) {
+          vec3 d = fwidth(bary);
+          vec3 a3 = smoothstep(d * (width - 0.5), d * (width + 0.5), bary);
+          return min(min(a3.x, a3.y), a3.z);
+        } */
+
+        vec4 sRGBToLinear( in vec4 value ) {
+          return vec4( mix( pow( value.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), value.rgb * 0.0773993808, vec3( lessThanEqual( value.rgb, vec3( 0.04045 ) ) ) ), value.a );
+        }
+
+        void main() {
+          // if (vUv.x > 1.) {
+          //   gl_FragColor = vec4(0., 0.0, 0., 1.0);
+          // } else {
+            // gl_FragColor = vec4(vUv.x, 0.0, vUv.y, 1.0);
+          // }
+
+          // vec3 c = mix(lineColor1, lineColor2, vPosition.y / 10.);
+          vec3 c = lineColor1;
+          vec3 p = vPosition;
+          // float f = min(mod(p.x, 1.), mod(p.z, 1.));
+          float f = min(mod(vUv.x, 1.), mod(vUv.y, 1.));
+          f = min(f, mod(1.-vUv.x, 1.));
+          f = min(f, mod(1.-vUv.y, 1.));
+          f *= 10.;
+          float a = max(1. - f, 0.);
+          if (a < 0.5) {
+            discard;
+          } else {
+            gl_FragColor = vec4(c, a);
+            gl_FragColor = sRGBToLinear(gl_FragColor);
+          }
+
+          // #include <tonemapping_fragment>
+			    // #include <encodings_fragment>
+        }
+      `,
+      side: THREE.DoubleSide,
+      transparent: true,
+
+      clipping: false,
+      fog: false,
+      lights: false,
+    });
 
     super(geometry, material);
 
@@ -72,6 +151,8 @@ export class BarrierMesh extends BatchedMesh {
       ) => {
         let positionOffset = geometryBinding.getAttributeOffset('position');
         let normalOffset = geometryBinding.getAttributeOffset('normal');
+        let uvOffset = geometryBinding.getAttributeOffset('uv');
+        let position2DOffset = geometryBinding.getAttributeOffset('position2D');
         let indexOffset = geometryBinding.getIndexOffset();
 
         _mapOffsettedIndices(
@@ -91,6 +172,18 @@ export class BarrierMesh extends BatchedMesh {
           normalOffset,
           barrierGeometry.normals.length,
           barrierGeometry.normals,
+          0
+        );
+        geometry.attributes.uv.update(
+          uvOffset,
+          barrierGeometry.uvs.length,
+          barrierGeometry.uvs,
+          0
+        );
+        geometry.attributes.position2D.update(
+          position2DOffset,
+          barrierGeometry.positions2D.length,
+          barrierGeometry.positions2D,
           0
         );
         geometry.index.update(indexOffset, barrierGeometry.indices.length);
