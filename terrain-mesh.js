@@ -7,22 +7,28 @@ import {
   MIN_WORLD_HEIGHT,
   MAX_WORLD_HEIGHT,
 } from './constants.js';
+import loadTerrainMaterial from './terrain-material.js';
 // import {GLTFExporter} from 'three/examples/jsm/exporters/GLTFExporter.js';
 
-const {useInstancing, useProcGenManager, useLoaders} = metaversefile;
+const {useInstancing, useProcGenManager} = metaversefile;
 const {BatchedMesh, GeometryAllocator} = useInstancing();
 const procGenManager = useProcGenManager();
 
 //
 
+const fakeMaterial = new THREE.MeshBasicMaterial({
+  color: 0xffffff,
+});
+
 const localVector3D = new THREE.Vector3();
 const localVector3D2 = new THREE.Vector3();
+const localQuaternion = new THREE.Quaternion();
 const localBox = new THREE.Box3();
 
 //
 
 export class TerrainMesh extends BatchedMesh {
-  constructor({ instance, gpuTaskManager }) {
+  constructor({ instance, gpuTaskManager, physics }) {
     const allocator = new GeometryAllocator(
       [
         {
@@ -78,7 +84,7 @@ export class TerrainMesh extends BatchedMesh {
       }
     );
 
-    const {geometry} = allocator;
+    const { geometry } = allocator;
 
     super(geometry);
 
@@ -90,8 +96,12 @@ export class TerrainMesh extends BatchedMesh {
 
     this.material = new THREE.MeshNormalMaterial();
 
+    this.physics = physics;
+
     this.instance = instance;
     this.gpuTaskManager = gpuTaskManager;
+
+    this.physicsObjectsMap = new Map();
 
     this.allocator = allocator;
     this.gpuTasks = new Map();
@@ -280,33 +290,41 @@ export class TerrainMesh extends BatchedMesh {
           });
         }; */
       };
-      _handleTerrainMesh(chunkResult.terrainGeometry);
+      const terrainGeometry = chunkResult.terrainGeometry;
 
-      /* const _handlePhysics = async () => {
+      _handleTerrainMesh(terrainGeometry);
+
+      const _handlePhysics = async () => {
+        let geometryBuffer;
+
+        const physicsGeo = new THREE.BufferGeometry();
+        physicsGeo.setAttribute(
+          'position',
+          new THREE.BufferAttribute(terrainGeometry.positions, 3)
+        );
+        physicsGeo.setIndex(
+          new THREE.BufferAttribute(terrainGeometry.indices, 1)
+        );
+        const physicsMesh = new THREE.Mesh(physicsGeo, fakeMaterial);
+
+        geometryBuffer = await this.physics.cookGeometryAsync(physicsMesh);
+
         if (geometryBuffer) {
-          this.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+          this.matrixWorld.decompose(
+            localVector3D,
+            localQuaternion,
+            localVector3D2
+          );
           const physicsObject = this.physics.addCookedGeometry(
             geometryBuffer,
-            localVector,
+            localVector3D,
             localQuaternion,
-            localVector2
+            localVector3D2
           );
-          this.physicsObjects.push(physicsObject);
-          this.physicsObjectToChunkMap.set(physicsObject, chunk);
-
-          const onchunkremove = () => {
-            this.physics.removeGeometry(physicsObject);
-
-            const index = this.physicsObjects.indexOf(physicsObject);
-            this.physicsObjects.splice(index, 1);
-            this.physicsObjectToChunkMap.delete(physicsObject);
-
-            tracker.offChunkRemove(chunk, onchunkremove);
-          };
-          tracker.onChunkRemove(chunk, onchunkremove);
+          this.physicsObjectsMap.set(key, physicsObject);
         }
       };
-      _handlePhysics(); */
+      _handlePhysics();
     });
     this.gpuTasks.set(key, task);
   }
@@ -321,6 +339,14 @@ export class TerrainMesh extends BatchedMesh {
         } */
         this.allocator.free(geometryBinding);
         this.geometryBindings.delete(key);
+      }
+    }
+    {
+      const physicsObject = this.physicsObjectsMap.get(key);
+
+      if (physicsObject) {
+        this.physics.removeGeometry(physicsObject);
+        this.physicsObjectsMap.delete(physicsObject);
       }
     }
     {
