@@ -68,7 +68,7 @@ export default e => {
   const app = useApp();
   const camera = useCamera();
   const procGenManager = useProcGenManager();
-  // const physics = usePhysics();
+  const physics = usePhysics();
 
   // locals
 
@@ -98,6 +98,7 @@ export default e => {
     const terrainMesh = new TerrainMesh({
       instance,
       gpuTaskManager,
+      physics
     });
     terrainMesh.frustumCulled = false;
     app.add(terrainMesh);
