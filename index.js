@@ -6,6 +6,7 @@ const {useApp, useFrame, useCamera, useLocalPlayer, useProcGenManager, useInstan
 import {Generation} from './generation.js';
 import {TerrainMesh} from './terrain-mesh.js';
 import {WaterMesh} from './water-mesh.js';
+import {BarrierMesh} from './barrier-mesh.js';
 
 // locals
 
@@ -112,6 +113,14 @@ export default e => {
     app.add(waterMesh);
     waterMesh.updateMatrixWorld();
 
+    /* const barrierMesh = new BarrierMesh({
+      instance,
+      gpuTaskManager,
+    });
+    barrierMesh.frustumCulled = false;
+    app.add(barrierMesh);
+    barrierMesh.updateMatrixWorld(); */
+
     // genration events handling
 
     lodTracker.onChunkAdd(async chunk => {
@@ -130,10 +139,12 @@ export default e => {
         const {geometry} = e.data;
         terrainMesh.addChunk(chunk, geometry);
         waterMesh.addChunk(chunk, geometry);
+        // barrierMesh.addChunk(chunk, geometry);
       });
       generation.addEventListener('geometryremove', e => {
         terrainMesh.removeChunk(chunk);
         waterMesh.removeChunk(chunk);
+        // barrierMesh.removeChunk(chunk);
       });
 
       try {

@@ -96,53 +96,55 @@ export class BarrierMesh extends BatchedMesh {
         geometry.index.update(indexOffset, barrierGeometry.indices.length);
       };
       const _handleBarrierMesh = barrierGeometry => {
-        const {chunkSize} = this.instance;
+        if (barrierGeometry.positions.length > 0) {
+          const {chunkSize} = this.instance;
 
-        const boundingBox = localBox.set(
-          localVector3D.set(
-            chunk.min.x * chunkSize,
-            -WORLD_BASE_HEIGHT + MIN_WORLD_HEIGHT,
-            chunk.min.y * chunkSize
-          ),
-          localVector3D2.set(
-            (chunk.min.x + chunk.lod) * chunkSize,
-            -WORLD_BASE_HEIGHT + MAX_WORLD_HEIGHT,
-            (chunk.min.y + chunk.lod) * chunkSize
-          )
-        );
-        /* localSphere.center.set(
-            (chunk.min.x + 0.5) * chunkSize,
-            (chunk.min.y + 0.5) * chunkSize,
-            (chunk.min.z + 0.5) * chunkSize
-          )
-          .applyMatrix4(this.matrixWorld);
-        localSphere.radius = chunkRadius; */
+          const boundingBox = localBox.set(
+            localVector3D.set(
+              chunk.min.x * chunkSize,
+              -WORLD_BASE_HEIGHT + MIN_WORLD_HEIGHT,
+              chunk.min.y * chunkSize
+            ),
+            localVector3D2.set(
+              (chunk.min.x + chunk.lod) * chunkSize,
+              -WORLD_BASE_HEIGHT + MAX_WORLD_HEIGHT,
+              (chunk.min.y + chunk.lod) * chunkSize
+            )
+          );
+          /* localSphere.center.set(
+              (chunk.min.x + 0.5) * chunkSize,
+              (chunk.min.y + 0.5) * chunkSize,
+              (chunk.min.z + 0.5) * chunkSize
+            )
+            .applyMatrix4(this.matrixWorld);
+          localSphere.radius = chunkRadius; */
 
-        // const min = localVector3D.set(chunk.min.x, chunk.min.y, chunk.min.z)
-        //   .multiplyScalar(chunkSize);
-        // const max = localVector3D2.set(chunk.min.x, chunk.min.y, chunk.min.z)
-        //   .addScalar(chunk.lod)
-        //   .multiplyScalar(chunkSize);
+          // const min = localVector3D.set(chunk.min.x, chunk.min.y, chunk.min.z)
+          //   .multiplyScalar(chunkSize);
+          // const max = localVector3D2.set(chunk.min.x, chunk.min.y, chunk.min.z)
+          //   .addScalar(chunk.lod)
+          //   .multiplyScalar(chunkSize);
 
-        // console.log(localVector3D.x + ", " + localVector3D2.x);
+          // console.log(localVector3D.x + ", " + localVector3D2.x);
 
-        const geometryBinding = this.allocator.alloc(
-          barrierGeometry.positions.length,
-          barrierGeometry.indices.length,
-          boundingBox,
-          // min,
-          // max,
-          // this.appMatrix,
-          // barrierGeometry.peeks
-        );
-        // console.log(localVector3D);
-        _renderWaterMeshDataToGeometry(
-          barrierGeometry,
-          this.allocator.geometry,
-          geometryBinding
-        );
+          const geometryBinding = this.allocator.alloc(
+            barrierGeometry.positions.length,
+            barrierGeometry.indices.length,
+            boundingBox,
+            // min,
+            // max,
+            // this.appMatrix,
+            // barrierGeometry.peeks
+          );
+          // console.log(localVector3D);
+          _renderWaterMeshDataToGeometry(
+            barrierGeometry,
+            this.allocator.geometry,
+            geometryBinding
+          );
 
-        this.geometryBindings.set(key, geometryBinding);
+          this.geometryBindings.set(key, geometryBinding);
+        }
       };
       _handleBarrierMesh(chunkResult.barrierGeometry);
 
@@ -178,7 +180,6 @@ export class BarrierMesh extends BatchedMesh {
     const key = procGenManager.getNodeHash(chunk);
 
     {
-      // console.log('chunk remove', key, chunk.min.toArray().join(','));
       const geometryBinding = this.geometryBindings.get(key);
       if (geometryBinding) {
         /* if (!geometryBinding) {
