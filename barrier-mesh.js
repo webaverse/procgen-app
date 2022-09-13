@@ -34,7 +34,7 @@ export class BarrierMesh extends BatchedMesh {
       ],
       {
         bufferSize,
-        boundingType: 'box',
+        // boundingType: 'box',
         // hasOcclusionCulling: true
       }
     );
