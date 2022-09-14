@@ -58,13 +58,19 @@ export class BarrierMesh extends BatchedMesh {
         },
       },
       vertexShader: `\
+        attribute ivec2 position2D;
         varying vec2 vUv;
         varying vec3 vPosition;
+        uniform ivec2 uPosition2D;
 
         void main() {
           vUv = uv;
           vPosition = position;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          bool matches = uPosition2D.x == position2D.x && uPosition2D.y == position2D.y;
+          if (!matches) {
+            vPosition = vec3(0.);
+          }
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(vPosition, 1.0);
         }
       `,
       fragmentShader: `\
@@ -73,12 +79,12 @@ export class BarrierMesh extends BatchedMesh {
 
         #define PI 3.1415926535897932384626433832795
 
-        varying vec3 vPosition;
+        // varying vec3 vPosition;
         varying vec2 vUv;
 
         // const vec3 lineColor1 = vec3(${new THREE.Color(0x66bb6a).toArray().join(', ')});
         const vec3 lineColor1 = vec3(${new THREE.Color(0x42a5f5).toArray().join(', ')});
-        // const vec3 lineColor2 = vec3(${new THREE.Color(0x9575cd).toArray().join(', ')});
+        const vec3 lineColor2 = vec3(${new THREE.Color(0x9575cd).toArray().join(', ')});
 
         /* float edgeFactor(vec3 bary, float width) {
           vec3 d = fwidth(bary);
@@ -99,7 +105,7 @@ export class BarrierMesh extends BatchedMesh {
 
           // vec3 c = mix(lineColor1, lineColor2, vPosition.y / 10.);
           vec3 c = lineColor1;
-          vec3 p = vPosition;
+          // vec3 p = vPosition;
           // float f = min(mod(p.x, 1.), mod(p.z, 1.));
           float f = min(mod(vUv.x, 1.), mod(vUv.y, 1.));
           f = min(f, mod(1.-vUv.x, 1.));
@@ -135,65 +141,65 @@ export class BarrierMesh extends BatchedMesh {
     this.geometryBindings = new Map();
   }
   addChunk(chunk, chunkResult) {
-    const key = procGenManager.getNodeHash(chunk);
-    const task = this.gpuTaskManager.transact(() => {
-      const _mapOffsettedIndices = (
-        srcIndices,
-        dstIndices,
-        dstOffset,
-        positionOffset
-      ) => {
-        const positionIndex = positionOffset / 3;
-        for (let i = 0; i < srcIndices.length; i++) {
-          dstIndices[dstOffset + i] = srcIndices[i] + positionIndex;
-        }
-      };
-      const _renderWaterMeshDataToGeometry = (
-        barrierGeometry,
-        geometry,
-        geometryBinding
-      ) => {
-        let positionOffset = geometryBinding.getAttributeOffset('position');
-        let normalOffset = geometryBinding.getAttributeOffset('normal');
-        let uvOffset = geometryBinding.getAttributeOffset('uv');
-        let position2DOffset = geometryBinding.getAttributeOffset('position2D');
-        let indexOffset = geometryBinding.getIndexOffset();
-
-        _mapOffsettedIndices(
-          barrierGeometry.indices,
-          geometry.index.array,
-          indexOffset,
+    if (chunkResult.barrierGeometry.positions.length > 0) {
+      const key = procGenManager.getNodeHash(chunk);
+      const task = this.gpuTaskManager.transact(() => {
+        const _mapOffsettedIndices = (
+          srcIndices,
+          dstIndices,
+          dstOffset,
           positionOffset
-        );
+        ) => {
+          const positionIndex = positionOffset / 3;
+          for (let i = 0; i < srcIndices.length; i++) {
+            dstIndices[dstOffset + i] = srcIndices[i] + positionIndex;
+          }
+        };
+        const _renderBarrierMeshDataToGeometry = (
+          barrierGeometry,
+          geometry,
+          geometryBinding
+        ) => {
+          let positionOffset = geometryBinding.getAttributeOffset('position');
+          let normalOffset = geometryBinding.getAttributeOffset('normal');
+          let uvOffset = geometryBinding.getAttributeOffset('uv');
+          let position2DOffset = geometryBinding.getAttributeOffset('position2D');
+          let indexOffset = geometryBinding.getIndexOffset();
 
-        geometry.attributes.position.update(
-          positionOffset,
-          barrierGeometry.positions.length,
-          barrierGeometry.positions,
-          0
-        );
-        geometry.attributes.normal.update(
-          normalOffset,
-          barrierGeometry.normals.length,
-          barrierGeometry.normals,
-          0
-        );
-        geometry.attributes.uv.update(
-          uvOffset,
-          barrierGeometry.uvs.length,
-          barrierGeometry.uvs,
-          0
-        );
-        geometry.attributes.position2D.update(
-          position2DOffset,
-          barrierGeometry.positions2D.length,
-          barrierGeometry.positions2D,
-          0
-        );
-        geometry.index.update(indexOffset, barrierGeometry.indices.length);
-      };
-      const _handleBarrierMesh = barrierGeometry => {
-        if (barrierGeometry.positions.length > 0) {
+          _mapOffsettedIndices(
+            barrierGeometry.indices,
+            geometry.index.array,
+            indexOffset,
+            positionOffset
+          );
+
+          geometry.attributes.position.update(
+            positionOffset,
+            barrierGeometry.positions.length,
+            barrierGeometry.positions,
+            0
+          );
+          geometry.attributes.normal.update(
+            normalOffset,
+            barrierGeometry.normals.length,
+            barrierGeometry.normals,
+            0
+          );
+          geometry.attributes.uv.update(
+            uvOffset,
+            barrierGeometry.uvs.length,
+            barrierGeometry.uvs,
+            0
+          );
+          geometry.attributes.position2D.update(
+            position2DOffset,
+            barrierGeometry.positions2D.length,
+            barrierGeometry.positions2D,
+            0
+          );
+          geometry.index.update(indexOffset, barrierGeometry.indices.length);
+        };
+        const _handleBarrierMesh = barrierGeometry => {
           const {chunkSize} = this.instance;
 
           const boundingBox = localBox.set(
@@ -208,21 +214,6 @@ export class BarrierMesh extends BatchedMesh {
               (chunk.min.y + chunk.lod) * chunkSize
             )
           );
-          /* localSphere.center.set(
-              (chunk.min.x + 0.5) * chunkSize,
-              (chunk.min.y + 0.5) * chunkSize,
-              (chunk.min.z + 0.5) * chunkSize
-            )
-            .applyMatrix4(this.matrixWorld);
-          localSphere.radius = chunkRadius; */
-
-          // const min = localVector3D.set(chunk.min.x, chunk.min.y, chunk.min.z)
-          //   .multiplyScalar(chunkSize);
-          // const max = localVector3D2.set(chunk.min.x, chunk.min.y, chunk.min.z)
-          //   .addScalar(chunk.lod)
-          //   .multiplyScalar(chunkSize);
-
-          // console.log(localVector3D.x + ", " + localVector3D2.x);
 
           const geometryBinding = this.allocator.alloc(
             barrierGeometry.positions.length,
@@ -234,44 +225,44 @@ export class BarrierMesh extends BatchedMesh {
             // barrierGeometry.peeks
           );
           // console.log(localVector3D);
-          _renderWaterMeshDataToGeometry(
+          _renderBarrierMeshDataToGeometry(
             barrierGeometry,
             this.allocator.geometry,
             geometryBinding
           );
 
           this.geometryBindings.set(key, geometryBinding);
-        }
-      };
-      _handleBarrierMesh(chunkResult.barrierGeometry);
+        };
+        _handleBarrierMesh(chunkResult.barrierGeometry);
 
-      /* const _handlePhysics = async () => {
-        if (geometryBuffer) {
-          this.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-          const physicsObject = this.physics.addCookedGeometry(
-            geometryBuffer,
-            localVector,
-            localQuaternion,
-            localVector2
-          );
-          this.physicsObjects.push(physicsObject);
-          this.physicsObjectToChunkMap.set(physicsObject, chunk);
+        /* const _handlePhysics = async () => {
+          if (geometryBuffer) {
+            this.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+            const physicsObject = this.physics.addCookedGeometry(
+              geometryBuffer,
+              localVector,
+              localQuaternion,
+              localVector2
+            );
+            this.physicsObjects.push(physicsObject);
+            this.physicsObjectToChunkMap.set(physicsObject, chunk);
 
-          const onchunkremove = () => {
-            this.physics.removeGeometry(physicsObject);
+            const onchunkremove = () => {
+              this.physics.removeGeometry(physicsObject);
 
-            const index = this.physicsObjects.indexOf(physicsObject);
-            this.physicsObjects.splice(index, 1);
-            this.physicsObjectToChunkMap.delete(physicsObject);
+              const index = this.physicsObjects.indexOf(physicsObject);
+              this.physicsObjects.splice(index, 1);
+              this.physicsObjectToChunkMap.delete(physicsObject);
 
-            tracker.offChunkRemove(chunk, onchunkremove);
-          };
-          tracker.onChunkRemove(chunk, onchunkremove);
-        }
-      };
-      _handlePhysics(); */
-    });
-    this.gpuTasks.set(key, task);
+              tracker.offChunkRemove(chunk, onchunkremove);
+            };
+            tracker.onChunkRemove(chunk, onchunkremove);
+          }
+        };
+        _handlePhysics(); */
+      });
+      this.gpuTasks.set(key, task);
+    }
   }
   removeChunk(chunk) {
     const key = procGenManager.getNodeHash(chunk);
@@ -279,17 +270,20 @@ export class BarrierMesh extends BatchedMesh {
     {
       const geometryBinding = this.geometryBindings.get(key);
       if (geometryBinding) {
-        /* if (!geometryBinding) {
-          debugger;
-        } */
         this.allocator.free(geometryBinding);
         this.geometryBindings.delete(key);
       }
     }
     {
       const task = this.gpuTasks.get(key);
-      task.cancel();
-      this.gpuTasks.delete(key);
+      if (task) {
+        task.cancel();
+        this.gpuTasks.delete(key);
+      }
     }
+  }
+  updateChunk(currentCoord) {
+    this.material.uniforms.uPosition2D.value.fromArray(currentCoord);
+    this.material.uniforms.uPosition2D.needsUpdate = true;
   }
 }
