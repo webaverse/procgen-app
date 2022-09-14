@@ -92,6 +92,10 @@ export default e => {
     // lodTracker.debugMesh.position.y = 0.1;
     // lodTracker.debugMesh.updateMatrixWorld();
 
+    lodTracker.onPostUpdate(currentCoord => {
+      barrierMesh.updateChunk(currentCoord);
+    });
+
     // meshes
 
     const gpuTaskManager = new GPUTaskManager();
