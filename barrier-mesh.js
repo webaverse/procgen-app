@@ -52,6 +52,10 @@ export class BarrierMesh extends BatchedMesh {
     const {geometry} = allocator;
     const material = new THREE.ShaderMaterial({
       uniforms: {
+        uPosition2D: {
+          value: new THREE.Vector2(),
+          needsUpdate: false,
+        },
       },
       vertexShader: `\
         varying vec2 vUv;
