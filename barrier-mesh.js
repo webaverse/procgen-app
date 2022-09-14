@@ -38,7 +38,7 @@ export class BarrierMesh extends BatchedMesh {
         },
         {
           name: 'position2D',
-          Type: Float32Array,
+          Type: Int32Array,
           itemSize: 2,
         },
       ],
