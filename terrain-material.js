@@ -26,25 +26,25 @@ const _loadTexture = async (path) => {
 };
 
 const loadTerrainMaterial = async () => {
-  const rockDiffMap = await _loadKTX2(
-    'assets/textures/rock/rock_06_diff_8k.ktx2'
-  );
-  rockDiffMap.encoding = THREE.sRGBEncoding;
+  // const rockDiffMap = await _loadKTX2(
+  //   'assets/textures/rock/rock_06_diff_8k.ktx2'
+  // );
+  // rockDiffMap.encoding = THREE.sRGBEncoding;
 
-  const rockRoughnessMap = await _loadKTX2(
-    'assets/textures/rock/rock_06_rough_8k.ktx2'
-  );
-  rockRoughnessMap.encoding = THREE.LinearEncoding;
+  // const rockRoughnessMap = await _loadKTX2(
+  //   'assets/textures/rock/rock_06_rough_8k.ktx2'
+  // );
+  // rockRoughnessMap.encoding = THREE.LinearEncoding;
 
-  const rockNormalMap = await _loadKTX2(
-    'assets/textures/rock/rock_06_nor_dx_8k.ktx2'
-  );
-  rockNormalMap.encoding = THREE.LinearEncoding;
+  // const rockNormalMap = await _loadKTX2(
+  //   'assets/textures/rock/rock_06_nor_dx_8k.ktx2'
+  // );
+  // rockNormalMap.encoding = THREE.LinearEncoding;
 
-  const rockAoMap = await _loadKTX2(
-    'assets/textures/rock/rock_06_nor_dx_8k.ktx2'
-  );
-  rockNormalMap.encoding = THREE.LinearEncoding;
+  // const rockAoMap = await _loadKTX2(
+  //   'assets/textures/rock/rock_06_nor_dx_8k.ktx2'
+  // );
+  // rockNormalMap.encoding = THREE.LinearEncoding;
 
   const grassDiffMap = await _loadTexture('assets/textures/grass/grass4.png');
   // grassDiffMap.encoding = THREE.sRGBEncoding;
@@ -53,7 +53,7 @@ const loadTerrainMaterial = async () => {
   grassNormalMap.encoding = THREE.LinearEncoding;
 
   const rockMap = await _loadTexture('assets/textures/grass/rock7.png');
-  // rockMap.encoding = THREE.sRGBEncoding;
+  rockMap.encoding = THREE.sRGBEncoding;
 
   const rockNormal = await _loadTexture('assets/textures/grass/rock6n.png');
   rockMap.encoding = THREE.LinearEncoding;
@@ -64,10 +64,10 @@ const loadTerrainMaterial = async () => {
   // define material uniforms here
   const materialUniforms = {
     uDiffMap: { value: [grassDiffMap, rockMap] },
-    uRoughnessMap: { value: [rockRoughnessMap] },
+    // uRoughnessMap: { value: [rockRoughnessMap] },
     uNormalMap: { value: [grassNormalMap, rockNormal] },
-    uAoMap: { value: [rockAoMap] },
-    uGrassDiff: { value: grassDiffMap },
+    // uAoMap: { value: [rockAoMap] },
+    // uGrassDiff: { value: grassDiffMap },
     uNoiseTexture: { value: noiseTexture },
   };
 

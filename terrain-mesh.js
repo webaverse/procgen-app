@@ -7,6 +7,7 @@ import {
   MIN_WORLD_HEIGHT,
   MAX_WORLD_HEIGHT,
 } from './constants.js';
+import loadTerrainMaterial from './terrain-material.js';
 // import {GLTFExporter} from 'three/examples/jsm/exporters/GLTFExporter.js';
 
 const {useInstancing, useProcGenManager, useLoaders} = metaversefile;
