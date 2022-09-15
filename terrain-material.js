@@ -62,22 +62,20 @@ const loadTerrainMaterial = async () => {
     roughness: 1,
     metalness: 0,
     onBeforeCompile: (shader) => {
-      // ? by installing glsl-literal extension in vscode you can get syntax highlighting for glsl
-      const glsl = (x) => x;
-
       for (const k in materialUniforms) {
         shader.uniforms[k] = materialUniforms[k];
       }
 
+      // ? by installing glsl-literal extension in vscode you can get syntax highlighting for glsl
       // vertex shader
-      const uvParseVertex = glsl`
+      const uvParseVertex = /* glsl */`
         #include <uv_pars_vertex>
         varying mat3 vNormalMatrix;
         varying vec3 vPosition;
         varying vec3 vObjectNormal;
       `;
 
-      const worldPosVertex = glsl`
+      const worldPosVertex = /* glsl */`
        #include <worldpos_vertex>
 
        vPosition = transformed;
@@ -86,7 +84,7 @@ const loadTerrainMaterial = async () => {
       `;
 
       // fragment shader
-      const mapParseFragment = glsl`
+      const mapParseFragment = /* glsl */`
         #include <map_pars_fragment>
   
         varying vec3 vPosition;
@@ -188,26 +186,26 @@ const loadTerrainMaterial = async () => {
         }
       `;
 
-      const mapFragment = glsl`
+      const mapFragment = /* glsl */`
         #include <map_fragment>
  
         vec4 triplanarDiffColor = triplanarMap(vPosition, vObjectNormal, uDiffMap);
         diffuseColor *= triplanarDiffColor;
       `;
-      const roughnessMapFragment = glsl`
+      const roughnessMapFragment = /* glsl */`
         #include <roughnessmap_fragment>
 
         vec4 texelRoughness = triplanarMap(vPosition, vObjectNormal, uRoughnessMap);
         roughnessFactor *= texelRoughness.g;
       `;
-      const normalFragmentMaps = glsl`
+      const normalFragmentMaps = /* glsl */`
         #include <normal_fragment_maps>
 
         vec3 triplanarNormalColor = triplanarNormal(vPosition, vObjectNormal, uNormalMap).xyz;
         normal = normalize(vNormalMatrix * triplanarNormalColor);
       `;
 
-      const aoMapFragment = glsl`
+      const aoMapFragment = /* glsl */`
         // #include <aomap_fragment>
 
         vec4 triplanarAoColor = triplanarMap(vPosition, vObjectNormal, uAoMap);
