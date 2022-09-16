@@ -6,6 +6,7 @@ const {useApp, useFrame, useCamera, useLocalPlayer, useProcGenManager, useInstan
 import {Generation} from './generation.js';
 import {TerrainMesh} from './terrain-mesh.js';
 import {WaterMesh} from './water-mesh.js';
+import {BarrierMesh} from './barrier-mesh.js';
 
 // locals
 
@@ -68,7 +69,7 @@ export default e => {
   const app = useApp();
   const camera = useCamera();
   const procGenManager = useProcGenManager();
-  // const physics = usePhysics();
+  const physics = usePhysics();
 
   // locals
 
@@ -91,6 +92,10 @@ export default e => {
     // lodTracker.debugMesh.position.y = 0.1;
     // lodTracker.debugMesh.updateMatrixWorld();
 
+    lodTracker.onPostUpdate(currentCoord => {
+      barrierMesh.updateChunk(currentCoord);
+    });
+
     // meshes
 
     const gpuTaskManager = new GPUTaskManager();
@@ -98,18 +103,27 @@ export default e => {
     const terrainMesh = new TerrainMesh({
       instance,
       gpuTaskManager,
+      physics
     });
     terrainMesh.frustumCulled = false;
     app.add(terrainMesh);
     terrainMesh.updateMatrixWorld();
 
-    const waterMesh = new WaterMesh({
+    /* const waterMesh = new WaterMesh({
       instance,
       gpuTaskManager,
     });
     waterMesh.frustumCulled = false;
     app.add(waterMesh);
-    waterMesh.updateMatrixWorld();
+    waterMesh.updateMatrixWorld(); */
+
+    const barrierMesh = new BarrierMesh({
+      instance,
+      gpuTaskManager,
+    });
+    barrierMesh.frustumCulled = false;
+    app.add(barrierMesh);
+    barrierMesh.updateMatrixWorld();
 
     // genration events handling
 
@@ -128,11 +142,13 @@ export default e => {
       generation.addEventListener('geometryadd', e => {
         const {geometry} = e.data;
         terrainMesh.addChunk(chunk, geometry);
-        waterMesh.addChunk(chunk, geometry);
+        // waterMesh.addChunk(chunk, geometry);
+        barrierMesh.addChunk(chunk, geometry);
       });
       generation.addEventListener('geometryremove', e => {
         terrainMesh.removeChunk(chunk);
-        waterMesh.removeChunk(chunk);
+        // waterMesh.removeChunk(chunk);
+        barrierMesh.removeChunk(chunk);
       });
 
       try {

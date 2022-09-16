@@ -75,15 +75,13 @@ const loadTerrainMaterial = async () => {
     roughness: 1,
     metalness: 0,
     onBeforeCompile: (shader) => {
-      // ? by installing glsl-literal extension in vscode you can get syntax highlighting for glsl
-      const glsl = (x) => x;
-
       for (const k in materialUniforms) {
         shader.uniforms[k] = materialUniforms[k];
       }
 
+      // ? by installing glsl-literal extension in vscode you can get syntax highlighting for glsl
       // vertex shader
-      const uvParseVertex = glsl`
+      const uvParseVertex = /* glsl */`
         #include <uv_pars_vertex>
 
         // attribute ivec4 biomeTypes = ivec4(0); // TODO: implement biome types as an attribute
@@ -100,7 +98,7 @@ const loadTerrainMaterial = async () => {
         vec4 biomeWeights = vec4(1., 1., 1., 1.);
       `;
 
-      const worldPosVertex = glsl`
+      const worldPosVertex = /* glsl */`
        #include <worldpos_vertex>
 
        vBiomeTypes = biomeTypes;
@@ -112,7 +110,7 @@ const loadTerrainMaterial = async () => {
       `;
 
       // fragment shader
-      const mapParseFragment = glsl`
+      const mapParseFragment = /* glsl */`
         #include <map_pars_fragment>
 
         // precision highp sampler2DArray;
@@ -247,7 +245,7 @@ const loadTerrainMaterial = async () => {
         }
       `;
 
-      const mapFragment = glsl`
+      const mapFragment = /* glsl */`
         #include <map_fragment>
 
  
@@ -258,13 +256,13 @@ const loadTerrainMaterial = async () => {
         // diffuseColor *= (rock * triplanarDiffColor + grass * grassColor);
         diffuseColor *= triplanarDiffColor;
       `;
-      const roughnessMapFragment = glsl`
+      const roughnessMapFragment = /* glsl */`
         #include <roughnessmap_fragment>
 
         // vec4 texelRoughness = triplanarMap(vPosition, vObjectNormal, uRoughnessMap);
         // roughnessFactor *= texelRoughness.g;
       `;
-      const normalFragmentMaps = glsl`
+      const normalFragmentMaps = /* glsl */`
         #include <normal_fragment_maps>
 
         vec3 triplanarNormalColor = triplanarNormal(vPosition, vObjectNormal, uNormalMap).xyz;
