@@ -52,10 +52,10 @@ const loadTerrainMaterial = async () => {
   const grassNormalMap = await _loadTexture('assets/textures/grass/grass_n.png');
   grassNormalMap.encoding = THREE.LinearEncoding;
 
-  const grassRoughnessMap = await _loadTexture('assets/textures/grass/grass_n.png');
+  const grassRoughnessMap = await _loadTexture('assets/textures/grass/grass_r.png');
   grassRoughnessMap.encoding = THREE.LinearEncoding;
 
-  const grassMetalnessMap = await _loadTexture('assets/textures/grass/grass_n.png');
+  const grassMetalnessMap = await _loadTexture('assets/textures/grass/grass_m.png');
   grassMetalnessMap.encoding = THREE.LinearEncoding;
 
   const rockDiffMap = await _loadTexture('assets/textures/rock/complex_stone_d.png');
@@ -67,7 +67,7 @@ const loadTerrainMaterial = async () => {
   const rockRoughnessMap = await _loadTexture('assets/textures/rock/complex_stone_r.png');
   rockRoughnessMap.encoding = THREE.LinearEncoding;
 
-  const rockMetalnessMap = await _loadTexture('assets/textures/rock/complex_stone_r.png');
+  const rockMetalnessMap = await _loadTexture('assets/textures/rock/complex_stone_m.png');
   rockMetalnessMap.encoding = THREE.LinearEncoding;
 
   const noiseTexture = await _loadTexture('assets/textures/simplex-noise.png');
