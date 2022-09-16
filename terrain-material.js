@@ -52,20 +52,33 @@ const loadTerrainMaterial = async () => {
   const grassNormalMap = await _loadTexture('assets/textures/grass/grass_n.png');
   grassNormalMap.encoding = THREE.LinearEncoding;
 
-  const rockMap = await _loadTexture('assets/textures/rock/complex_stone_d.png');
-  rockMap.encoding = THREE.sRGBEncoding;
+  const grassRoughnessMap = await _loadTexture('assets/textures/grass/grass_n.png');
+  grassRoughnessMap.encoding = THREE.LinearEncoding;
 
-  const rockNormal = await _loadTexture('assets/textures/rock/complex_stone_n.png');
-  rockMap.encoding = THREE.LinearEncoding;
+  const grassMetalnessMap = await _loadTexture('assets/textures/grass/grass_n.png');
+  grassMetalnessMap.encoding = THREE.LinearEncoding;
+
+  const rockDiffMap = await _loadTexture('assets/textures/rock/complex_stone_d.png');
+  rockDiffMap.encoding = THREE.sRGBEncoding;
+
+  const rockNormalMap = await _loadTexture('assets/textures/rock/complex_stone_n.png');
+  rockDiffMap.encoding = THREE.LinearEncoding;
+
+  const rockRoughnessMap = await _loadTexture('assets/textures/rock/complex_stone_r.png');
+  rockRoughnessMap.encoding = THREE.LinearEncoding;
+
+  const rockMetalnessMap = await _loadTexture('assets/textures/rock/complex_stone_r.png');
+  rockMetalnessMap.encoding = THREE.LinearEncoding;
 
   const noiseTexture = await _loadTexture('assets/textures/simplex-noise.png');
   noiseTexture.encoding = THREE.LinearEncoding;
 
   // define material uniforms here
   const materialUniforms = {
-    uDiffMap: { value: [grassDiffMap, rockMap] },
-    // uRoughnessMap: { value: [rockRoughnessMap] },
-    uNormalMap: { value: [grassNormalMap, rockNormal] },
+    uDiffMap: { value: [grassDiffMap, rockDiffMap] },
+    uRoughnessMap: { value: [rockRoughnessMap, grassNormalMap] },
+    uMetalnessMap: { value: [rockMetalnessMap, grassMetalnessMap] },
+    uNormalMap: { value: [grassNormalMap, rockNormalMap] },
     // uAoMap: { value: [rockAoMap] },
     // uGrassDiff: { value: grassDiffMap },
     uNoiseTexture: { value: noiseTexture },
@@ -124,6 +137,7 @@ const loadTerrainMaterial = async () => {
   
         uniform sampler2D uDiffMap[2];
         uniform sampler2D uRoughnessMap[2];
+        uniform sampler2D uMetalnessMap[2];
         uniform sampler2D uNormalMap[2];
         uniform sampler2D uAoMap[2];
 
@@ -259,8 +273,14 @@ const loadTerrainMaterial = async () => {
       const roughnessMapFragment = /* glsl */`
         #include <roughnessmap_fragment>
 
-        // vec4 texelRoughness = triplanarMap(vPosition, vObjectNormal, uRoughnessMap);
-        // roughnessFactor *= texelRoughness.g;
+        vec4 texelRoughness = triplanarMap(vPosition, vObjectNormal, uRoughnessMap);
+        roughnessFactor *= texelRoughness.g;
+      `;
+      const metalnessMapFragment = /* glsl */`
+        #include <metalnessmap_fragment>
+
+        vec4 texelMetalness = triplanarMap(vPosition, vObjectNormal, uMetalnessMap);
+        metalnessFactor *= texelMetalness.g;
       `;
       const normalFragmentMaps = /* glsl */`
         #include <normal_fragment_maps>
@@ -304,6 +324,10 @@ const loadTerrainMaterial = async () => {
         roughnessMapFragment
       );
 
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <metalnessmap_fragment>',
+        metalnessMapFragment
+      );
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <map_fragment>',
         mapFragment

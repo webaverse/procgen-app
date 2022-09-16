@@ -109,13 +109,13 @@ export default e => {
     app.add(terrainMesh);
     terrainMesh.updateMatrixWorld();
 
-    /* const waterMesh = new WaterMesh({
+    const waterMesh = new WaterMesh({
       instance,
       gpuTaskManager,
     });
     waterMesh.frustumCulled = false;
     app.add(waterMesh);
-    waterMesh.updateMatrixWorld(); */
+    waterMesh.updateMatrixWorld();
 
     const barrierMesh = new BarrierMesh({
       instance,
@@ -142,12 +142,12 @@ export default e => {
       generation.addEventListener('geometryadd', e => {
         const {geometry} = e.data;
         terrainMesh.addChunk(chunk, geometry);
-        // waterMesh.addChunk(chunk, geometry);
+        waterMesh.addChunk(chunk, geometry);
         barrierMesh.addChunk(chunk, geometry);
       });
       generation.addEventListener('geometryremove', e => {
         terrainMesh.removeChunk(chunk);
-        // waterMesh.removeChunk(chunk);
+        waterMesh.removeChunk(chunk);
         barrierMesh.removeChunk(chunk);
       });
 
