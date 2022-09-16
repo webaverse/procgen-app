@@ -79,7 +79,7 @@ export default e => {
   // initialization
 
   e.waitUntil((async () => {
-    const instance = procGenManager.getInstance();
+    const instance = procGenManager.getInstance('lol');
 
     // lod tracker
 
