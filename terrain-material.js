@@ -46,16 +46,16 @@ const loadTerrainMaterial = async () => {
   // );
   // rockNormalMap.encoding = THREE.LinearEncoding;
 
-  const grassDiffMap = await _loadTexture('assets/textures/grass/grass4.png');
+  const grassDiffMap = await _loadTexture('assets/textures/grass/grass_d.png');
   // grassDiffMap.encoding = THREE.sRGBEncoding;
 
-  const grassNormalMap = await _loadTexture('assets/textures/grass/grass4n.png');
+  const grassNormalMap = await _loadTexture('assets/textures/grass/grass_n.png');
   grassNormalMap.encoding = THREE.LinearEncoding;
 
-  const rockMap = await _loadTexture('assets/textures/grass/rock6.png');
+  const rockMap = await _loadTexture('assets/textures/rock/complex_stone_d.png');
   rockMap.encoding = THREE.sRGBEncoding;
 
-  const rockNormal = await _loadTexture('assets/textures/grass/rock6n.png');
+  const rockNormal = await _loadTexture('assets/textures/rock/complex_stone_n.png');
   rockMap.encoding = THREE.LinearEncoding;
 
   const noiseTexture = await _loadTexture('assets/textures/simplex-noise.png');
