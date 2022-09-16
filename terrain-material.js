@@ -269,7 +269,7 @@ const loadTerrainMaterial = async () => {
         normal = normalize(vNormalMatrix * triplanarNormalColor);
       `;
 
-      const aoMapFragment = glsl`
+      const aoMapFragment = /* glsl */`
         #include <aomap_fragment>
 
         // vec4 triplanarAoColor = triplanarMap(vPosition, vObjectNormal, uAoMap);
