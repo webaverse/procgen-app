@@ -1,11 +1,13 @@
 import * as THREE from 'three';
+import {EXRLoader} from 'three/examples/jsm/loaders/EXRLoader.js';
 import metaversefile from 'metaversefile';
 
 const baseUrl = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
 
 const { useLoaders, useScene } = metaversefile;
-const rootScene = useScene();
 
+const rootScene = useScene();
+const exrLoader = new EXRLoader();
 const textureLoader = new THREE.TextureLoader();
 const { ktx2Loader } = useLoaders();
 
@@ -17,6 +19,11 @@ const _loadKTX2 = async (path) => {
   texture.anisotropy = 16;
 
   return texture;
+};
+const _loadExr = async (path) => {
+  const texture = exrLoader.loadAsync(baseUrl + path);
+  return texture;
+
 };
 const _loadTexture = async (path) => {
   const texture = await textureLoader.loadAsync(baseUrl + path);
@@ -46,8 +53,10 @@ const loadTerrainMaterial = async () => {
   // );
   // rockNormalMap.encoding = THREE.LinearEncoding;
 
+  const envMap = await _loadExr('assets/envmaps/env.exr');
+
   const grassDiffMap = await _loadTexture('assets/textures/grass/grass_d.png');
-  // grassDiffMap.encoding = THREE.sRGBEncoding;
+  grassDiffMap.encoding = THREE.sRGBEncoding;
 
   const grassNormalMap = await _loadTexture('assets/textures/grass/grass_n.png');
   grassNormalMap.encoding = THREE.LinearEncoding;
@@ -62,7 +71,7 @@ const loadTerrainMaterial = async () => {
   rockDiffMap.encoding = THREE.sRGBEncoding;
 
   const rockNormalMap = await _loadTexture('assets/textures/rock/complex_stone_n.png');
-  rockDiffMap.encoding = THREE.LinearEncoding;
+  rockNormalMap.encoding = THREE.LinearEncoding;
 
   const rockRoughnessMap = await _loadTexture('assets/textures/rock/complex_stone_r.png');
   rockRoughnessMap.encoding = THREE.LinearEncoding;
@@ -80,13 +89,14 @@ const loadTerrainMaterial = async () => {
     uMetalnessMap: { value: [rockMetalnessMap, grassMetalnessMap] },
     uNormalMap: { value: [grassNormalMap, rockNormalMap] },
     // uAoMap: { value: [rockAoMap] },
-    // uGrassDiff: { value: grassDiffMap },
     uNoiseTexture: { value: noiseTexture },
   };
 
   const material = new THREE.MeshStandardMaterial({
-    roughness: 1,
-    metalness: 0,
+    roughness: 0.95,
+    metalness: 0.1,
+    envMap: envMap,
+    envMapIntensity: 1,
     onBeforeCompile: (shader) => {
       for (const k in materialUniforms) {
         shader.uniforms[k] = materialUniforms[k];
@@ -144,8 +154,8 @@ const loadTerrainMaterial = async () => {
         uniform sampler2D uNoiseTexture;
         uniform sampler2D uGrassDiff;
   
-        float TRI_SCALE = 0.1;
-        float TRI_SHARPNESS = 0.5;
+        float TRI_SCALE = 0.2;
+        float TRI_SHARPNESS = 7.5;
 
         vec4 blendSamples(vec4 samples[4], vec4 weights) {
           float weightSum = weights.x + weights.y + weights.z + weights.w;
@@ -185,7 +195,7 @@ const loadTerrainMaterial = async () => {
           // samples[2] = textureNoTile(inputTextures, vBiomeTypes.z, uv);
           // samples[3] = textureNoTile(inputTextures, vBiomeTypes.w, uv);
           float slope = max(0.f, 1.f - vObjectNormal.y);
-          float fade = clamp(slope + 0.4, 0., 1.);
+          float fade = clamp(slope * 2.5 - 0.1, 0., 1.);
           float grass = 1.0 - fade;
           float rock = fade;
 
@@ -261,13 +271,8 @@ const loadTerrainMaterial = async () => {
 
       const mapFragment = /* glsl */`
         #include <map_fragment>
-
  
         vec4 triplanarDiffColor = triplanarMap(vPosition, vObjectNormal, uDiffMap);
-
-        // vec4 grassColor = triplanarMap(vPosition, vObjectNormal, uDiffMap);
-        // vec4 grassColor = vec4(0.1, 0.8, 0.3, 1.);
-        // diffuseColor *= (rock * triplanarDiffColor + grass * grassColor);
         diffuseColor *= triplanarDiffColor;
       `;
       const roughnessMapFragment = /* glsl */`
@@ -286,7 +291,7 @@ const loadTerrainMaterial = async () => {
         #include <normal_fragment_maps>
 
         vec3 triplanarNormalColor = triplanarNormal(vPosition, vObjectNormal, uNormalMap).xyz;
-        normal = normalize(vNormalMatrix * triplanarNormalColor);
+        normal = normalize(vNormalMatrix * triplanarNormalColor); 
       `;
 
       const aoMapFragment = /* glsl */`
@@ -348,14 +353,16 @@ const loadTerrainMaterial = async () => {
   });
 
   // const testMesh = new THREE.Mesh(
-  //   new THREE.SphereGeometry(25),
+  //   new THREE.SphereGeometry(10),
   //   new THREE.MeshStandardMaterial({
   //     roughness: 1,
   //     metalness: 0,
-  //     map: rockDiffMap,
-  //     normalMap: rockNormalMap,
-  //     roughnessMap: rockRoughnessMap,
-  //     aoMap: rockAoMap
+  //     map: grassDiffMap,
+  //     normalMap: grassNormalMap,
+  //     roughnessMap: grassRoughnessMap,
+  //     metalnessMap: grassMetalnessMap,
+  //     envMap: envMap,
+  //     envMapIntensity: 1
   //   })
   // );
   // rootScene.add(testMesh);
