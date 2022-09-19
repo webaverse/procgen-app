@@ -53,7 +53,7 @@ const loadTerrainMaterial = async () => {
   // );
   // rockNormalMap.encoding = THREE.LinearEncoding;
 
-  const envMap = await _loadExr('assets/envmaps/env.exr');
+  const envMap = await _loadExr('assets/env.exr');
 
   const grassDiffMap = await _loadTexture('assets/textures/grass/grass_d.png');
   grassDiffMap.encoding = THREE.sRGBEncoding;
@@ -195,16 +195,16 @@ const loadTerrainMaterial = async () => {
           // samples[2] = textureNoTile(inputTextures, vBiomeTypes.z, uv);
           // samples[3] = textureNoTile(inputTextures, vBiomeTypes.w, uv);
           float slope = max(0.f, 1.f - vObjectNormal.y);
-          float fade = clamp(slope * 2.5 - 0.1, 0., 1.);
-          float grass = 1.0 - fade;
-          float rock = fade;
+          float blend = clamp(slope * 2.5 - 0.1, 0., 1.);
+          float grassWeight = 1.0 - blend;
+          float rockWeight = blend;
 
           samples[0] = textureNoTile(inputTextures[0], vBiomeTypes.x, uv);
           samples[1] = textureNoTile(inputTextures[1], vBiomeTypes.y, uv);
           samples[2] = vec4(0.);
           samples[3] = vec4(0.);
 
-          vec4 weights = vec4(grass, rock, 0., 0.);
+          vec4 weights = vec4(grassWeight, rockWeight, 0., 0.);
 
           return blendSamples(samples, weights);
         }
