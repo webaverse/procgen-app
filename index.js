@@ -55,7 +55,7 @@ export default e => {
     const gpuTaskManager = new GPUTaskManager();
     const generationTaskManager = new GenerationTaskManager();
 
-    const terrainMesh = new TerrainMesh({
+    /* const terrainMesh = new TerrainMesh({
       instance,
       gpuTaskManager,
       physics
@@ -64,7 +64,7 @@ export default e => {
     app.add(terrainMesh);
     terrainMesh.updateMatrixWorld();
 
-    /* const waterMesh = new WaterMesh({
+    const waterMesh = new WaterMesh({
       instance,
       gpuTaskManager,
     });
