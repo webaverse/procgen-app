@@ -7,11 +7,9 @@ import {
   MIN_WORLD_HEIGHT,
   MAX_WORLD_HEIGHT,
 } from './constants.js';
-// import loadTerrainMaterial from './terrain-material.js';
-// import {GLTFExporter} from 'three/examples/jsm/exporters/GLTFExporter.js';
 
-const {useInstancing, useProcGenManager} = metaversefile;
-const {BatchedMesh, GeometryAllocator} = useInstancing();
+const {useProcGenManager, useGeometryBuffering} = metaversefile;
+const {BufferedMesh, GeometryAllocator} = useGeometryBuffering();
 const procGenManager = useProcGenManager();
 
 //
@@ -27,7 +25,7 @@ const localBox = new THREE.Box3();
 
 //
 
-export class TerrainMesh extends BatchedMesh {
+export class TerrainMesh extends BufferedMesh {
   constructor({instance, gpuTaskManager, physics}) {
     const allocator = new GeometryAllocator(
       [

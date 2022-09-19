@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 // import easing from './easing.js';
 import metaversefile from 'metaversefile';
-const {useApp, useFrame, useCamera, useLocalPlayer, useProcGenManager, useGPUTask, useGenerationTask} = metaversefile;
+const {useApp, useFrame, useCamera, useLocalPlayer, usePhysics, useProcGenManager, useGPUTask, useGenerationTask} = metaversefile;
 const {GPUTaskManager} = useGPUTask();
 const {GenerationTaskManager} = useGenerationTask();
 
@@ -24,7 +24,7 @@ export default e => {
   const app = useApp();
   const camera = useCamera();
   const procGenManager = useProcGenManager();
-  // const physics = usePhysics();
+  const physics = usePhysics();
 
   // locals
 
@@ -55,7 +55,7 @@ export default e => {
     const gpuTaskManager = new GPUTaskManager();
     const generationTaskManager = new GenerationTaskManager();
 
-    /* const terrainMesh = new TerrainMesh({
+    const terrainMesh = new TerrainMesh({
       instance,
       gpuTaskManager,
       physics
@@ -70,7 +70,7 @@ export default e => {
     });
     waterMesh.frustumCulled = false;
     app.add(waterMesh);
-    waterMesh.updateMatrixWorld(); */
+    waterMesh.updateMatrixWorld();
 
     const barrierMesh = new BarrierMesh({
       instance,
@@ -88,13 +88,13 @@ export default e => {
       const generation = generationTaskManager.createGeneration(key);
       generation.addEventListener('geometryadd', e => {
         const {geometry} = e.data;
-        // terrainMesh.addChunk(chunk, geometry);
-        // waterMesh.addChunk(chunk, geometry);
+        terrainMesh.addChunk(chunk, geometry);
+        waterMesh.addChunk(chunk, geometry);
         barrierMesh.addChunk(chunk, geometry);
       });
       generation.addEventListener('geometryremove', e => {
-        // terrainMesh.removeChunk(chunk);
-        // waterMesh.removeChunk(chunk);
+        terrainMesh.removeChunk(chunk);
+        waterMesh.removeChunk(chunk);
         barrierMesh.removeChunk(chunk);
       });
 
