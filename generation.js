@@ -19,11 +19,11 @@ const geometryremoveEvent = new MessageEvent('geometryremove', {
 // main
 
 export class Generation extends EventTarget {
-  constructor(key, abortController) {
+  constructor(key) {
     super();
 
     this.key = key;
-    this.abortController = abortController;
+    this.abortController = new AbortController();
 
     this.result = null;
   }
@@ -40,5 +40,27 @@ export class Generation extends EventTarget {
       geometryremoveEvent.data.geometry = this.result;
       this.dispatchEvent(geometryremoveEvent);
     }
+  }
+  getSignal() {
+    return this.abortController.signal;
+  }
+}
+
+export class GenerationTaskManager {
+  constructor() {
+    this.generations = new Map();
+  }
+  createGeneration(key) {
+    const generation = new Generation(key);
+    this.generations.set(key, generation);
+    return generation;
+  }
+  deleteGeneration(key) {
+    const generation = this.generations.get(key);
+    generation.cancel();
+    this.generations.delete(key);
+  }
+  getSignal() {
+    return this.abortController.signal;
   }
 }
