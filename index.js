@@ -4,7 +4,7 @@ import metaversefile from 'metaversefile';
 const {useApp, useFrame, useCamera, useLocalPlayer, useProcGenManager, useGPUTask} = metaversefile;
 const {GPUTaskManager} = useGPUTask();
 
-import {Generation} from './generation.js';
+import {GenerationTaskManager} from './generation.js';
 import {TerrainMesh} from './terrain-mesh.js';
 import {WaterMesh} from './water-mesh.js';
 import {BarrierMesh} from './barrier-mesh.js';
@@ -28,7 +28,6 @@ export default e => {
 
   // locals
 
-  const generations = new Map();
   let frameCb = null;
 
   // initialization
@@ -54,6 +53,7 @@ export default e => {
     // meshes
 
     const gpuTaskManager = new GPUTaskManager();
+    const generationTaskManager = new GenerationTaskManager();
 
     const terrainMesh = new TerrainMesh({
       instance,
@@ -83,30 +83,23 @@ export default e => {
     // genration events handling
 
     lodTracker.onChunkAdd(async chunk => {
-      const abortController = new AbortController();
-      const {signal} = abortController;
-
       const key = procGenManager.getNodeHash(chunk);
-      // console.log('chunk', key, chunk.min.toArray().join(','), 'ADD');
-      /* if (generations.has(key)) {
-        debugger;
-      } */
-      const generation = new Generation(key, abortController);
-      generations.set(key, generation);
-
+      
+      const generation = generationTaskManager.createGeneration(key);
       generation.addEventListener('geometryadd', e => {
         const {geometry} = e.data;
-        terrainMesh.addChunk(chunk, geometry);
+        // terrainMesh.addChunk(chunk, geometry);
         // waterMesh.addChunk(chunk, geometry);
         barrierMesh.addChunk(chunk, geometry);
       });
       generation.addEventListener('geometryremove', e => {
-        terrainMesh.removeChunk(chunk);
+        // terrainMesh.removeChunk(chunk);
         // waterMesh.removeChunk(chunk);
         barrierMesh.removeChunk(chunk);
       });
 
       try {
+        const signal = generation.getSignal();
         const result = await instance.generateChunk(chunk.min, chunk.lod, chunk.lodArray, {
           signal,
         });
@@ -125,14 +118,7 @@ export default e => {
     lodTracker.onChunkRemove(chunk => {
       const key = procGenManager.getNodeHash(chunk);
       // console.log('chunk', key, chunk, 'REMOVE');
-      const generation = generations.get(key);
-      // console.log('got chunk remove', chunk, key, generation);
-      /* if (!generation) {
-        debugger;
-      } */
-      generation.cancel();
-
-      generations.delete(key);
+      generationTaskManager.deleteGeneration(key);
     });
 
     // frame handling
