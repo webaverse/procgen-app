@@ -30,16 +30,12 @@ export class Generation extends EventTarget {
   finish(result) {
     this.result = result;
 
-    // console.log('generation finish', !!result);
-
     geometryaddEvent.data.geometry = result;
     this.dispatchEvent(geometryaddEvent);
   }
   cancel() {
-    // console.log('cancel finished 1', !!this.result);
     this.abortController.abort(abortError);
 
-    // console.log('cancel finished 2', !!this.result);
     if (this.result) {
       geometryremoveEvent.data.geometry = this.result;
       this.dispatchEvent(geometryremoveEvent);
