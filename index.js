@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 // import easing from './easing.js';
 import metaversefile from 'metaversefile';
-const {useApp, useFrame, useCamera, useLocalPlayer, useProcGenManager, useGPUTask} = metaversefile;
+const {useApp, useFrame, useCamera, useLocalPlayer, useProcGenManager, useGPUTask, useGenerationTask} = metaversefile;
 const {GPUTaskManager} = useGPUTask();
+const {GenerationTaskManager} = useGenerationTask();
 
-import {GenerationTaskManager} from './generation.js';
 import {TerrainMesh} from './terrain-mesh.js';
 import {WaterMesh} from './water-mesh.js';
 import {BarrierMesh} from './barrier-mesh.js';
