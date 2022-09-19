@@ -7,7 +7,7 @@ import {
   MIN_WORLD_HEIGHT,
   MAX_WORLD_HEIGHT,
 } from './constants.js';
-import loadTerrainMaterial from './terrain-material.js';
+// import loadTerrainMaterial from './terrain-material.js';
 // import {GLTFExporter} from 'three/examples/jsm/exporters/GLTFExporter.js';
 
 const {useInstancing, useProcGenManager} = metaversefile;
@@ -28,7 +28,7 @@ const localBox = new THREE.Box3();
 //
 
 export class TerrainMesh extends BatchedMesh {
-  constructor({ instance, gpuTaskManager, physics }) {
+  constructor({instance, gpuTaskManager, physics}) {
     const allocator = new GeometryAllocator(
       [
         {
@@ -84,7 +84,7 @@ export class TerrainMesh extends BatchedMesh {
       }
     );
 
-    const { geometry } = allocator;
+    const {geometry} = allocator;
 
     super(geometry);
 
@@ -202,7 +202,7 @@ export class TerrainMesh extends BatchedMesh {
         geometry.index.update(indexOffset, terrainGeometry.indices.length);
       };
       const _handleTerrainMesh = (terrainGeometry) => {
-        const { chunkSize } = this.instance;
+        const {chunkSize} = this.instance;
 
         const boundingBox = localBox.set(
           localVector3D.set(
@@ -216,33 +216,12 @@ export class TerrainMesh extends BatchedMesh {
             (chunk.min.y + chunk.lod) * chunkSize
           )
         );
-        /* localSphere.center.set(
-            (chunk.min.x + 0.5) * chunkSize,
-            (chunk.min.y + 0.5) * chunkSize,
-            (chunk.min.z + 0.5) * chunkSize
-          )
-          .applyMatrix4(this.matrixWorld);
-        localSphere.radius = chunkRadius; */
 
-        // const min = localVector3D.set(chunk.min.x, chunk.min.y, chunk.min.z)
-        //   .multiplyScalar(chunkSize);
-        // const max = localVector3D2.set(chunk.min.x, chunk.min.y, chunk.min.z)
-        //   .addScalar(chunk.lod)
-        //   .multiplyScalar(chunkSize);
-
-        // console.log(localVector3D.x + ", " + localVector3D2.x);
-
-        // XXX defer this to one per frame
         const geometryBinding = this.allocator.alloc(
           terrainGeometry.positions.length,
           terrainGeometry.indices.length,
           boundingBox
-          // min,
-          // max,
-          // this.appMatrix,
-          // terrainGeometry.peeks
         );
-        // console.log(localVector3D);
         _renderTerrainMeshDataToGeometry(
           terrainGeometry,
           this.allocator.geometry,
@@ -295,8 +274,6 @@ export class TerrainMesh extends BatchedMesh {
       _handleTerrainMesh(terrainGeometry);
 
       const _handlePhysics = async () => {
-        let geometryBuffer;
-
         const physicsGeo = new THREE.BufferGeometry();
         physicsGeo.setAttribute(
           'position',
@@ -307,7 +284,7 @@ export class TerrainMesh extends BatchedMesh {
         );
         const physicsMesh = new THREE.Mesh(physicsGeo, fakeMaterial);
 
-        geometryBuffer = await this.physics.cookGeometryAsync(physicsMesh);
+        const geometryBuffer = await this.physics.cookGeometryAsync(physicsMesh);
 
         if (geometryBuffer) {
           this.matrixWorld.decompose(
