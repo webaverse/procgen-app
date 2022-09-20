@@ -7,7 +7,6 @@ import {
   MIN_WORLD_HEIGHT,
   MAX_WORLD_HEIGHT,
 } from './constants.js';
-
 const {useProcGenManager, useGeometryBuffering} = metaversefile;
 const {BufferedMesh, GeometryAllocator} = useGeometryBuffering();
 const procGenManager = useProcGenManager();
