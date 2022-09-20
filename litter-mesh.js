@@ -385,7 +385,10 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
           vec3 s = texture2D(sTexture, pUv).xyz;
           float itemIndex = texture2D(itemIndexTexture, pUv).x;
 
-          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          vec3 pos = position;
+          pos += p;
+
+          vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
           gl_Position = projectionMatrix * mvPosition;
 
           vUv = uv;
