@@ -28,13 +28,26 @@ const localBox = new THREE.Box3();
 
 //
 
+class MeshPackage {
+  constructor() {
+
+  }
+  static async loadUrls(urls) {
+
+  }
+}
+
+//
+
 class LitterPolygonMesh extends InstancedBatchedMesh {
   constructor({
-    procGenInstance,
-    lodMeshes = [],
-    shapeAddresses = [],
-    physicsGeometries = [],
-    physics = null,
+    instance,
+    lodPackage,
+    // procGenInstance,
+    // lodMeshes = [],
+    // shapeAddresses = [],
+    // physicsGeometries = [],
+    // physics = null,
   } = {}) {
     // instancing
     const {
@@ -44,8 +57,8 @@ class LitterPolygonMesh extends InstancedBatchedMesh {
       textures: ['map', 'normalMap'],
       attributes: ['position', 'normal', 'uv'],
     });
+    
     // allocator
-
     const allocator = new InstancedGeometryAllocator(lod0Geometries, [
       {
         name: 'p',
@@ -271,6 +284,80 @@ vec4 q = texture2D(qTexture, pUv).xyzw;
 
 //
 
+class SpritesheetPackage {
+  constructor(canvas) {
+    this.canvas = canvas;
+  }
+  static async loadUrls(urls) {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvasSize;
+    canvas.height = canvasSize;
+    const ctx = canvas.getContext('2d');
+
+    await Promise.all(urls.map(async (url, index) => {
+      const numFrames = 8;
+      const spritesheet = await createAppUrlSpriteSheet(url, {
+        size: spritesheetSize,
+        numFrames,
+      });
+      const {
+        result,
+        // numFrames,
+        // frameSize,
+        // numFramesPerRow,
+        // worldWidth,
+        // worldHeight,
+        // worldOffset,
+      } = spritesheet;
+
+      const x = index % spritesheetsPerRow;
+      const y = Math.floor(index / spritesheetsPerRow);
+      ctx.drawImage(result, x * spritesheetSize, y * spritesheetSize);
+
+      // console.log('got spritesheet', spritesheet);
+
+      // debugging
+      /* const canvas = document.createElement('canvas');
+      canvas.width = result.width;
+      canvas.height = result.height;
+      canvas.style.cssText = `\
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 512px;
+        height: 512px;
+      `;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(result, 0, 0);
+      document.body.appendChild(canvas); */
+
+      /* const texture = new THREE.Texture(result);
+      texture.needsUpdate = true;
+      const numAngles = numFrames;
+      const numSlots = numFramesPerRow;
+      const worldSize = Math.max(worldWidth, worldHeight);
+      const spritesheetMesh = new LitterSpritesheetMesh({
+        texture,
+        worldSize,
+        worldOffset,
+        numAngles,
+        numSlots,
+      });
+      spritesheetMesh.position.y = 0.5;
+      spritesheetMesh.position.x = (-urls.length / 2 + index) * meshSize;
+      spritesheetMesh.position.z += meshSize * 2;
+      spritesheetMesh.scale.multiplyScalar(2);
+      app.add(spritesheetMesh);
+      spritesheetMesh.updateMatrixWorld(); */
+    }));
+
+    const pkg = new SpritesheetPackage(canvas);
+    return pkg;
+  }
+}
+
+//
+
 const canvasSize = 2048;
 const spritesheetSize = 512;
 const spritesheetsPerRow = canvasSize / spritesheetSize;
@@ -284,16 +371,6 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
   constructor({
     instance,
   }) {
-    // const geometry = new DoubleSidedPlaneGeometry(worldSize, worldSize)
-    //   .translate(worldOffset[0], worldOffset[1], worldOffset[2]);
-    
-    const canvas = document.createElement('canvas');
-    canvas.width = canvasSize;
-    canvas.height = canvasSize;
-    const ctx = canvas.getContext('2d');
-    canvas.ctx = ctx;
-    const texture = new THREE.Texture(canvas);
-
     const baseGeometry = new DoubleSidedPlaneGeometry(10, 10);
     const allocator = new ChunkedGeometryAllocator(baseGeometry, [
       {
@@ -330,8 +407,8 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
     const material = new THREE.ShaderMaterial({
       uniforms: {
         uTex: {
-          value: texture,
-          needsUpdate: true,
+          value: null,
+          needsUpdate: null,
         },
         uY: {
           value: 0,
@@ -538,66 +615,13 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
       this.drawChunks.delete(key);
     }
   }
-  async loadUrls(urls) {
-    await Promise.all(urls.map(async (url, index) => {
-      const numFrames = 8;
-      const spritesheet = await createAppUrlSpriteSheet(url, {
-        size: spritesheetSize,
-        numFrames,
-      });
-      const {
-        result,
-        // numFrames,
-        // frameSize,
-        // numFramesPerRow,
-        // worldWidth,
-        // worldHeight,
-        // worldOffset,
-      } = spritesheet;
+  setPackage(pkg) {
+    const {canvas} = pkg;
+    const texture = new THREE.Texture(canvas);
+    texture.needsUpdate = true;
 
-      const canvas = this.material.uniforms.uTex.value.image;
-      const {ctx} = canvas;
-      const x = index % spritesheetsPerRow;
-      const y = Math.floor(index / spritesheetsPerRow);
-      ctx.drawImage(result, x * spritesheetSize, y * spritesheetSize);
-
-      // console.log('got spritesheet', spritesheet);
-
-      // debugging
-      /* const canvas = document.createElement('canvas');
-      canvas.width = result.width;
-      canvas.height = result.height;
-      canvas.style.cssText = `\
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 512px;
-        height: 512px;
-      `;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(result, 0, 0);
-      document.body.appendChild(canvas); */
-
-      /* const texture = new THREE.Texture(result);
-      texture.needsUpdate = true;
-      const numAngles = numFrames;
-      const numSlots = numFramesPerRow;
-      const worldSize = Math.max(worldWidth, worldHeight);
-      const spritesheetMesh = new LitterSpritesheetMesh({
-        texture,
-        worldSize,
-        worldOffset,
-        numAngles,
-        numSlots,
-      });
-      spritesheetMesh.position.y = 0.5;
-      spritesheetMesh.position.x = (-urls.length / 2 + index) * meshSize;
-      spritesheetMesh.position.z += meshSize * 2;
-      spritesheetMesh.scale.multiplyScalar(2);
-      app.add(spritesheetMesh);
-      spritesheetMesh.updateMatrixWorld(); */
-    }));
-    this.material.uniforms.uTex.value.needsUpdate = true;
+    this.material.uniforms.uTex.value = texture;
+    this.material.uniforms.uTex.needsUpdate = true;
   }
 }
 
@@ -616,14 +640,19 @@ export class LitterMetaMesh extends THREE.Object3D {
     this.add(this.spritesheetMesh);
   }
   addChunk(chunk, chunkResult) {
-    // console.log('litter add chunk', chunk, chunkResult);
     this.spritesheetMesh.addChunk(chunk, chunkResult);
   }
   removeChunk(chunk) {
-    // console.log('litter remove chunk', chunk);
     this.spritesheetMesh.removeChunk(chunk);
   }
   async loadUrls(urls) {
-    await this.spritesheetMesh.loadUrls(urls);
+    const [
+      meshPackage,
+      spritesheetPackage,
+    ] = await Promise.all([
+      MeshPackage.loadUrls(urls),
+      SpritesheetPackage.loadUrls(urls),
+    ]);
+    this.spritesheetMesh.setPackage(spritesheetPackage);
   }
 }
