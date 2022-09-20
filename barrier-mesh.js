@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import metaversefile from 'metaversefile';
 import {bufferSize, WORLD_BASE_HEIGHT, MIN_WORLD_HEIGHT, MAX_WORLD_HEIGHT} from './constants.js';
 
-const {useInstancing, useProcGenManager} = metaversefile;
-const {BatchedMesh, GeometryAllocator} = useInstancing();
+const {useProcGenManager, useGeometryBuffering} = metaversefile;
+const {BufferedMesh, GeometryAllocator} = useGeometryBuffering();
 const procGenManager = useProcGenManager();
 
 //
@@ -14,7 +14,7 @@ const localBox = new THREE.Box3();
 
 //
 
-export class BarrierMesh extends BatchedMesh {
+export class BarrierMesh extends BufferedMesh {
   constructor({
     instance,
     gpuTaskManager,

@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 // import easing from './easing.js';
 import metaversefile from 'metaversefile';
-const {useApp, useFrame, useCamera, useLocalPlayer, useProcGenManager, useInstancing, usePhysics} = metaversefile;
+const {useApp, useFrame, useCamera, useLocalPlayer, usePhysics, useProcGenManager, useGPUTask, useGenerationTask} = metaversefile;
+const {GPUTaskManager} = useGPUTask();
+const {GenerationTaskManager} = useGenerationTask();
 
-import {Generation} from './generation.js';
 import {TerrainMesh} from './terrain-mesh.js';
 import {WaterMesh} from './water-mesh.js';
 import {BarrierMesh} from './barrier-mesh.js';
+import {LitterMetaMesh} from './litter-mesh.js';
 
 // locals
 
@@ -17,51 +19,43 @@ const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
 
-// classes
+// urls
 
-class GPUTask {
-  constructor(fn, parent) {
-    this.fn = fn;
-    this.parent = parent;
-
-    this.live = true;
-  }
-  run() {
-    this.live = false;
-    this.fn();
-  }
-  cancel() {
-    if (this.live) {
-      this.live = false;
-      this.parent.removeTask(this);
-    }
-  }
-}
-class GPUTaskManager {
-  static numTasksPerTick = 4;
-  constructor() {
-    this.queue = [];
-  }
-  transact(fn) {
-    const task = new GPUTask(fn, this);
-    this.queue.push(task);
-    return task;
-  }
-  update() {
-    for (let i = 0; i < GPUTaskManager.numTasksPerTick; i++) {
-      if (this.queue.length > 0) {
-        const task = this.queue.shift();
-        task.run();
-      } else {
-        break;
-      }
-    }
-  }
-  removeTask(task) {
-    const index = this.queue.indexOf(task);
-    this.queue.splice(index, 1);
-  }
-}
+const urlSpecs = {
+  trees: [
+    `Tree_1_1.glb`,
+    `Tree_1_2.glb`,
+    `Tree_2_1.glb`,
+    `Tree_2_2.glb`,
+    `Tree_3_1.glb`,
+    `Tree_3_2.glb`,
+    `Tree_4_1.glb`,
+    `Tree_4_2.glb`,
+    `Tree_4_3.glb`,
+    `Tree_5_1.glb`,
+    `Tree_5_2.glb`,
+    `Tree_6_1.glb`,
+    `Tree_6_2.glb`,
+  ].map(u => {
+    return `../procgen-assets/vegetation/garden-trees/${u}`;
+  }),
+  ores: [
+    `BlueOre_deposit_low.glb`,
+    `Iron_Deposit_low.glb`,
+    `Ore_Blue_low.glb`,
+    `Ore_BrownRock_low.glb`,
+    `Ore_Deposit_Red.glb`,
+    `Ore_Red_low.glb`,
+    `Ore_metal_low.glb`,
+    `Ore_wood_low.glb`,
+    `Rock_ore_Deposit_low.glb`,
+    `TreeOre_low.glb`,
+  ].map(u => {
+    return `../procgen-assets/litter/ores/${u}`;
+  }),
+};
+const litterUrls = urlSpecs.trees.slice(0, 1)
+  .concat(urlSpecs.ores.slice(0, 1));
 
 // main
 
@@ -73,13 +67,12 @@ export default e => {
 
   // locals
 
-  const generations = new Map();
   let frameCb = null;
 
   // initialization
 
   e.waitUntil((async () => {
-    const instance = procGenManager.getInstance();
+    const instance = procGenManager.getInstance('lol');
 
     // lod tracker
 
@@ -99,6 +92,7 @@ export default e => {
     // meshes
 
     const gpuTaskManager = new GPUTaskManager();
+    const generationTaskManager = new GenerationTaskManager();
 
     const terrainMesh = new TerrainMesh({
       instance,
@@ -109,13 +103,13 @@ export default e => {
     app.add(terrainMesh);
     terrainMesh.updateMatrixWorld();
 
-    /* const waterMesh = new WaterMesh({
+    const waterMesh = new WaterMesh({
       instance,
       gpuTaskManager,
     });
     waterMesh.frustumCulled = false;
     app.add(waterMesh);
-    waterMesh.updateMatrixWorld(); */
+    waterMesh.updateMatrixWorld();
 
     const barrierMesh = new BarrierMesh({
       instance,
@@ -125,38 +119,58 @@ export default e => {
     app.add(barrierMesh);
     barrierMesh.updateMatrixWorld();
 
+    const litterMesh = new LitterMetaMesh({
+      instance,
+      gpuTaskManager,
+    });
+    app.add(litterMesh);
+    litterMesh.updateMatrixWorld();
+
     // genration events handling
 
     lodTracker.onChunkAdd(async chunk => {
-      const abortController = new AbortController();
-      const {signal} = abortController;
-
       const key = procGenManager.getNodeHash(chunk);
-      // console.log('chunk', key, chunk.min.toArray().join(','), 'ADD');
-      /* if (generations.has(key)) {
-        debugger;
-      } */
-      const generation = new Generation(key, abortController);
-      generations.set(key, generation);
-
+      
+      const generation = generationTaskManager.createGeneration(key);
       generation.addEventListener('geometryadd', e => {
-        const {geometry} = e.data;
-        terrainMesh.addChunk(chunk, geometry);
-        // waterMesh.addChunk(chunk, geometry);
-        barrierMesh.addChunk(chunk, geometry);
+        const {result} = e.data;
+        const {heightfield, vegetation} = result;
+        
+        // heightfield
+        // terrainMesh.addChunk(chunk, heightfield);
+        // waterMesh.addChunk(chunk, heightfield);
+        barrierMesh.addChunk(chunk, heightfield);
+      
+        // vegetation
+        litterMesh.addChunk(chunk, vegetation);
       });
       generation.addEventListener('geometryremove', e => {
-        terrainMesh.removeChunk(chunk);
+        // heightfield
+        // terrainMesh.removeChunk(chunk);
         // waterMesh.removeChunk(chunk);
         barrierMesh.removeChunk(chunk);
+
+        // vegetation
+        litterMesh.removeChunk(chunk);
       });
 
       try {
-        const result = await instance.generateChunk(chunk.min, chunk.lod, chunk.lodArray, {
-          signal,
+        const signal = generation.getSignal();
+        const [
+          heightfield,
+          vegetation,
+        ] = await Promise.all([
+          instance.generateChunk(chunk.min, chunk.lod, chunk.lodArray, {
+            signal,
+          }),
+          instance.generateVegetation(chunk.min, chunk.lod, {
+            signal,
+          }),
+        ]);
+        generation.finish({
+          heightfield,
+          vegetation,
         });
-        // console.log('got chunk add result, add to geometry pool', chunk, result);
-        generation.finish(result);
       } catch (err) {
         if (err.isAbortError) {
           // console.log('got chunk add abort', chunk);
@@ -170,15 +184,12 @@ export default e => {
     lodTracker.onChunkRemove(chunk => {
       const key = procGenManager.getNodeHash(chunk);
       // console.log('chunk', key, chunk, 'REMOVE');
-      const generation = generations.get(key);
-      // console.log('got chunk remove', chunk, key, generation);
-      /* if (!generation) {
-        debugger;
-      } */
-      generation.cancel();
-
-      generations.delete(key);
+      generationTaskManager.deleteGeneration(key);
     });
+
+    // load
+
+    await litterMesh.loadUrls(litterUrls);
 
     // frame handling
     
