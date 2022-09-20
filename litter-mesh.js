@@ -16,6 +16,10 @@ import {
 
 //
 
+const spriteLodCutoff = 16;
+
+//
+
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
@@ -445,7 +449,7 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
   addChunk(chunk, chunkResult) {
     const vegetationData = chunkResult;
 
-    if (vegetationData.instances.length > 0) {
+    if (chunk.lod >= spriteLodCutoff && vegetationData.instances.length > 0) {
       const _renderVegetationGeometry = (drawCall, vegetationData) => {
         const pTexture = drawCall.getTexture('p');
         const pOffset = drawCall.getTextureOffset('p');
