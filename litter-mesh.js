@@ -440,8 +440,7 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
     this.drawChunks = new Map();
   }
   addChunk(chunk, chunkResult) {
-    const _renderVegetationGeometry = (drawCall, ps, qs, index) => {
-      // geometry
+    const _renderVegetationGeometry = (drawCall, vegetationData) => {
       const pTexture = drawCall.getTexture('p');
       const pOffset = drawCall.getTextureOffset('p');
       const qTexture = drawCall.getTexture('q');
@@ -449,46 +448,52 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
       const sTexture = drawCall.getTexture('s');
       const sOffset = drawCall.getTextureOffset('s');
 
-      const px = ps[index * 3];
-      const py = ps[index * 3 + 1];
-      const pz = ps[index * 3 + 2];
-      pTexture.image.data[pOffset] = px;
-      pTexture.image.data[pOffset + 1] = py;
-      pTexture.image.data[pOffset + 2] = pz;
+      const {ps, qs, instances} = vegetationData;
+      for (let index = 0; index < instances.length; index++) {
+        const indexOffset = index * 4;
+        
+        // geometry
+        const px = ps[index * 3];
+        const py = ps[index * 3 + 1];
+        const pz = ps[index * 3 + 2];
+        pTexture.image.data[pOffset + indexOffset] = px;
+        pTexture.image.data[pOffset + indexOffset + 1] = py;
+        pTexture.image.data[pOffset + indexOffset+ 2] = pz;
 
-      const qx = qs[index * 4];
-      const qy = qs[index * 4 + 1];
-      const qz = qs[index * 4 + 2];
-      const qw = qs[index * 4 + 3];
-      qTexture.image.data[qOffset] = qx;
-      qTexture.image.data[qOffset + 1] = qy;
-      qTexture.image.data[qOffset + 2] = qz;
-      qTexture.image.data[qOffset + 3] = qw;
+        const qx = qs[index * 4];
+        const qy = qs[index * 4 + 1];
+        const qz = qs[index * 4 + 2];
+        const qw = qs[index * 4 + 3];
+        qTexture.image.data[qOffset + indexOffset] = qx;
+        qTexture.image.data[qOffset + indexOffset + 1] = qy;
+        qTexture.image.data[qOffset + indexOffset + 2] = qz;
+        qTexture.image.data[qOffset + indexOffset + 3] = qw;
 
-      // XXX get scales from the mapped geometry
-      /* const sx = ss[index * 3];
-      const sy = ss[index * 3 + 1];
-      const sz = ss[index * 3 + 2]; */
-      const sx = 1;
-      const sy = 1;
-      const sz = 1;
+        // XXX get scales from the mapped geometry
+        /* const sx = ss[index * 3];
+        const sy = ss[index * 3 + 1];
+        const sz = ss[index * 3 + 2]; */
+        const sx = 1;
+        const sy = 1;
+        const sz = 1;
+        sTexture.image.data[sOffset + indexOffset] = sx;
+        sTexture.image.data[sOffset + indexOffset + 1] = sy;
+        sTexture.image.data[sOffset + indexOffset + 2] = sz;
+
+        // physics
+        // const shapeAddress = this.#getShapeAddress(drawCall.geometryIndex);
+        // const physicsObject = this.#addPhysicsShape(shapeAddress, drawCall.geometryIndex, px, py, pz, qx, qy, qz, qw);
+        // this.physicsObjects.push(physicsObject);
+        // localPhysicsObjects.push(physicsObject);
+        // this.instanceObjects.set(physicsObject.physicsId, drawCall);
+      }
+
       const ss = {
         length: ps.length,
       };
-      sTexture.image.data[sOffset] = sx;
-      sTexture.image.data[sOffset + 1] = sy;
-      sTexture.image.data[sOffset + 2] = sz;
-
-      drawCall.updateTexture('p', pOffset, ps.length);
-      drawCall.updateTexture('q', qOffset, qs.length);
-      drawCall.updateTexture('s', sOffset, ss.length);
-
-      // physics
-      // const shapeAddress = this.#getShapeAddress(drawCall.geometryIndex);
-      // const physicsObject = this.#addPhysicsShape(shapeAddress, drawCall.geometryIndex, px, py, pz, qx, qy, qz, qw);
-      // this.physicsObjects.push(physicsObject);
-      // localPhysicsObjects.push(physicsObject);
-      // this.instanceObjects.set(physicsObject.physicsId, drawCall);
+      drawCall.updateTexture('p', pOffset, ps.length / 3 * 4);
+      drawCall.updateTexture('q', qOffset, qs.length / 4 * 4);
+      drawCall.updateTexture('s', sOffset, ss.length / 3 * 4);
     };
 
     const vegetationData = chunkResult;
@@ -510,14 +515,8 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
       vegetationData.instances.length,
       boundingBox
     );
-    for (let i = 0; i < vegetationData.instances.length; i++) {
-      // const geometryNoise = vegetationData.instances[i];
-      // const geometryIndex = Math.floor(geometryNoise * this.meshes.length);
+    _renderVegetationGeometry(drawChunk, vegetationData);
 
-      // let drawCall = this.allocator.allocDrawCall(geometryIndex, localBox);
-      // drawcalls.push(drawCall);
-      _renderVegetationGeometry(drawChunk, vegetationData.ps, vegetationData.qs, i);
-    }
     const key = procGenManager.getNodeHash(chunk);
     this.drawChunks.set(key, drawChunk);
   }
