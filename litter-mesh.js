@@ -301,11 +301,11 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
         Type: Float32Array,
         itemSize: 3,
       },
-      {
+      /* {
         name: 'q',
         Type: Float32Array,
         itemSize: 4,
-      },
+      }, */
       {
         name: 's',
         Type: Float32Array,
@@ -350,10 +350,10 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
           value: attributeTextures.p,
           needsUpdate: true,
         },
-        qTexture: {
+        /* qTexture: {
           value: attributeTextures.q,
           needsUpdate: true,
-        },
+        }, */
         sTexture: {
           value: attributeTextures.s,
           needsUpdate: true,
@@ -368,7 +368,7 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
         precision highp int;
 
         uniform sampler2D pTexture;
-        uniform sampler2D qTexture;
+        // uniform sampler2D qTexture;
         uniform sampler2D sTexture;
         uniform sampler2D itemIndexTexture;
         varying vec2 vUv;
@@ -385,7 +385,7 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
           float y = floor(float(instanceIndex) / width);
           vec2 pUv = (vec2(x, y) + 0.5) / vec2(width, height);
           vec3 p = texture2D(pTexture, pUv).xyz;
-          vec4 q = texture2D(qTexture, pUv).xyzw;
+          // vec4 q = texture2D(qTexture, pUv).xyzw;
           vec3 s = texture2D(sTexture, pUv).xyz;
           float itemIndex = texture2D(itemIndexTexture, pUv).x;
 
@@ -453,12 +453,12 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
       const _renderVegetationGeometry = (drawCall, vegetationData) => {
         const pTexture = drawCall.getTexture('p');
         const pOffset = drawCall.getTextureOffset('p');
-        const qTexture = drawCall.getTexture('q');
-        const qOffset = drawCall.getTextureOffset('q');
+        // const qTexture = drawCall.getTexture('q');
+        // const qOffset = drawCall.getTextureOffset('q');
         const sTexture = drawCall.getTexture('s');
         const sOffset = drawCall.getTextureOffset('s');
 
-        const {ps, qs, instances} = vegetationData;
+        const {ps, /*qs, */instances} = vegetationData;
         for (let index = 0; index < instances.length; index++) {
           const indexOffset = index * 4;
           
@@ -470,14 +470,14 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
           pTexture.image.data[pOffset + indexOffset + 1] = py;
           pTexture.image.data[pOffset + indexOffset + 2] = pz;
 
-          const qx = qs[index * 4];
+          /* const qx = qs[index * 4];
           const qy = qs[index * 4 + 1];
           const qz = qs[index * 4 + 2];
           const qw = qs[index * 4 + 3];
           qTexture.image.data[qOffset + indexOffset] = qx;
           qTexture.image.data[qOffset + indexOffset + 1] = qy;
           qTexture.image.data[qOffset + indexOffset + 2] = qz;
-          qTexture.image.data[qOffset + indexOffset + 3] = qw;
+          qTexture.image.data[qOffset + indexOffset + 3] = qw; */
 
           // XXX get scales from the mapped geometry
           /* const sx = ss[index * 3];
@@ -502,7 +502,7 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
           length: ps.length,
         };
         drawCall.updateTexture('p', pOffset, ps.length / 3 * 4);
-        drawCall.updateTexture('q', qOffset, qs.length / 4 * 4);
+        // drawCall.updateTexture('q', qOffset, qs.length / 4 * 4);
         drawCall.updateTexture('s', sOffset, ss.length / 3 * 4);
       };
 
