@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import metaversefile from 'metaversefile';
-const {useProcGenManager, useGeometries, useAtlasing, useGeometryBatching, useGeometryChunking, useSpriting} = metaversefile;
+const {useProcGenManager, useGeometries, useAtlasing, useGeometryBatching, useGeometryChunking, useLoaders, usePhysics, useSpriting} = metaversefile;
 const procGenManager = useProcGenManager();
 const {createAppUrlSpriteSheet} = useSpriting();
 const {DoubleSidedPlaneGeometry} = useGeometries();
 const {createTextureAtlas} = useAtlasing();
 const {InstancedBatchedMesh, InstancedGeometryAllocator} = useGeometryBatching();
 const {ChunkedBatchedMesh, ChunkedGeometryAllocator} = useGeometryChunking();
+const {gltfLoader} = useLoaders();
 import {
   // bufferSize,
   WORLD_BASE_HEIGHT,
@@ -28,12 +29,91 @@ const localBox = new THREE.Box3();
 
 //
 
+const meshLodSpecs = {
+  1: {
+    targetRatio: 1,
+    targetError: 0,
+  },
+  2: {
+    targetRatio: 0.5,
+    targetError: 0.01,
+  },
+  4: {
+    targetRatio: 0.3,
+    targetError: 0.05,
+  },
+  8: {
+    targetRatio: 0.15,
+    targetError: 0.1,
+  },
+};
+const meshLodSpecKeys = Object.keys(meshLodSpecs).map(Number);
 class MeshPackage {
-  constructor() {
-
+  constructor(lodMeshes) {
+    this.lodMeshes = lodMeshes;
   }
-  static async loadUrls(urls) {
+  static async loadUrls(urls, physics) {
+    // const meshSize = 3;
+    const _loadModel = u => new Promise((accept, reject) => {
+      gltfLoader.load(u, o => {
+        accept(o.scene);
+      }, function onProgress() {}, reject);
+    });
+    const _getMesh = model => {
+      let mesh = null;
+      const _recurse = o => {
+        if (o.isMesh) {
+          mesh = o;
+          return false;
+        } else {
+          for (let i = 0; i < o.children.length; i++) {
+            if (!_recurse(o.children[i])) {
+              return false;
+            }
+          }
+          return true;
+        }
+      };
+      _recurse(model);
+      return mesh;
+    };
+    const _generateLodMeshes = async model => {
+      const mesh = _getMesh(model);
+      const lodMeshes = await Promise.all(meshLodSpecKeys.map(async lod => {
+        const meshLodSpec = meshLodSpecs[lod];
+        const {targetRatio, targetError} = meshLodSpec;
+        if (targetRatio === 1) {
+          return mesh;
+        } else {
+          const lodMesh = await physics.meshoptSimplify(mesh, targetRatio, targetError);
+          return lodMesh;
+        }
+      }));
+      return lodMeshes;
 
+      /* const targetRatio = 0.2;
+      const targetError = 0.1;
+      const treeMesh2 = await physics.meshoptSimplify(treeMesh, targetRatio, targetError);
+      
+      treeMesh2.position.y = 0.5;
+      treeMesh2.position.x = (-litterUrls.length / 2 + index) * meshSize;
+      treeMesh2.position.z += meshSize;
+      treeMesh2.scale.multiplyScalar(2);
+
+      app.add(treeMesh2);
+      treeMesh2.updateMatrixWorld();
+      
+      return treeMesh2; */
+    };
+
+    // XXX generate the texture atlas here
+    const lodMeshes = await Promise.all(urls.map(async url => {
+      const model = await _loadModel(url);
+      const lodMeshes = await _generateLodMeshes(model);
+      return lodMeshes;
+    }));
+    const pkg = new MeshPackage(lodMeshes);
+    return pkg;
   }
 }
 
@@ -631,6 +711,7 @@ export class LitterMetaMesh extends THREE.Object3D {
   constructor({
     instance,
     // gpuTaskManager,
+    physics,
   }) {
     super();
 
@@ -638,6 +719,8 @@ export class LitterMetaMesh extends THREE.Object3D {
       instance,
     });
     this.add(this.spritesheetMesh);
+
+    this.physics = physics;
   }
   addChunk(chunk, chunkResult) {
     this.spritesheetMesh.addChunk(chunk, chunkResult);
@@ -650,7 +733,7 @@ export class LitterMetaMesh extends THREE.Object3D {
       meshPackage,
       spritesheetPackage,
     ] = await Promise.all([
-      MeshPackage.loadUrls(urls),
+      MeshPackage.loadUrls(urls, this.physics),
       SpritesheetPackage.loadUrls(urls),
     ]);
     this.spritesheetMesh.setPackage(spritesheetPackage);

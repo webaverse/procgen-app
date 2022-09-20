@@ -97,7 +97,7 @@ export default e => {
     const terrainMesh = new TerrainMesh({
       instance,
       gpuTaskManager,
-      physics
+      physics,
     });
     terrainMesh.frustumCulled = false;
     app.add(terrainMesh);
@@ -122,6 +122,7 @@ export default e => {
     const litterMesh = new LitterMetaMesh({
       instance,
       gpuTaskManager,
+      physics,
     });
     app.add(litterMesh);
     litterMesh.updateMatrixWorld();
