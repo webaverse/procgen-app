@@ -106,6 +106,8 @@ export default e => {
       physics
     });
     terrainMesh.frustumCulled = false;
+    terrainMesh.castShadow = true;
+    terrainMesh.receiveShadow = true; 
     app.add(terrainMesh);
     terrainMesh.updateMatrixWorld();
 
