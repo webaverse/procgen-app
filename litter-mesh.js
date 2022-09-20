@@ -77,8 +77,7 @@ class MeshPackage {
       _recurse(model);
       return mesh;
     };
-    const _generateLodMeshes = async model => {
-      const mesh = _getMesh(model);
+    const _generateLodMeshes = async mesh => {
       const lodMeshes = await Promise.all(meshLodSpecKeys.map(async lod => {
         const meshLodSpec = meshLodSpecs[lod];
         const {targetRatio, targetError} = meshLodSpec;
@@ -105,13 +104,38 @@ class MeshPackage {
       
       return treeMesh2; */
     };
+    
+
+    const models = await Promise.all(urls.map(_loadModel));
+    const meshes = models.map(_getMesh);
+    const textureAtlasResult = createTextureAtlas(meshes, {
+      textures: ['map', 'normalMap'],
+      attributes: ['position', 'normal', 'uv'],
+    });
+    const {
+      meshes: atlasedMeshes,
+    } = textureAtlasResult;
+    /* const {
+      atlasTextures,
+      geometries: lod0Geometries,
+    } = createTextureAtlas(lodMeshes.map(lods => lods[0]), {
+      textures: ['map', 'normalMap'],
+      attributes: ['position', 'normal', 'uv'],
+    }); */
+    const lodMeshes = await Promise.all(atlasedMeshes.map(_generateLodMeshes));
 
     // XXX generate the texture atlas here
-    const lodMeshes = await Promise.all(urls.map(async url => {
+    /* const lodMeshes = await Promise.all(urls.map(async url => {
       const model = await _loadModel(url);
       const lodMeshes = await _generateLodMeshes(model);
       return lodMeshes;
-    }));
+    })); */
+    
+    console.log('got package', {
+      lodMeshes,
+      textureAtlasResult,
+    });
+    
     const pkg = new MeshPackage(lodMeshes);
     return pkg;
   }
@@ -737,5 +761,26 @@ export class LitterMetaMesh extends THREE.Object3D {
       SpritesheetPackage.loadUrls(urls),
     ]);
     this.spritesheetMesh.setPackage(spritesheetPackage);
+
+    // XXX debugging
+    {
+      const allLodMeshes = [];
+      const {lodMeshes} = meshPackage;
+      for (const lodMeshArray of lodMeshes) {
+        for (const lodMesh of lodMeshArray) {
+          // this.add(lodMesh);
+          allLodMeshes.push(lodMesh);
+        }
+      }
+      const meshSize = 3;
+      for (let i = 0; i < allLodMeshes.length; i++) {
+        const lodMesh = allLodMeshes[i];
+        lodMesh.position.x = (-allLodMeshes.length/2 + i) * meshSize;
+        lodMesh.position.y = 0.5;
+        lodMesh.position.z = 5;
+        this.add(lodMesh);
+        lodMesh.updateMatrixWorld();
+      }
+    }
   }
 }
