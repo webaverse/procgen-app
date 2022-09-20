@@ -137,8 +137,8 @@ export default e => {
         const {heightfield, vegetation} = result;
         
         // heightfield
-        // terrainMesh.addChunk(chunk, heightfield);
-        // waterMesh.addChunk(chunk, heightfield);
+        terrainMesh.addChunk(chunk, heightfield);
+        waterMesh.addChunk(chunk, heightfield);
         barrierMesh.addChunk(chunk, heightfield);
       
         // vegetation
@@ -146,8 +146,8 @@ export default e => {
       });
       generation.addEventListener('geometryremove', e => {
         // heightfield
-        // terrainMesh.removeChunk(chunk);
-        // waterMesh.removeChunk(chunk);
+        terrainMesh.removeChunk(chunk);
+        waterMesh.removeChunk(chunk);
         barrierMesh.removeChunk(chunk);
 
         // vegetation
