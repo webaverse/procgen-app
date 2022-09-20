@@ -123,18 +123,11 @@ class MeshPackage {
       attributes: ['position', 'normal', 'uv'],
     }); */
     const lodMeshes = await Promise.all(atlasedMeshes.map(_generateLodMeshes));
-
-    // XXX generate the texture atlas here
-    /* const lodMeshes = await Promise.all(urls.map(async url => {
-      const model = await _loadModel(url);
-      const lodMeshes = await _generateLodMeshes(model);
-      return lodMeshes;
-    })); */
     
-    console.log('got package', {
+    /* console.log('got package', {
       lodMeshes,
       textureAtlasResult,
-    });
+    }); */
     
     const pkg = new MeshPackage(lodMeshes);
     return pkg;
