@@ -8,6 +8,7 @@ const {GenerationTaskManager} = useGenerationTask();
 import {TerrainMesh} from './terrain-mesh.js';
 import {WaterMesh} from './water-mesh.js';
 import {BarrierMesh} from './barrier-mesh.js';
+import {LitterMetaMesh} from './litter-mesh.js';
 
 // locals
 
@@ -17,6 +18,44 @@ const localVector3 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
+
+// urls
+
+const urlSpecs = {
+  trees: [
+    `Tree_1_1.glb`,
+    `Tree_1_2.glb`,
+    `Tree_2_1.glb`,
+    `Tree_2_2.glb`,
+    `Tree_3_1.glb`,
+    `Tree_3_2.glb`,
+    `Tree_4_1.glb`,
+    `Tree_4_2.glb`,
+    `Tree_4_3.glb`,
+    `Tree_5_1.glb`,
+    `Tree_5_2.glb`,
+    `Tree_6_1.glb`,
+    `Tree_6_2.glb`,
+  ].map(u => {
+    return `../procgen-assets/vegetation/garden-trees/${u}`;
+  }),
+  ores: [
+    `BlueOre_deposit_low.glb`,
+    `Iron_Deposit_low.glb`,
+    `Ore_Blue_low.glb`,
+    `Ore_BrownRock_low.glb`,
+    `Ore_Deposit_Red.glb`,
+    `Ore_Red_low.glb`,
+    `Ore_metal_low.glb`,
+    `Ore_wood_low.glb`,
+    `Rock_ore_Deposit_low.glb`,
+    `TreeOre_low.glb`,
+  ].map(u => {
+    return `../procgen-assets/litter/ores/${u}`;
+  }),
+};
+const litterUrls = urlSpecs.trees.slice(0, 1)
+  .concat(urlSpecs.ores.slice(0, 1));
 
 // main
 
@@ -80,6 +119,13 @@ export default e => {
     app.add(barrierMesh);
     barrierMesh.updateMatrixWorld();
 
+    const litterMesh = new LitterMetaMesh({
+      instance,
+      gpuTaskManager,
+    });
+    app.add(litterMesh);
+    litterMesh.updateMatrixWorld();
+
     // genration events handling
 
     lodTracker.onChunkAdd(async chunk => {
@@ -87,24 +133,44 @@ export default e => {
       
       const generation = generationTaskManager.createGeneration(key);
       generation.addEventListener('geometryadd', e => {
-        const {geometry} = e.data;
-        terrainMesh.addChunk(chunk, geometry);
-        waterMesh.addChunk(chunk, geometry);
-        barrierMesh.addChunk(chunk, geometry);
+        const {result} = e.data;
+        const {heightfield, vegetation} = result;
+        
+        // heightfield
+        // terrainMesh.addChunk(chunk, heightfield);
+        // waterMesh.addChunk(chunk, heightfield);
+        barrierMesh.addChunk(chunk, heightfield);
+      
+        // vegetation
+        litterMesh.addChunk(chunk, vegetation);
       });
       generation.addEventListener('geometryremove', e => {
-        terrainMesh.removeChunk(chunk);
-        waterMesh.removeChunk(chunk);
+        // heightfield
+        // terrainMesh.removeChunk(chunk);
+        // waterMesh.removeChunk(chunk);
         barrierMesh.removeChunk(chunk);
+
+        // vegetation
+        litterMesh.removeChunk(chunk);
       });
 
       try {
         const signal = generation.getSignal();
-        const result = await instance.generateChunk(chunk.min, chunk.lod, chunk.lodArray, {
-          signal,
+        const [
+          heightfield,
+          vegetation,
+        ] = await Promise.all([
+          instance.generateChunk(chunk.min, chunk.lod, chunk.lodArray, {
+            signal,
+          }),
+          instance.generateVegetation(chunk.min, chunk.lod, {
+            signal,
+          }),
+        ]);
+        generation.finish({
+          heightfield,
+          vegetation,
         });
-        // console.log('got chunk add result, add to geometry pool', chunk, result);
-        generation.finish(result);
       } catch (err) {
         if (err.isAbortError) {
           // console.log('got chunk add abort', chunk);
@@ -120,6 +186,10 @@ export default e => {
       // console.log('chunk', key, chunk, 'REMOVE');
       generationTaskManager.deleteGeneration(key);
     });
+
+    // load
+
+    await litterMesh.loadUrls(litterUrls);
 
     // frame handling
     
