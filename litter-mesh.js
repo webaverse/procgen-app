@@ -54,7 +54,6 @@ class MeshPackage {
     this.textureNames = textureNames;
   }
   static async loadUrls(urls, physics) {
-    // const meshSize = 3;
     const _loadModel = u => new Promise((accept, reject) => {
       gltfLoader.load(u, o => {
         accept(o.scene);
@@ -113,8 +112,8 @@ class MeshPackage {
 //
 
 const maxNumGeometries = 16;
-const maxInstancesPerGeometryPerDrawCall = 128;
-const maxDrawCallsPerGeometry = 32;
+const maxInstancesPerGeometryPerDrawCall = 256;
+const maxDrawCallsPerGeometry = 256;
 class LitterPolygonMesh extends InstancedBatchedMesh {
   constructor({
     instance,
@@ -124,15 +123,6 @@ class LitterPolygonMesh extends InstancedBatchedMesh {
     // physicsGeometries = [],
     // physics = null,
   } = {}) {
-    // instancing
-    /* const {
-      atlasTextures,
-      geometries: lod0Geometries,
-    } = createTextureAtlas(lodMeshes.map(lods => lods[0]), {
-      textures: ['map', 'normalMap'],
-      attributes: ['position', 'normal', 'uv'],
-    }); */
-    
     // allocator
     const allocator = new InstancedGeometryAllocator([
       {
@@ -195,7 +185,7 @@ vec3 rotate_vertex_position(vec3 position, vec4 q) {
         shader.vertexShader = shader.vertexShader.replace(`#include <begin_vertex>`, `\
 #include <begin_vertex>
 
-int instanceIndex = gl_DrawID * ${maxInstancesPerDrawCall} + gl_InstanceID;
+int instanceIndex = gl_DrawID * ${maxInstancesPerGeometryPerDrawCall} + gl_InstanceID;
 const float width = ${attributeTextures.p.image.width.toFixed(8)};
 const float height = ${attributeTextures.p.image.height.toFixed(8)};
 float x = mod(float(instanceIndex), width);
@@ -241,91 +231,126 @@ vec4 q = texture2D(qTexture, pUv).xyzw;
     // this.physicsObjects = [];
 
     // this.instanceObjects = new Map();
+
+    this.instance = instance;
+    
+    this.allocatedChunks = new Map();
   }
 
-  drawChunk(chunk, renderData, tracker){
-    const {
-      vegetationData,
-    } = renderData;
-    const localPhysicsObjects = [];
-    const _renderVegetationGeometry = (drawCall, ps, qs, index) => {
-      // geometry
-      const pTexture = drawCall.getTexture('p');
-      const pOffset = drawCall.getTextureOffset('p');
-      const qTexture = drawCall.getTexture('q');
-      const qOffset = drawCall.getTextureOffset('q');
+  addChunk(chunk, chunkResult) {
+    const vegetationData = chunkResult;
 
-      const px = ps[index * 3];
-      const py = ps[index * 3 + 1];
-      const pz = ps[index * 3 + 2];
-      pTexture.image.data[pOffset] = px;
-      pTexture.image.data[pOffset + 1] = py;
-      pTexture.image.data[pOffset + 2] = pz;
+    if (chunk.lod <= 1 && vegetationData.instances.length > 0) {
+      const _renderLitterPolygonGeometry = (drawCall, ps, qs) => {
+        const pTexture = drawCall.getTexture('p');
+        const pOffset = drawCall.getTextureOffset('p');
+        const qTexture = drawCall.getTexture('q');
+        const qOffset = drawCall.getTextureOffset('q');
+        // const sTexture = drawCall.getTexture('s');
+        // const sOffset = drawCall.getTextureOffset('s');
 
-      const qx = qs[index * 4];
-      const qy = qs[index * 4 + 1];
-      const qz = qs[index * 4 + 2];
-      const qw = qs[index * 4 + 3];
-      qTexture.image.data[qOffset] = qx;
-      qTexture.image.data[qOffset + 1] = qy;
-      qTexture.image.data[qOffset + 2] = qz;
-      qTexture.image.data[qOffset + 3] = qw;
+        let index = 0;
+        for (let j = 0; j < ps.length; j += 3) {
+          const indexOffset = index * 4;
+          
+          // geometry
+          const px = ps[index * 3];
+          const py = ps[index * 3 + 1];
+          const pz = ps[index * 3 + 2];
+          pTexture.image.data[pOffset + indexOffset] = px;
+          pTexture.image.data[pOffset + indexOffset + 1] = py;
+          pTexture.image.data[pOffset + indexOffset + 2] = pz;
 
-      drawCall.updateTexture('p', pOffset, ps.length);
-      drawCall.updateTexture('q', qOffset, qs.length);
+          const qx = qs[index * 4];
+          const qy = qs[index * 4 + 1];
+          const qz = qs[index * 4 + 2];
+          const qw = qs[index * 4 + 3];
+          qTexture.image.data[qOffset + indexOffset] = qx;
+          qTexture.image.data[qOffset + indexOffset + 1] = qy;
+          qTexture.image.data[qOffset + indexOffset + 2] = qz;
+          qTexture.image.data[qOffset + indexOffset + 3] = qw;
 
-      // physics
-      const shapeAddress = this.#getShapeAddress(drawCall.geometryIndex);
-      const physicsObject = this.#addPhysicsShape(shapeAddress, drawCall.geometryIndex, px, py, pz, qx, qy, qz, qw);
-      this.physicsObjects.push(physicsObject);
-      localPhysicsObjects.push(physicsObject);
+          // XXX get scales from the mapped geometry
+          /* const sx = ss[index * 3];
+          const sy = ss[index * 3 + 1];
+          const sz = ss[index * 3 + 2]; */
+          // const sx = 1;
+          // const sy = 1;
+          // const sz = 1;
+          // sTexture.image.data[sOffset + indexOffset] = sx;
+          // sTexture.image.data[sOffset + indexOffset + 1] = sy;
+          // sTexture.image.data[sOffset + indexOffset + 2] = sz;
 
-      drawCall.incrementInstanceCount();
+          // physics
+          // const shapeAddress = this.#getShapeAddress(drawCall.geometryIndex);
+          // const physicsObject = this.#addPhysicsShape(shapeAddress, drawCall.geometryIndex, px, py, pz, qx, qy, qz, qw);
+          // this.physicsObjects.push(physicsObject);
+          // localPhysicsObjects.push(physicsObject);
+          // this.instanceObjects.set(physicsObject.physicsId, drawCall);
       
-      this.instanceObjects.set(physicsObject.physicsId, drawCall);
-    };
+          index++;
+        }
 
-      
-    const drawcalls = [];
-    for (let i = 0; i < vegetationData.instances.length; i++) {
-      const geometryNoise = vegetationData.instances[i];
-      const geometryIndex = Math.floor(geometryNoise * this.meshes.length);
-      
-      localBox.setFromCenterAndSize(
+        drawCall.updateTexture('p', pOffset, index * 4);
+        drawCall.updateTexture('q', qOffset, index * 4);
+        // drawCall.updateTexture('s', sOffset, index * 4);
+      };
+
+      const {chunkSize} = this.instance;
+      const boundingBox = localBox.set(
         localVector.set(
-          (chunk.min.x + 0.5) * chunkWorldSize,
-          (chunk.min.y + 0.5) * chunkWorldSize,
-          (chunk.min.z + 0.5) * chunkWorldSize
+          chunk.min.x * chunkSize,
+          -WORLD_BASE_HEIGHT + MIN_WORLD_HEIGHT,
+          chunk.min.y * chunkSize
         ),
-        localVector2.set(chunkWorldSize, chunkWorldSize * 256, chunkWorldSize)
+        localVector2.set(
+          (chunk.min.x + chunk.lod) * chunkSize,
+          -WORLD_BASE_HEIGHT + MAX_WORLD_HEIGHT,
+          (chunk.min.y + chunk.lod) * chunkSize
+        )
       );
+      const lodIndex = Math.log2(chunk.lod);
+      const {instances} = vegetationData;
+      const drawChunks = Array(instances.length);
+      for (let i = 0; i < instances.length; i++) {
+        const {
+          instanceId,
+          ps,
+          qs,
+        } = instances[i];
+        const geometryIndex = instanceId;
+        const numInstances = ps.length / 3;
 
-      let drawCall = this.allocator.allocDrawCall(geometryIndex, localBox);
-      drawcalls.push(drawCall);
-      _renderVegetationGeometry(drawCall, vegetationData.ps, vegetationData.qs, i);
+        const drawChunk = this.allocator.allocDrawCall(
+          geometryIndex,
+          lodIndex,
+          numInstances,
+          boundingBox
+        );
+        _renderLitterPolygonGeometry(drawChunk, ps, qs);
+        drawChunks[i] = drawChunk;
+      }
+      const key = procGenManager.getNodeHash(chunk);
+      this.allocatedChunks.set(key, drawChunks);
     }
-
-    const onchunkremove = () => {
-      drawcalls.forEach(drawcall => {
-        this.allocator.freeDrawCall(drawcall);
-      });
-      tracker.offChunkRemove(chunk, onchunkremove);
-
-      const firstLocalPhysicsObject = localPhysicsObjects[0];
-      const firstLocalPhysicsObjectIndex = this.physicsObjects.indexOf(firstLocalPhysicsObject);
-      this.physicsObjects.splice(firstLocalPhysicsObjectIndex, localPhysicsObjects.length);
-    };
-    tracker.onChunkRemove(chunk, onchunkremove);
-
   }
-  
-  #getShapeAddress(geometryIndex) {
+  removeChunk(chunk) {
+    const key = procGenManager.getNodeHash(chunk);
+    const drawChunks = this.allocatedChunks.get(key);
+    if (drawChunks) {
+      for (const drawChunk of drawChunks) {
+        this.allocator.freeDrawCall(drawChunk);
+      }
+    }
+    this.allocatedChunks.delete(key);
+  }
+
+  /* #getShapeAddress(geometryIndex) {
     return this.shapeAddresses[geometryIndex];
   }
   #getShapeGeometry(geometryIndex){
     return this.physicsGeometries[geometryIndex];
   }
-  
   #addPhysicsShape(shapeAddress, geometryIndex, px, py, pz, qx, qy, qz, qw) {    
     localVector.set(px, py, pz);
     localQuaternion.set(qx, qy, qz, qw);
@@ -346,7 +371,7 @@ vec4 q = texture2D(qTexture, pUv).xyzw;
     this.physicsObjects.push(physicsObject);
 
     return physicsObject;
-  }
+  } */
   
   grabInstance(physicsId){
     const phys = metaversefile.getPhysicsObjectByPhysicsId(physicsId);
@@ -636,13 +661,13 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
 
     this.instance = instance;
 
-    this.drawChunks = new Map();
+    this.allocatedChunks = new Map();
   }
   addChunk(chunk, chunkResult) {
     const vegetationData = chunkResult;
 
     if (chunk.lod >= spriteLodCutoff && vegetationData.instances.length > 0) {
-      const _renderVegetationGeometry = (drawCall, vegetationData) => {
+      const _renderLitterSpriteGeometry = (drawCall, vegetationData) => {
         const pTexture = drawCall.getTexture('p');
         const pOffset = drawCall.getTextureOffset('p');
         // const qTexture = drawCall.getTexture('q');
@@ -732,18 +757,18 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
         totalInstances,
         boundingBox
       );
-      _renderVegetationGeometry(drawChunk, vegetationData);
+      _renderLitterSpriteGeometry(drawChunk, vegetationData);
 
       const key = procGenManager.getNodeHash(chunk);
-      this.drawChunks.set(key, drawChunk);
+      this.allocatedChunks.set(key, drawChunk);
     }
   }
   removeChunk(chunk) {
     const key = procGenManager.getNodeHash(chunk);
-    const drawChunk = this.drawChunks.get(key);
+    const drawChunk = this.allocatedChunks.get(key);
     if (drawChunk) {
       this.allocator.freeChunk(drawChunk);
-      this.drawChunks.delete(key);
+      this.allocatedChunks.delete(key);
     }
   }
   setPackage(pkg) {
@@ -797,7 +822,7 @@ export class LitterMetaMesh extends THREE.Object3D {
     this.polygonMesh.setPackage(meshPackage);
     this.spritesheetMesh.setPackage(spritesheetPackage);
 
-    // XXX debugging
+    /* // XXX debugging
     {
       const allLodMeshes = [];
       const {lodMeshes} = meshPackage;
@@ -816,6 +841,6 @@ export class LitterMetaMesh extends THREE.Object3D {
         this.add(lodMesh);
         lodMesh.updateMatrixWorld();
       }
-    }
+    } */
   }
 }
