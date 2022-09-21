@@ -49,8 +49,9 @@ const meshLodSpecs = {
 };
 const meshLodSpecKeys = Object.keys(meshLodSpecs).map(Number);
 class MeshPackage {
-  constructor(lodMeshes) {
+  constructor(lodMeshes, atlasImages) {
     this.lodMeshes = lodMeshes;
+    this.atlasImages = atlasImages;
   }
   static async loadUrls(urls, physics) {
     // const meshSize = 3;
@@ -99,11 +100,12 @@ class MeshPackage {
       attributes: ['position', 'normal', 'uv'],
     });
     const {
-      meshes: atlasedMeshes,
+      meshes: atlasMeshes,
+      atlasImages,
     } = textureAtlasResult;
-    const lodMeshes = await Promise.all(atlasedMeshes.map(_generateLodMeshes));
+    const lodMeshes = await Promise.all(atlasMeshes.map(_generateLodMeshes));
     
-    const pkg = new MeshPackage(lodMeshes);
+    const pkg = new MeshPackage(lodMeshes, atlasImages);
     return pkg;
   }
 }
