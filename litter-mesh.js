@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import metaversefile from 'metaversefile';
-const {useProcGenManager, useGeometries, useAtlasing, useGeometryBatching, useGeometryChunking, useLoaders, usePhysics, useSpriting} = metaversefile;
+const {useCamera, useProcGenManager, useGeometries, useAtlasing, useGeometryBatching, useGeometryChunking, useLoaders, usePhysics, useSpriting} = metaversefile;
 const procGenManager = useProcGenManager();
 const {createAppUrlSpriteSheet} = useSpriting();
 const {DoubleSidedPlaneGeometry} = useGeometries();
@@ -17,15 +17,22 @@ import {
 
 //
 
-const spriteLodCutoff = 16;
+const spriteLodCutoff = 1;
 
 //
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
+const localEuler = new THREE.Euler();
 const localMatrix = new THREE.Matrix4();
 const localBox = new THREE.Box3();
+
+//
+
+function mod(a, n) {
+  return ((a % n) + n) % n;
+}
 
 //
 
@@ -199,10 +206,6 @@ vec4 q = texture2D(qTexture, pUv).xyzw;
   transformed = rotate_vertex_position(transformed, q);
   transformed += p;
 }
-/* {
-  transformed.y += float(gl_DrawID) * 10.;
-  transformed.x += float(gl_InstanceID) * 10.;
-} */
         `);
         shader.fragmentShader = shader.fragmentShader.replace(`#include <uv_pars_fragment>`, `\
 #undef USE_INSTANCING
@@ -398,26 +401,6 @@ vec4 q = texture2D(qTexture, pUv).xyzw;
     }
 
     this.visible = true;
-
-    /* this.geometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
-    
-    const geometryRegistry = Array(maxNumGeometries);
-    let indexIndex = 0;
-    for (let i = 0; i < maxNumGeometries; i++) {
-      const geometry = geometries[i];
-
-      const indexCount = geometry.index.count;
-      const spec = {
-        index: {
-          start: indexIndex,
-          count: indexCount,
-        },
-      };
-      geometryRegistry[i] = spec;
-
-      indexIndex += indexCount;
-    }
-    this.geometryRegistry = geometryRegistry; */
   }
 }
 
@@ -549,7 +532,11 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
           value: null,
           needsUpdate: null,
         },
-        uY: {
+        /* uY: {
+          value: 0,
+          needsUpdate: false,
+        }, */
+        cameraY: {
           value: 0,
           needsUpdate: false,
         },
@@ -584,15 +571,34 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
         precision highp int;
 
         uniform sampler2D pTexture;
-        // uniform sampler2D qTexture;
         uniform sampler2D sTexture;
         uniform sampler2D itemIndexTexture;
+        uniform float cameraY;
         varying vec2 vUv;
 
         vec3 rotate_vertex_position(vec3 position, vec4 q) { 
           return position + 2.0 * cross(q.xyz, cross(q.xyz, position) + q.w * position);
         }
+        vec4 euler_to_quaternion(vec3 e) { // assumes YXZ order
+          float x = e.x;
+          float y = e.y;
+          float z = e.z;
 
+          float c1 = cos( x / 2. );
+          float c2 = cos( y / 2. );
+          float c3 = cos( z / 2. );
+
+          float s1 = sin( x / 2. );
+          float s2 = sin( y / 2. );
+          float s3 = sin( z / 2. );
+
+          vec4 q;
+          q.x = s1 * c2 * c3 + c1 * s2 * s3;
+          q.y = c1 * s2 * c3 - s1 * c2 * s3;
+          q.z = c1 * c2 * s3 - s1 * s2 * c3;
+          q.w = c1 * c2 * c3 + s1 * s2 * s3;
+          return q;
+        }
         void main() {
           int instanceIndex = gl_DrawID * ${maxInstancesPerDrawCall} + gl_InstanceID;
           const float width = ${attributeTextures.p.image.width.toFixed(8)};
@@ -601,14 +607,19 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
           float y = floor(float(instanceIndex) / width);
           vec2 pUv = (vec2(x, y) + 0.5) / vec2(width, height);
           vec3 p = texture2D(pTexture, pUv).xyz;
-          // vec4 q = texture2D(qTexture, pUv).xyzw;
           vec3 s = texture2D(sTexture, pUv).xyz;
           float itemIndex = texture2D(itemIndexTexture, pUv).x;
 
-          vec3 pos = position;
-          pos += p;
+          // transform position
+          vec3 transformed = position;
+          {
+            vec3 e = vec3(0., cameraY, 0.);
+            vec4 q = euler_to_quaternion(e);
+            transformed = rotate_vertex_position(transformed, q);
+            transformed += p;
+          }
 
-          vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+          vec4 mvPosition = modelViewMatrix * vec4(transformed, 1.0);
           gl_Position = projectionMatrix * mvPosition;
 
           vUv = uv;
@@ -781,6 +792,25 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
 
     this.visible = true;
   }
+  update() {
+    /* localQuaternion.setFromRotationMatrix(
+      localMatrix.lookAt(
+        spritesheetMesh.getWorldPosition(localVector),
+        camera.position,
+        localVector2.set(0, 1, 0)
+      )
+    ); */
+    const camera = useCamera();
+    localEuler.setFromQuaternion(camera.quaternion, 'YXZ');
+    localEuler.x = 0;
+    localEuler.z = 0;
+    // localQuaternion.setFromEuler(localEuler);
+    // spritesheetMesh.updateMatrixWorld();
+
+    // this.material.uniforms.cameraY.value = mod(-localEuler.y + Math.PI/2 + (Math.PI * 2) / numAngles / 2, Math.PI * 2) / (Math.PI * 2);
+    this.material.uniforms.cameraY.value = localEuler.y;
+    this.material.uniforms.cameraY.needsUpdate = true;
+  }
 }
 
 //
@@ -804,6 +834,9 @@ export class LitterMetaMesh extends THREE.Object3D {
     this.add(this.spritesheetMesh);
 
     this.physics = physics;
+  }
+  update() {
+    this.spritesheetMesh.update();
   }
   addChunk(chunk, chunkResult) {
     this.spritesheetMesh.addChunk(chunk, chunkResult);

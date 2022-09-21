@@ -220,6 +220,11 @@ export default e => {
       };
       _updateLodTracker();
 
+      const _updateLitteMesh = () => {
+        litterMesh.update();
+      };
+      _updateLitteMesh();
+
       gpuTaskManager.update();
     };
   })());
