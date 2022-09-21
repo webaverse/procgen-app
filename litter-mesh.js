@@ -112,6 +112,9 @@ class MeshPackage {
 
 //
 
+const maxNumGeometries = 16;
+const maxInstancesPerGeometryPerDrawCall = 128;
+const maxDrawCallsPerGeometry = 32;
 class LitterPolygonMesh extends InstancedBatchedMesh {
   constructor({
     instance,
@@ -131,7 +134,7 @@ class LitterPolygonMesh extends InstancedBatchedMesh {
     }); */
     
     // allocator
-    const allocator = new InstancedGeometryAllocator(lod0Geometries, [
+    const allocator = new InstancedGeometryAllocator([
       {
         name: 'p',
         Type: Float32Array,
@@ -143,21 +146,25 @@ class LitterPolygonMesh extends InstancedBatchedMesh {
         itemSize: 4,
       },
     ], {
-      maxInstancesPerDrawCall,
+      maxNumGeometries,
+      maxInstancesPerGeometryPerDrawCall,
       maxDrawCallsPerGeometry,
       boundingType: 'box',
     });
-    const {geometry, textures: attributeTextures} = allocator;
+    const {textures: attributeTextures} = allocator;
     for (const k in attributeTextures) {
       const texture = attributeTextures[k];
       texture.anisotropy = maxAnisotropy;
     }
 
-    // material
+    // geometry
+    // const geometry = new THREE.BufferGeometry();
+    let geometry;
 
+    // material
     const material = new THREE.MeshStandardMaterial({
-      map: atlasTextures.map,
-      normalMap: atlasTextures.normalMap,
+      // map: atlasTextures.map,
+      // normalMap: atlasTextures.normalMap,
       side: THREE.DoubleSide,
       transparent: true,
       alphaTest: 0.5,
@@ -222,18 +229,18 @@ vec4 q = texture2D(qTexture, pUv).xyzw;
     });
 
     // mesh
-
     super(geometry, material, allocator);
     this.frustumCulled = false;
+    this.visible = false;
     
-    this.procGenInstance = procGenInstance;
-    this.meshes = lodMeshes;
-    this.shapeAddresses = shapeAddresses;
-    this.physicsGeometries = physicsGeometries;
-    this.physics = physics;
-    this.physicsObjects = [];
+    // this.procGenInstance = procGenInstance;
+    // this.meshes = lodMeshes;
+    // this.shapeAddresses = shapeAddresses;
+    // this.physicsGeometries = physicsGeometries;
+    // this.physics = physics;
+    // this.physicsObjects = [];
 
-    this.instanceObjects = new Map();
+    // this.instanceObjects = new Map();
   }
 
   drawChunk(chunk, renderData, tracker){
@@ -276,7 +283,6 @@ vec4 q = texture2D(qTexture, pUv).xyzw;
       drawCall.incrementInstanceCount();
       
       this.instanceObjects.set(physicsObject.physicsId, drawCall);
-      
     };
 
       
@@ -347,10 +353,46 @@ vec4 q = texture2D(qTexture, pUv).xyzw;
     this.physics.removeGeometry(phys);
     const drawcall = this.instanceObjects.get(physicsId);
     drawcall.decrementInstanceCount();
-
   }
-  getPhysicsObjects() {
+  /* getPhysicsObjects() {
     return this.physicsObjects;
+  } */
+  setPackage(pkg) {
+    // console.log('set package', pkg);
+    const {lodMeshes, textureNames} = pkg;
+    // console.log('set package', {lodMeshes, textureNames});
+    this.allocator.setGeometries(lodMeshes.map(lodMeshesArray => {
+      return lodMeshesArray.map(lodMesh => {
+        return lodMesh.geometry;
+      });
+    }));
+    this.geometry = this.allocator.geometry;
+
+    for (const textureName of textureNames) {
+      this.material[textureName] = lodMeshes[0][0].material[textureName];
+    }
+
+    this.visible = true;
+
+    /* this.geometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
+    
+    const geometryRegistry = Array(maxNumGeometries);
+    let indexIndex = 0;
+    for (let i = 0; i < maxNumGeometries; i++) {
+      const geometry = geometries[i];
+
+      const indexCount = geometry.index.count;
+      const spec = {
+        index: {
+          start: indexIndex,
+          count: indexCount,
+        },
+      };
+      geometryRegistry[i] = spec;
+
+      indexIndex += indexCount;
+    }
+    this.geometryRegistry = geometryRegistry; */
   }
 }
 
@@ -590,6 +632,7 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
     });
     super(geometry, material, allocator);
     this.frustumCulled = false;
+    this.visible = false;
 
     this.instance = instance;
 
@@ -710,6 +753,8 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
 
     this.material.uniforms.uTex.value = texture;
     this.material.uniforms.uTex.needsUpdate = true;
+
+    this.visible = true;
   }
 }
 
@@ -722,6 +767,11 @@ export class LitterMetaMesh extends THREE.Object3D {
     physics,
   }) {
     super();
+
+    this.polygonMesh = new LitterPolygonMesh({
+      instance,
+    });
+    this.add(this.polygonMesh);
 
     this.spritesheetMesh = new LitterSpritesheetMesh({
       instance,
@@ -744,6 +794,7 @@ export class LitterMetaMesh extends THREE.Object3D {
       MeshPackage.loadUrls(urls, this.physics),
       SpritesheetPackage.loadUrls(urls),
     ]);
+    this.polygonMesh.setPackage(meshPackage);
     this.spritesheetMesh.setPackage(spritesheetPackage);
 
     // XXX debugging
