@@ -21,6 +21,7 @@ const localMatrix2 = new THREE.Matrix4();
 
 // urls
 
+const procgenAssetsBaseUrl = `https://webaverse.github.io/procgen-assets/`;
 const urlSpecs = {
   trees: [
     `Tree_1_1.glb`,
@@ -37,7 +38,7 @@ const urlSpecs = {
     `Tree_6_1.glb`,
     `Tree_6_2.glb`,
   ].map(u => {
-    return `../procgen-assets/vegetation/garden-trees/${u}`;
+    return `${procgenAssetsBaseUrl}vegetation/garden-trees/${u}`;
   }),
   ores: [
     `BlueOre_deposit_low.glb`,
@@ -51,7 +52,7 @@ const urlSpecs = {
     `Rock_ore_Deposit_low.glb`,
     `TreeOre_low.glb`,
   ].map(u => {
-    return `../procgen-assets/litter/ores/${u}`;
+    return `${procgenAssetsBaseUrl}/litter/ores/${u}`;
   }),
 };
 const litterUrls = urlSpecs.trees.slice(0, 1)
@@ -97,7 +98,7 @@ export default e => {
     const terrainMesh = new TerrainMesh({
       instance,
       gpuTaskManager,
-      physics
+      physics,
     });
     terrainMesh.frustumCulled = false;
     app.add(terrainMesh);
@@ -122,6 +123,7 @@ export default e => {
     const litterMesh = new LitterMetaMesh({
       instance,
       gpuTaskManager,
+      physics,
     });
     app.add(litterMesh);
     litterMesh.updateMatrixWorld();
@@ -137,8 +139,8 @@ export default e => {
         const {heightfield, vegetation} = result;
         
         // heightfield
-        // terrainMesh.addChunk(chunk, heightfield);
-        // waterMesh.addChunk(chunk, heightfield);
+        terrainMesh.addChunk(chunk, heightfield);
+        waterMesh.addChunk(chunk, heightfield);
         barrierMesh.addChunk(chunk, heightfield);
       
         // vegetation
@@ -146,8 +148,8 @@ export default e => {
       });
       generation.addEventListener('geometryremove', e => {
         // heightfield
-        // terrainMesh.removeChunk(chunk);
-        // waterMesh.removeChunk(chunk);
+        terrainMesh.removeChunk(chunk);
+        waterMesh.removeChunk(chunk);
         barrierMesh.removeChunk(chunk);
 
         // vegetation
