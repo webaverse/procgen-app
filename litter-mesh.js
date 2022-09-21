@@ -240,7 +240,7 @@ vec4 q = texture2D(qTexture, pUv).xyzw;
   addChunk(chunk, chunkResult) {
     const vegetationData = chunkResult;
 
-    if (chunk.lod <= 1 && vegetationData.instances.length > 0) {
+    if (chunk.lod < spriteLodCutoff && vegetationData.instances.length > 0) {
       const _renderLitterPolygonGeometry = (drawCall, ps, qs) => {
         const pTexture = drawCall.getTexture('p');
         const pOffset = drawCall.getTextureOffset('p');
