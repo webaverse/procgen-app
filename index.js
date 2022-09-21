@@ -121,12 +121,12 @@ export default e => {
     // app.add(barrierMesh);
     // barrierMesh.updateMatrixWorld();
 
-    const litterMesh = new LitterMetaMesh({
-      instance,
-      gpuTaskManager,
-    });
-    app.add(litterMesh);
-    litterMesh.updateMatrixWorld();
+    // const litterMesh = new LitterMetaMesh({
+    //   instance,
+    //   gpuTaskManager,
+    // });
+    // app.add(litterMesh);
+    // litterMesh.updateMatrixWorld();
 
     // genration events handling
 
@@ -144,7 +144,7 @@ export default e => {
         // barrierMesh.addChunk(chunk, heightfield);
       
         // vegetation
-        litterMesh.addChunk(chunk, vegetation);
+        // litterMesh.addChunk(chunk, vegetation);
       });
       generation.addEventListener('geometryremove', e => {
         // heightfield
@@ -153,25 +153,25 @@ export default e => {
         // barrierMesh.removeChunk(chunk);
 
         // vegetation
-        litterMesh.removeChunk(chunk);
+        // litterMesh.removeChunk(chunk);
       });
 
       try {
         const signal = generation.getSignal();
         const [
           heightfield,
-          vegetation,
+          // vegetation,
         ] = await Promise.all([
           instance.generateChunk(chunk.min, chunk.lod, chunk.lodArray, {
             signal,
           }),
-          instance.generateVegetation(chunk.min, chunk.lod, {
-            signal,
-          }),
+          // instance.generateVegetation(chunk.min, chunk.lod, {
+          //   signal,
+          // }),
         ]);
         generation.finish({
           heightfield,
-          vegetation,
+          // vegetation,
         });
       } catch (err) {
         if (err.isAbortError) {
@@ -191,7 +191,7 @@ export default e => {
 
     // load
 
-    await litterMesh.loadUrls(litterUrls);
+    // await litterMesh.loadUrls(litterUrls);
 
     // frame handling
     
