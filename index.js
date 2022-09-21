@@ -21,6 +21,7 @@ const localMatrix2 = new THREE.Matrix4();
 
 // urls
 
+const procgenAssetsBaseUrl = `https://webaverse.github.io/procgen-assets/`;
 const urlSpecs = {
   trees: [
     `Tree_1_1.glb`,
@@ -37,7 +38,7 @@ const urlSpecs = {
     `Tree_6_1.glb`,
     `Tree_6_2.glb`,
   ].map(u => {
-    return `../procgen-assets/vegetation/garden-trees/${u}`;
+    return `${procgenAssetsBaseUrl}vegetation/garden-trees/${u}`;
   }),
   ores: [
     `BlueOre_deposit_low.glb`,
@@ -51,7 +52,7 @@ const urlSpecs = {
     `Rock_ore_Deposit_low.glb`,
     `TreeOre_low.glb`,
   ].map(u => {
-    return `../procgen-assets/litter/ores/${u}`;
+    return `${procgenAssetsBaseUrl}/litter/ores/${u}`;
   }),
 };
 const litterUrls = urlSpecs.trees.slice(0, 1)
@@ -75,7 +76,6 @@ export default e => {
     const instance = procGenManager.getInstance('lol');
 
     // lod tracker
-
     const lodTracker = await instance.createLodChunkTracker({
       lods: 7,
       lod1Range: 2,
@@ -89,15 +89,15 @@ export default e => {
     //   barrierMesh.updateChunk(currentCoord);
     // });
 
-    // meshes
-
+    // managers
     const gpuTaskManager = new GPUTaskManager();
     const generationTaskManager = new GenerationTaskManager();
 
+    // meshes
     const terrainMesh = new TerrainMesh({
       instance,
       gpuTaskManager,
-      physics
+      physics,
     });
     terrainMesh.frustumCulled = false;
     terrainMesh.castShadow = true;
@@ -129,7 +129,6 @@ export default e => {
     // litterMesh.updateMatrixWorld();
 
     // genration events handling
-
     lodTracker.onChunkAdd(async chunk => {
       const key = procGenManager.getNodeHash(chunk);
       
@@ -194,12 +193,12 @@ export default e => {
     // await litterMesh.loadUrls(litterUrls);
 
     // frame handling
-    
     frameCb = () => {
       const _updateLodTracker = () => {
         const localPlayer = useLocalPlayer();
 
-        const appMatrixWorldInverse = localMatrix2.copy(app.matrixWorld).invert();
+        const appMatrixWorldInverse = localMatrix2.copy(app.matrixWorld)
+          .invert();
         localMatrix
           .copy(localPlayer.matrixWorld)
           .premultiply(appMatrixWorldInverse)
