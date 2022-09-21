@@ -76,7 +76,6 @@ export default e => {
     const instance = procGenManager.getInstance('lol');
 
     // lod tracker
-
     const lodTracker = await instance.createLodChunkTracker({
       lods: 7,
       lod1Range: 2,
@@ -90,11 +89,11 @@ export default e => {
       barrierMesh.updateChunk(currentCoord);
     });
 
-    // meshes
-
+    // managers
     const gpuTaskManager = new GPUTaskManager();
     const generationTaskManager = new GenerationTaskManager();
 
+    // meshes
     const terrainMesh = new TerrainMesh({
       instance,
       gpuTaskManager,
@@ -129,7 +128,6 @@ export default e => {
     litterMesh.updateMatrixWorld();
 
     // genration events handling
-
     lodTracker.onChunkAdd(async chunk => {
       const key = procGenManager.getNodeHash(chunk);
       
@@ -165,7 +163,7 @@ export default e => {
           instance.generateChunk(chunk.min, chunk.lod, chunk.lodArray, {
             signal,
           }),
-          instance.generateVegetation(chunk.min, chunk.lod, {
+          instance.generateVegetation(chunk.min, chunk.lod, litterUrls.length, {
             signal,
           }),
         ]);
@@ -190,16 +188,15 @@ export default e => {
     });
 
     // load
-
     await litterMesh.loadUrls(litterUrls);
 
     // frame handling
-    
     frameCb = () => {
       const _updateLodTracker = () => {
         const localPlayer = useLocalPlayer();
 
-        const appMatrixWorldInverse = localMatrix2.copy(app.matrixWorld).invert();
+        const appMatrixWorldInverse = localMatrix2.copy(app.matrixWorld)
+          .invert();
         localMatrix
           .copy(localPlayer.matrixWorld)
           .premultiply(appMatrixWorldInverse)

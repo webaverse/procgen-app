@@ -89,20 +89,6 @@ class MeshPackage {
         }
       }));
       return lodMeshes;
-
-      /* const targetRatio = 0.2;
-      const targetError = 0.1;
-      const treeMesh2 = await physics.meshoptSimplify(treeMesh, targetRatio, targetError);
-      
-      treeMesh2.position.y = 0.5;
-      treeMesh2.position.x = (-litterUrls.length / 2 + index) * meshSize;
-      treeMesh2.position.z += meshSize;
-      treeMesh2.scale.multiplyScalar(2);
-
-      app.add(treeMesh2);
-      treeMesh2.updateMatrixWorld();
-      
-      return treeMesh2; */
     };
     
 
@@ -115,19 +101,7 @@ class MeshPackage {
     const {
       meshes: atlasedMeshes,
     } = textureAtlasResult;
-    /* const {
-      atlasTextures,
-      geometries: lod0Geometries,
-    } = createTextureAtlas(lodMeshes.map(lods => lods[0]), {
-      textures: ['map', 'normalMap'],
-      attributes: ['position', 'normal', 'uv'],
-    }); */
     const lodMeshes = await Promise.all(atlasedMeshes.map(_generateLodMeshes));
-    
-    /* console.log('got package', {
-      lodMeshes,
-      textureAtlasResult,
-    }); */
     
     const pkg = new MeshPackage(lodMeshes);
     return pkg;
@@ -139,7 +113,6 @@ class MeshPackage {
 class LitterPolygonMesh extends InstancedBatchedMesh {
   constructor({
     instance,
-    lodPackage,
     // procGenInstance,
     // lodMeshes = [],
     // shapeAddresses = [],
@@ -147,13 +120,13 @@ class LitterPolygonMesh extends InstancedBatchedMesh {
     // physics = null,
   } = {}) {
     // instancing
-    const {
+    /* const {
       atlasTextures,
       geometries: lod0Geometries,
     } = createTextureAtlas(lodMeshes.map(lods => lods[0]), {
       textures: ['map', 'normalMap'],
       attributes: ['position', 'normal', 'uv'],
-    });
+    }); */
     
     // allocator
     const allocator = new InstancedGeometryAllocator(lod0Geometries, [
@@ -632,52 +605,57 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
         const sTexture = drawCall.getTexture('s');
         const sOffset = drawCall.getTextureOffset('s');
 
-        const {ps, /*qs, */instances} = vegetationData;
-        for (let index = 0; index < instances.length; index++) {
-          const indexOffset = index * 4;
-          
-          // geometry
-          const px = ps[index * 3];
-          const py = ps[index * 3 + 1];
-          const pz = ps[index * 3 + 2];
-          pTexture.image.data[pOffset + indexOffset] = px;
-          pTexture.image.data[pOffset + indexOffset + 1] = py;
-          pTexture.image.data[pOffset + indexOffset + 2] = pz;
+        const {instances} = vegetationData;
+        let index = 0;
+        for (let i = 0; i < instances.length; i++) {
+          const instance = instances[i];
+          const {ps, qs} = instance;
 
-          /* const qx = qs[index * 4];
-          const qy = qs[index * 4 + 1];
-          const qz = qs[index * 4 + 2];
-          const qw = qs[index * 4 + 3];
-          qTexture.image.data[qOffset + indexOffset] = qx;
-          qTexture.image.data[qOffset + indexOffset + 1] = qy;
-          qTexture.image.data[qOffset + indexOffset + 2] = qz;
-          qTexture.image.data[qOffset + indexOffset + 3] = qw; */
+          for (let j = 0; j < ps.length; j += 3) {
+            const indexOffset = index * 4;
+            
+            // geometry
+            const px = ps[index * 3];
+            const py = ps[index * 3 + 1];
+            const pz = ps[index * 3 + 2];
+            pTexture.image.data[pOffset + indexOffset] = px;
+            pTexture.image.data[pOffset + indexOffset + 1] = py;
+            pTexture.image.data[pOffset + indexOffset + 2] = pz;
 
-          // XXX get scales from the mapped geometry
-          /* const sx = ss[index * 3];
-          const sy = ss[index * 3 + 1];
-          const sz = ss[index * 3 + 2]; */
-          const sx = 1;
-          const sy = 1;
-          const sz = 1;
-          sTexture.image.data[sOffset + indexOffset] = sx;
-          sTexture.image.data[sOffset + indexOffset + 1] = sy;
-          sTexture.image.data[sOffset + indexOffset + 2] = sz;
+            /* const qx = qs[index * 4];
+            const qy = qs[index * 4 + 1];
+            const qz = qs[index * 4 + 2];
+            const qw = qs[index * 4 + 3];
+            qTexture.image.data[qOffset + indexOffset] = qx;
+            qTexture.image.data[qOffset + indexOffset + 1] = qy;
+            qTexture.image.data[qOffset + indexOffset + 2] = qz;
+            qTexture.image.data[qOffset + indexOffset + 3] = qw; */
 
-          // physics
-          // const shapeAddress = this.#getShapeAddress(drawCall.geometryIndex);
-          // const physicsObject = this.#addPhysicsShape(shapeAddress, drawCall.geometryIndex, px, py, pz, qx, qy, qz, qw);
-          // this.physicsObjects.push(physicsObject);
-          // localPhysicsObjects.push(physicsObject);
-          // this.instanceObjects.set(physicsObject.physicsId, drawCall);
+            // XXX get scales from the mapped geometry
+            /* const sx = ss[index * 3];
+            const sy = ss[index * 3 + 1];
+            const sz = ss[index * 3 + 2]; */
+            const sx = 1;
+            const sy = 1;
+            const sz = 1;
+            sTexture.image.data[sOffset + indexOffset] = sx;
+            sTexture.image.data[sOffset + indexOffset + 1] = sy;
+            sTexture.image.data[sOffset + indexOffset + 2] = sz;
+
+            // physics
+            // const shapeAddress = this.#getShapeAddress(drawCall.geometryIndex);
+            // const physicsObject = this.#addPhysicsShape(shapeAddress, drawCall.geometryIndex, px, py, pz, qx, qy, qz, qw);
+            // this.physicsObjects.push(physicsObject);
+            // localPhysicsObjects.push(physicsObject);
+            // this.instanceObjects.set(physicsObject.physicsId, drawCall);
+        
+            index++;
+          }
         }
 
-        const ss = {
-          length: ps.length,
-        };
-        drawCall.updateTexture('p', pOffset, ps.length / 3 * 4);
-        // drawCall.updateTexture('q', qOffset, qs.length / 4 * 4);
-        drawCall.updateTexture('s', sOffset, ss.length / 3 * 4);
+        drawCall.updateTexture('p', pOffset, index * 4);
+        // drawCall.updateTexture('q', qOffset, index * 4);
+        drawCall.updateTexture('s', sOffset, index * 4);
       };
 
       const {chunkSize} = this.instance;
@@ -693,9 +671,20 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
           (chunk.min.y + chunk.lod) * chunkSize
         )
       );
-
+      const totalInstances = (() => {
+        let sum = 0;
+        const {instances} = vegetationData;
+        for (let i = 0; i < instances.length; i++) {
+          const instance = instances[i];
+          const {ps} = instance;
+          sum += ps.length;
+        }
+        sum /= 3;
+        return sum;
+      })();
+      // console.log('total instances', totalInstances);
       const drawChunk = this.allocator.allocChunk(
-        vegetationData.instances.length,
+        totalInstances,
         boundingBox
       );
       _renderVegetationGeometry(drawChunk, vegetationData);
