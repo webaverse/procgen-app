@@ -13,7 +13,7 @@ import {
   WORLD_BASE_HEIGHT,
   MIN_WORLD_HEIGHT,
   MAX_WORLD_HEIGHT,
-} from './constants.js';
+} from '../constants.js';
 
 //
 
@@ -49,7 +49,7 @@ const meshLodSpecs = {
   },
 };
 const meshLodSpecKeys = Object.keys(meshLodSpecs).map(Number);
-class MeshPackage {
+class PolygonPackage {
   constructor(lodMeshes, textureNames) {
     this.lodMeshes = lodMeshes;
     this.textureNames = textureNames;
@@ -105,7 +105,7 @@ class MeshPackage {
     } = textureAtlasResult;
     const lodMeshes = await Promise.all(atlasMeshes.map(_generateLodMeshes));
     
-    const pkg = new MeshPackage(lodMeshes, textureNames);
+    const pkg = new PolygonPackage(lodMeshes, textureNames);
     return pkg;
   }
 }
@@ -115,7 +115,7 @@ class MeshPackage {
 const maxNumGeometries = 16;
 const maxInstancesPerGeometryPerDrawCall = 256;
 const maxDrawCallsPerGeometry = 256;
-class LitterPolygonMesh extends InstancedBatchedMesh {
+class PolygonMesh extends InstancedBatchedMesh {
   constructor({
     instance,
     // procGenInstance,
@@ -901,7 +901,7 @@ export class LitterMetaMesh extends THREE.Object3D {
   }) {
     super();
 
-    this.polygonMesh = new LitterPolygonMesh({
+    this.polygonMesh = new PolygonMesh({
       instance,
     });
     this.add(this.polygonMesh);
@@ -926,19 +926,19 @@ export class LitterMetaMesh extends THREE.Object3D {
   }
   async loadUrls(urls) {
     const [
-      meshPackage,
+      polygonPackage,
       spritesheetPackage,
     ] = await Promise.all([
-      MeshPackage.loadUrls(urls, this.physics),
+      PolygonPackage.loadUrls(urls, this.physics),
       SpritesheetPackage.loadUrls(urls),
     ]);
-    this.polygonMesh.setPackage(meshPackage);
+    this.polygonMesh.setPackage(polygonPackage);
     this.spritesheetMesh.setPackage(spritesheetPackage);
 
     /* // XXX debugging
     {
       const allLodMeshes = [];
-      const {lodMeshes} = meshPackage;
+      const {lodMeshes} = polygonPackage;
       for (const lodMeshArray of lodMeshes) {
         for (const lodMesh of lodMeshArray) {
           // this.add(lodMesh);

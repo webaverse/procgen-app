@@ -13,7 +13,7 @@ import {
   WORLD_BASE_HEIGHT,
   MIN_WORLD_HEIGHT,
   MAX_WORLD_HEIGHT,
-} from './constants.js';
+} from '../constants.js';
 
 //
 
