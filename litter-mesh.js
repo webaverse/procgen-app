@@ -584,6 +584,10 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
           value: numFramesPerRow,
           needsUpdate: true,
         },
+        spritesheetsPerRow: {
+          value: spritesheetsPerRow,
+          needsUpdate: true,
+        },
 
         pTexture: {
           value: attributeTextures.p,
@@ -611,6 +615,7 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
         uniform sampler2D itemIndexTexture;
         uniform float cameraY;
         varying vec2 vUv;
+        varying float vItemIndex;
 
         vec3 rotate_vertex_position(vec3 position, vec4 q) { 
           return position + 2.0 * cross(q.xyz, cross(q.xyz, position) + q.w * position);
@@ -662,6 +667,7 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
           gl_Position = projectionMatrix * mvPosition;
 
           vUv = uv;
+          vItemIndex = itemIndex;
         }
       `,
       fragmentShader: `\
@@ -674,22 +680,29 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
         uniform float uY;
         uniform float numAngles;
         uniform float numFramesPerRow;
-
+        uniform float spritesheetsPerRow;
         varying vec2 vUv;
+        varying float vItemIndex;
 
         void main() {
+          float itemX = mod(vItemIndex, spritesheetsPerRow);
+          float itemY = floor(vItemIndex / spritesheetsPerRow);
+          vec2 uv =
+            vec2(0., 1. - 1./spritesheetsPerRow) + // last spritesheet
+            vec2(itemX, -itemY) / spritesheetsPerRow + // select spritesheet
+            (vUv / spritesheetsPerRow);
+
           float angleIndex = floor(uY * numAngles);
           float i = angleIndex;
           float x = mod(i, numFramesPerRow);
           float y = (i - x) / numFramesPerRow;
-
           /*
-          vec2 uv = vec2(0., 1. - 1./numFramesPerRow) + // last row
+          vec2 uv =
+            vec2(0., 1. - 1./numFramesPerRow) + // last row
             vec2(x, -y)/numFramesPerRow + // select frame
             vec2(1.-vUv.x, 1.-vUv.y)/numFramesPerRow; // offset within frame
           */
 
-          vec2 uv = vUv;
 
           gl_FragColor = texture(
             uTex,
@@ -697,11 +710,11 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
           );
 
           const float alphaTest = 0.5;
-          if (gl_FragColor.a < alphaTest) {
+          /* if (gl_FragColor.a < alphaTest) {
             discard;
-          }
+          } */
           gl_FragColor.a = 1.;
-          // gl_FragColor.r += 0.5;
+          gl_FragColor.r += 0.1;
         }
       `,
       transparent: true,
@@ -731,6 +744,8 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
         // const qOffset = drawCall.getTextureOffset('q');
         const sTexture = drawCall.getTexture('s');
         const sOffset = drawCall.getTextureOffset('s');
+        const itemIndexTexture = drawCall.getTexture('itemIndex');
+        const itemIndexOffset = drawCall.getTextureOffset('itemIndex');
 
         const {instances} = vegetationData;
         let index = 0;
@@ -770,6 +785,8 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
             // sTexture.image.data[sOffset + indexOffset + 1] = scale;
             // sTexture.image.data[sOffset + indexOffset + 2] = scale;
 
+            itemIndexTexture.image.data[itemIndexOffset + indexOffset] = instanceId;
+
             // physics
             // const shapeAddress = this.#getShapeAddress(drawCall.geometryIndex);
             // const physicsObject = this.#addPhysicsShape(shapeAddress, drawCall.geometryIndex, px, py, pz, qx, qy, qz, qw);
@@ -784,6 +801,7 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
         drawCall.updateTexture('p', pOffset, index * 4);
         // drawCall.updateTexture('q', qOffset, index * 4);
         drawCall.updateTexture('s', sOffset, index * 4);
+        drawCall.updateTexture('itemIndex', itemIndexOffset, index * 4);
       };
 
       const {chunkSize} = this.instance;
