@@ -55,9 +55,16 @@ const urlSpecs = {
   ].map(u => {
     return `${procgenAssetsBaseUrl}/litter/ores/${u}`;
   }),
+  grasses: [
+    `FieldLongerGrass_v3_Fuji.glb`,
+    `DesertGrass_v2_fuji.glb`,
+  ].map(u => {
+    return `${procgenAssetsBaseUrl}/grass/${u}`;
+  }),
 };
 const litterUrls = urlSpecs.trees.slice(0, 1)
   .concat(urlSpecs.ores.slice(0, 1));
+const grassUrls = urlSpecs.grasses;
 
 // main
 
