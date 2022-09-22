@@ -401,9 +401,9 @@ vec4 q = texture2D(qTexture, pUv).xyzw;
 //
 
 class SpritesheetPackage {
-  constructor(canvas, sizes) {
+  constructor(canvas, offsets) {
     this.canvas = canvas;
-    this.sizes = sizes;
+    this.offsets = offsets;
   }
   static async loadUrls(urls) {
     const canvas = document.createElement('canvas');
@@ -411,7 +411,7 @@ class SpritesheetPackage {
     canvas.height = canvasSize;
     const ctx = canvas.getContext('2d');
 
-    const sizes = Array(urls.length);
+    const offsets = new Float32Array(urls.length * 4);
     await Promise.all(urls.map(async (url, index) => {
       const numFrames = 8;
 
@@ -440,7 +440,7 @@ class SpritesheetPackage {
         // numFramesPerRow,
         worldWidth,
         worldHeight,
-        // worldOffset,
+        worldOffset,
       } = spritesheet;
 
       /* {
@@ -481,8 +481,11 @@ class SpritesheetPackage {
       ctx.drawImage(result, 0, 0);
       document.body.appendChild(canvas); */
 
+      offsets[index * 4] = worldOffset[0];
+      offsets[index * 4 + 1] = worldOffset[1];
+      offsets[index * 4 + 2] = worldOffset[2];
       const worldSize = Math.max(worldWidth, worldHeight);
-      sizes[index] = worldSize;
+      offsets[index * 4 + 3] = worldSize;
 
       /* const texture = new THREE.Texture(result);
       texture.needsUpdate = true;
@@ -503,7 +506,7 @@ class SpritesheetPackage {
       spritesheetMesh.updateMatrixWorld(); */
     }));
 
-    const pkg = new SpritesheetPackage(canvas, sizes);
+    const pkg = new SpritesheetPackage(canvas, offsets);
     return pkg;
   }
 }
@@ -536,9 +539,9 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
         itemSize: 4,
       }, */
       {
-        name: 's',
+        name: 'offset',
         Type: Float32Array,
-        itemSize: 1,
+        itemSize: 4,
       },
       {
         name: 'itemIndex',
@@ -595,8 +598,8 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
           value: attributeTextures.q,
           needsUpdate: true,
         }, */
-        sTexture: {
-          value: attributeTextures.s,
+        offsetTexture: {
+          value: attributeTextures.offset,
           needsUpdate: true,
         },
         itemIndexTexture: {
@@ -611,7 +614,7 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
         #define PI 3.1415926535897932384626433832795
 
         uniform sampler2D pTexture;
-        uniform sampler2D sTexture;
+        uniform sampler2D offsetTexture;
         uniform sampler2D itemIndexTexture;
         uniform vec3 cameraPos;
         uniform float cameraY;
@@ -650,7 +653,9 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
           float y = floor(float(instanceIndex) / width);
           vec2 pUv = (vec2(x, y) + 0.5) / vec2(width, height);
           vec3 p = texture2D(pTexture, pUv).xyz;
-          float s = texture2D(sTexture, pUv).x;
+          vec4 offsetFull = texture2D(offsetTexture, pUv).xyzw;
+          vec3 offset = offsetFull.xyz;
+          float s = offsetFull.w;
           float itemIndex = texture2D(itemIndexTexture, pUv).x;
 
           // transform position
@@ -733,7 +738,7 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
 
     this.instance = instance;
 
-    this.sizes = [];
+    this.offsets = new Float32Array(0);
     this.allocatedChunks = new Map();
   }
   addChunk(chunk, chunkResult) {
@@ -745,8 +750,8 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
         const pOffset = drawCall.getTextureOffset('p');
         // const qTexture = drawCall.getTexture('q');
         // const qOffset = drawCall.getTextureOffset('q');
-        const sTexture = drawCall.getTexture('s');
-        const sOffset = drawCall.getTextureOffset('s');
+        const offsetTexture = drawCall.getTexture('offset');
+        const offsetOffset = drawCall.getTextureOffset('offset');
         const itemIndexTexture = drawCall.getTexture('itemIndex');
         const itemIndexOffset = drawCall.getTextureOffset('itemIndex');
 
@@ -783,10 +788,10 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
             /* const sx = 1;
             const sy = 1;
             const sz = 1; */
-            const scale = this.sizes[instanceId];
-            sTexture.image.data[sOffset + indexOffset] = scale;
-            // sTexture.image.data[sOffset + indexOffset + 1] = scale;
-            // sTexture.image.data[sOffset + indexOffset + 2] = scale;
+            offsetTexture.image.data[offsetOffset + indexOffset] = this.offsets[instanceId * 4];
+            offsetTexture.image.data[offsetOffset + indexOffset + 1] = this.offsets[instanceId * 4 + 1];
+            offsetTexture.image.data[offsetOffset + indexOffset + 2] = this.offsets[instanceId * 4 + 2];
+            offsetTexture.image.data[offsetOffset + indexOffset + 3] = this.offsets[instanceId * 4 + 3];
 
             itemIndexTexture.image.data[itemIndexOffset + indexOffset] = instanceId;
 
@@ -803,7 +808,7 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
 
         drawCall.updateTexture('p', pOffset, index * 4);
         // drawCall.updateTexture('q', qOffset, index * 4);
-        drawCall.updateTexture('s', sOffset, index * 4);
+        drawCall.updateTexture('offset', offsetOffset, index * 4);
         drawCall.updateTexture('itemIndex', itemIndexOffset, index * 4);
       };
 
@@ -866,7 +871,7 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
     `;
     document.body.appendChild(canvas);
 
-    this.sizes = pkg.sizes;
+    this.offsets = pkg.offsets;
 
     this.visible = true;
   }
