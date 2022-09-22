@@ -17,22 +17,16 @@ import {
 
 //
 
-const spriteLodCutoff = 1;
+const spriteLodCutoff = 16;
 
 //
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
-const localQuaternion = new THREE.Quaternion();
+// const localQuaternion = new THREE.Quaternion();
 const localEuler = new THREE.Euler();
-const localMatrix = new THREE.Matrix4();
+// const localMatrix = new THREE.Matrix4();
 const localBox = new THREE.Box3();
-
-//
-
-function mod(a, n) {
-  return ((a % n) + n) % n;
-}
 
 //
 
@@ -917,9 +911,11 @@ export class LitterMetaMesh extends THREE.Object3D {
     this.spritesheetMesh.update();
   }
   addChunk(chunk, chunkResult) {
+    this.polygonMesh.addChunk(chunk, chunkResult);
     this.spritesheetMesh.addChunk(chunk, chunkResult);
   }
   removeChunk(chunk) {
+    this.polygonMesh.removeChunk(chunk);
     this.spritesheetMesh.removeChunk(chunk);
   }
   async loadUrls(urls) {
