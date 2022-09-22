@@ -5,10 +5,11 @@ const {useApp, useFrame, useCamera, useLocalPlayer, usePhysics, useProcGenManage
 const {GPUTaskManager} = useGPUTask();
 const {GenerationTaskManager} = useGenerationTask();
 
-import {TerrainMesh} from './terrain-mesh.js';
-import {WaterMesh} from './water-mesh.js';
-import {BarrierMesh} from './barrier-mesh.js';
-import {LitterMetaMesh} from './litter-mesh.js';
+import {TerrainMesh} from './layers/terrain-mesh.js';
+import {WaterMesh} from './layers/water-mesh.js';
+import {BarrierMesh} from './layers/barrier-mesh.js';
+import {LitterMetaMesh} from './layers/litter-mesh.js';
+import {GrassMesh} from './layers/grass-mesh.js';
 
 // locals
 
