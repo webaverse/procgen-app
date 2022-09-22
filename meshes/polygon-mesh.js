@@ -53,17 +53,32 @@ export class PolygonPackage {
       _recurse(model);
       return mesh;
     };
+    const _generateLodMesh = (() => {
+      const promiseCache = new Map();
+      return (mesh, meshLodSpec) => {
+        const {targetRatio, targetError} = meshLodSpec;
+        const key = `${targetRatio}:${targetError}`;
+        let promise = promiseCache.get(key);
+        if (!promise) {
+          promise = (async () => {
+            if (targetRatio === 1) {
+              return mesh;
+            } else {
+              const lodMesh = await physics.meshoptSimplify(mesh, targetRatio, targetError);
+              return lodMesh;
+            }
+          })();
+          promiseCache.set(key, promise);
+        }
+        return promise;
+      };
+    })();
     const _generateLodMeshes = async mesh => {
       const meshLodSpecKeys = Object.keys(meshLodSpecs).map(Number);
       const lodMeshes = await Promise.all(meshLodSpecKeys.map(async lod => {
         const meshLodSpec = meshLodSpecs[lod];
-        const {targetRatio, targetError} = meshLodSpec;
-        if (targetRatio === 1) {
-          return mesh;
-        } else {
-          const lodMesh = await physics.meshoptSimplify(mesh, targetRatio, targetError);
-          return lodMesh;
-        }
+        const lodMesh = await _generateLodMesh(mesh, meshLodSpec);
+        return lodMesh;
       }));
       return lodMeshes;
     };
