@@ -15,10 +15,6 @@ import {
 
 //
 
-const spriteLodCutoff = 16;
-
-//
-
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 // const localQuaternion = new THREE.Quaternion();
@@ -28,31 +24,12 @@ const localBox = new THREE.Box3();
 
 //
 
-const meshLodSpecs = {
-  1: {
-    targetRatio: 1,
-    targetError: 0,
-  },
-  2: {
-    targetRatio: 0.5,
-    targetError: 0.01,
-  },
-  4: {
-    targetRatio: 0.3,
-    targetError: 0.05,
-  },
-  8: {
-    targetRatio: 0.15,
-    targetError: 0.1,
-  },
-};
-const meshLodSpecKeys = Object.keys(meshLodSpecs).map(Number);
 export class PolygonPackage {
   constructor(lodMeshes, textureNames) {
     this.lodMeshes = lodMeshes;
     this.textureNames = textureNames;
   }
-  static async loadUrls(urls, physics) {
+  static async loadUrls(urls, meshLodSpecs, physics) {
     const _loadModel = u => new Promise((accept, reject) => {
       gltfLoader.load(u, o => {
         accept(o.scene);
@@ -77,6 +54,7 @@ export class PolygonPackage {
       return mesh;
     };
     const _generateLodMeshes = async mesh => {
+      const meshLodSpecKeys = Object.keys(meshLodSpecs).map(Number);
       const lodMeshes = await Promise.all(meshLodSpecKeys.map(async lod => {
         const meshLodSpec = meshLodSpecs[lod];
         const {targetRatio, targetError} = meshLodSpec;
@@ -116,6 +94,7 @@ const maxDrawCallsPerGeometry = 256;
 export class PolygonMesh extends InstancedBatchedMesh {
   constructor({
     instance,
+    lodCutoff,
     // procGenInstance,
     // lodMeshes = [],
     // shapeAddresses = [],
@@ -228,6 +207,7 @@ vec4 q = texture2D(qTexture, pUv).xyzw;
     // this.instanceObjects = new Map();
 
     this.instance = instance;
+    this.lodCutoff = lodCutoff;
     
     this.allocatedChunks = new Map();
   }
@@ -235,7 +215,7 @@ vec4 q = texture2D(qTexture, pUv).xyzw;
   addChunk(chunk, chunkResult) {
     const vegetationData = chunkResult;
 
-    if (chunk.lod < spriteLodCutoff && vegetationData.instances.length > 0) {
+    if (chunk.lod < this.lodCutoff && vegetationData.instances.length > 0) {
       const _renderLitterPolygonGeometry = (drawCall, ps, qs) => {
         const pTexture = drawCall.getTexture('p');
         const pOffset = drawCall.getTextureOffset('p');

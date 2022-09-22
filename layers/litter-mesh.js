@@ -4,6 +4,28 @@ import {SpritesheetPackage, SpritesheetMesh} from '../meshes/spritesheet-mesh.js
 
 //
 
+const spriteLodCutoff = 16;
+const meshLodSpecs = {
+  1: {
+    targetRatio: 1,
+    targetError: 0,
+  },
+  2: {
+    targetRatio: 0.5,
+    targetError: 0.01,
+  },
+  4: {
+    targetRatio: 0.3,
+    targetError: 0.05,
+  },
+  8: {
+    targetRatio: 0.15,
+    targetError: 0.1,
+  },
+};
+
+//
+
 export class LitterMetaMesh extends THREE.Object3D {
   constructor({
     instance,
@@ -14,11 +36,13 @@ export class LitterMetaMesh extends THREE.Object3D {
 
     this.polygonMesh = new PolygonMesh({
       instance,
+      lodCutoff: spriteLodCutoff,
     });
     this.add(this.polygonMesh);
 
     this.spritesheetMesh = new SpritesheetMesh({
       instance,
+      lodCutoff: spriteLodCutoff,
     });
     this.add(this.spritesheetMesh);
 
@@ -40,7 +64,7 @@ export class LitterMetaMesh extends THREE.Object3D {
       polygonPackage,
       spritesheetPackage,
     ] = await Promise.all([
-      PolygonPackage.loadUrls(urls, this.physics),
+      PolygonPackage.loadUrls(urls, meshLodSpecs, this.physics),
       SpritesheetPackage.loadUrls(urls),
     ]);
     this.polygonMesh.setPackage(polygonPackage);

@@ -15,10 +15,6 @@ import {
 
 //
 
-const spriteLodCutoff = 16;
-
-//
-
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 // const localQuaternion = new THREE.Quaternion();
@@ -152,6 +148,7 @@ const maxInstancesPerDrawCall = 1024;
 export class SpritesheetMesh extends ChunkedBatchedMesh {
   constructor({
     instance,
+    lodCutoff,
   }) {
     const baseGeometry = new DoubleSidedPlaneGeometry(1, 1);
     const allocator = new ChunkedGeometryAllocator(baseGeometry, [
@@ -365,6 +362,7 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
     this.visible = false;
 
     this.instance = instance;
+    this.lodCutoff = lodCutoff;
 
     this.offsets = new Float32Array(0);
     this.allocatedChunks = new Map();
@@ -372,7 +370,7 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
   addChunk(chunk, chunkResult) {
     const vegetationData = chunkResult;
 
-    if (chunk.lod >= spriteLodCutoff && vegetationData.instances.length > 0) {
+    if (chunk.lod >= this.lodCutoff && vegetationData.instances.length > 0) {
       const _renderLitterSpriteGeometry = (drawCall, vegetationData) => {
         const pTexture = drawCall.getTexture('p');
         const pOffset = drawCall.getTextureOffset('p');
