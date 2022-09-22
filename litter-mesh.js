@@ -862,14 +862,14 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
     this.material.uniforms.uTex.value = texture;
     this.material.uniforms.uTex.needsUpdate = true;
 
-    canvas.style.cssText = `\
+    /* canvas.style.cssText = `\
       position: fixed;
       top: 0;
       left: 0;
       width: 512px;
       height: 512px;
     `;
-    document.body.appendChild(canvas);
+    document.body.appendChild(canvas); */
 
     this.offsets = pkg.offsets;
 
