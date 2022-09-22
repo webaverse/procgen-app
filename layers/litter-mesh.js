@@ -491,7 +491,7 @@ export class SpritesheetPackage {
       texture.needsUpdate = true;
       const numAngles = numFrames;
       const numSlots = numFramesPerRow;
-      const spritesheetMesh = new LitterSpritesheetMesh({
+      const spritesheetMesh = new SpritesheetMesh({
         texture,
         worldSize,
         worldOffset,
@@ -522,7 +522,7 @@ const numFramesPerRow = Math.ceil(Math.sqrt(numFramesPow2));
 const maxDrawCalls = 256;
 const maxInstancesPerDrawCall = 1024;
 const maxAnisotropy = 16;
-class LitterSpritesheetMesh extends ChunkedBatchedMesh {
+class SpritesheetMesh extends ChunkedBatchedMesh {
   constructor({
     instance,
   }) {
@@ -906,7 +906,7 @@ export class LitterMetaMesh extends THREE.Object3D {
     });
     this.add(this.polygonMesh);
 
-    this.spritesheetMesh = new LitterSpritesheetMesh({
+    this.spritesheetMesh = new SpritesheetMesh({
       instance,
     });
     this.add(this.spritesheetMesh);
