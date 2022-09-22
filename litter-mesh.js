@@ -572,6 +572,10 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
           value: 0,
           needsUpdate: false,
         }, */
+        cameraPos: {
+          value: new THREE.Vector3(),
+          needsUpdate: false,
+        },
         cameraY: {
           value: 0,
           needsUpdate: false,
@@ -610,12 +614,16 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
         precision highp float;
         precision highp int;
 
+        #define PI 3.1415926535897932384626433832795
+
         uniform sampler2D pTexture;
         uniform sampler2D sTexture;
         uniform sampler2D itemIndexTexture;
+        uniform vec3 cameraPos;
         uniform float cameraY;
         varying vec2 vUv;
         varying float vItemIndex;
+        varying float vY;
 
         vec3 rotate_vertex_position(vec3 position, vec4 q) { 
           return position + 2.0 * cross(q.xyz, cross(q.xyz, position) + q.w * position);
@@ -668,6 +676,9 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
 
           vUv = uv;
           vItemIndex = itemIndex;
+
+          const float PI_2 = PI * 2.;
+          vY = mod(atan(cameraPos.z - p.z, cameraPos.x - p.x) - (PI * 0.5), PI_2) / PI_2;
         }
       `,
       fragmentShader: `\
@@ -683,6 +694,7 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
         uniform float spritesheetsPerRow;
         varying vec2 vUv;
         varying float vItemIndex;
+        varying float vY;
 
         void main() {
           float itemX = mod(vItemIndex, spritesheetsPerRow);
@@ -703,7 +715,6 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
             vec2(1.-vUv.x, 1.-vUv.y)/numFramesPerRow; // offset within frame
           */
 
-
           gl_FragColor = texture(
             uTex,
             uv
@@ -714,7 +725,8 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
             discard;
           } */
           gl_FragColor.a = 1.;
-          gl_FragColor.r += 0.1;
+          // gl_FragColor.r += 0.1;
+          gl_FragColor.b += vY;
         }
       `,
       transparent: true,
@@ -872,6 +884,9 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
     localEuler.setFromQuaternion(camera.quaternion, 'YXZ');
     localEuler.x = 0;
     localEuler.z = 0;
+
+    this.material.uniforms.cameraPos.value.copy(camera.position);
+    this.material.uniforms.cameraPos.needsUpdate = true;
 
     // this.material.uniforms.cameraY.value = mod(-localEuler.y + Math.PI/2 + (Math.PI * 2) / numAngles / 2, Math.PI * 2) / (Math.PI * 2);
     this.material.uniforms.cameraY.value = localEuler.y;
