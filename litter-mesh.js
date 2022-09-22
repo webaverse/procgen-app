@@ -662,6 +662,7 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
           vec3 transformed = position;
           {
             transformed *= s;
+            transformed += offset;
 
             vec3 e = vec3(0., cameraY, 0.);
             vec4 q = euler_to_quaternion(e);
