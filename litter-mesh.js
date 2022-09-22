@@ -449,7 +449,7 @@ class SpritesheetPackage {
         // worldOffset,
       } = spritesheet;
 
-      {
+      /* {
         const canvas2 = document.createElement('canvas');
         canvas2.width = result.width;
         canvas2.height = result.height;
@@ -463,11 +463,12 @@ class SpritesheetPackage {
         const ctx2 = canvas2.getContext('2d');
         ctx2.drawImage(result, 0, 0);
         document.body.appendChild(canvas2);
-      }
+      } */
 
       const x = index % spritesheetsPerRow;
       const y = Math.floor(index / spritesheetsPerRow);
       ctx.drawImage(result, x * spritesheetSize, y * spritesheetSize);
+      // console.log('draw image', x * spritesheetSize, y * spritesheetSize, result.width, result.height);
 
       // console.log('got spritesheet', spritesheet);
 
