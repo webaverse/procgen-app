@@ -57,8 +57,13 @@ export class PolygonPackage {
       const promiseCache = new Map();
       return (mesh, meshLodSpec) => {
         const {targetRatio, targetError} = meshLodSpec;
+        let promiseMap = promiseCache.get(mesh);
+        if (!promiseMap) {
+          promiseMap = new Map();
+          promiseCache.set(mesh, promiseMap);
+        }
         const key = `${targetRatio}:${targetError}`;
-        let promise = promiseCache.get(key);
+        let promise = promiseMap.get(key);
         if (!promise) {
           promise = (async () => {
             if (targetRatio === 1) {
@@ -68,7 +73,7 @@ export class PolygonPackage {
               return lodMesh;
             }
           })();
-          promiseCache.set(key, promise);
+          promiseMap.set(key, promise);
         }
         return promise;
       };
