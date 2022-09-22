@@ -688,7 +688,6 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
         #define PI 3.1415926535897932384626433832795
 
         uniform sampler2D uTex;
-        uniform float uY;
         uniform float numAngles;
         uniform float numFramesPerRow;
         uniform float spritesheetsPerRow;
@@ -701,19 +700,17 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
           float itemY = floor(vItemIndex / spritesheetsPerRow);
           vec2 uv =
             vec2(0., 1. - 1./spritesheetsPerRow) + // last spritesheet
-            vec2(itemX, -itemY) / spritesheetsPerRow + // select spritesheet
-            (vUv / spritesheetsPerRow);
+            vec2(itemX, -itemY) / spritesheetsPerRow; // select spritesheet
 
-          float angleIndex = floor(uY * numAngles);
+          float angleIndex = floor(vY * numAngles);
           float i = angleIndex;
           float x = mod(i, numFramesPerRow);
-          float y = (i - x) / numFramesPerRow;
-          /*
-          vec2 uv =
-            vec2(0., 1. - 1./numFramesPerRow) + // last row
-            vec2(x, -y)/numFramesPerRow + // select frame
-            vec2(1.-vUv.x, 1.-vUv.y)/numFramesPerRow; // offset within frame
-          */
+          float y = floor(i / numFramesPerRow);
+          float totalNumFramesPerRow = numFramesPerRow * spritesheetsPerRow;
+          uv +=
+            // vec2(0., -1./totalNumFramesPerRow) + // last row
+            vec2(x, y)/totalNumFramesPerRow + // select frame
+            vUv/totalNumFramesPerRow; // offset within frame
 
           gl_FragColor = texture(
             uTex,
@@ -721,12 +718,12 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
           );
 
           const float alphaTest = 0.5;
-          /* if (gl_FragColor.a < alphaTest) {
+          if (gl_FragColor.a < alphaTest) {
             discard;
-          } */
+          }
           gl_FragColor.a = 1.;
           // gl_FragColor.r += 0.1;
-          gl_FragColor.b += vY;
+          // gl_FragColor.b += vY * 0.1;
         }
       `,
       transparent: true,
