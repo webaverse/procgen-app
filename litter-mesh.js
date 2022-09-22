@@ -420,8 +420,23 @@ class SpritesheetPackage {
     const sizes = Array(urls.length);
     await Promise.all(urls.map(async (url, index) => {
       const numFrames = 8;
+
+      /* const spritesheet = await spriting.createAppUrlSpriteSheet(u, {
+        // size: 2048,
+        // numFrames: 8,
+      });
+      const {
+        result,
+        numFrames,
+        frameSize,
+        numFramesPerRow,
+        worldWidth,
+        worldHeight,
+      } = spritesheet; */
+
       const spritesheet = await createAppUrlSpriteSheet(url, {
         size: spritesheetSize,
+        // size: 2048,
         numFrames,
       });
       const {
@@ -433,6 +448,22 @@ class SpritesheetPackage {
         worldHeight,
         // worldOffset,
       } = spritesheet;
+
+      {
+        const canvas2 = document.createElement('canvas');
+        canvas2.width = result.width;
+        canvas2.height = result.height;
+        canvas2.style.cssText = `\
+          position: fixed;
+          top: 0;
+          left: ${index * 512}px;
+          width: 512px;
+          height: 512px;
+        `;
+        const ctx2 = canvas2.getContext('2d');
+        ctx2.drawImage(result, 0, 0);
+        document.body.appendChild(canvas2);
+      }
 
       const x = index % spritesheetsPerRow;
       const y = Math.floor(index / spritesheetsPerRow);
@@ -651,19 +682,25 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
           float x = mod(i, numFramesPerRow);
           float y = (i - x) / numFramesPerRow;
 
+          /*
+          vec2 uv = vec2(0., 1. - 1./numFramesPerRow) + // last row
+            vec2(x, -y)/numFramesPerRow + // select frame
+            vec2(1.-vUv.x, 1.-vUv.y)/numFramesPerRow; // offset within frame
+          */
+
+          vec2 uv = vUv;
+
           gl_FragColor = texture(
             uTex,
-            vec2(0., 1. - 1./numFramesPerRow) +
-              vec2(x, -y)/numFramesPerRow +
-              vec2(1.-vUv.x, 1.-vUv.y)/numFramesPerRow
+            uv
           );
 
-          /* const float alphaTest = 0.5;
+          const float alphaTest = 0.5;
           if (gl_FragColor.a < alphaTest) {
             discard;
-          } */
+          }
           gl_FragColor.a = 1.;
-          gl_FragColor.r += 0.5;
+          // gl_FragColor.r += 0.5;
         }
       `,
       transparent: true,
@@ -772,7 +809,6 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
         sum /= 3;
         return sum;
       })();
-      // console.log('total instances', totalInstances);
       const drawChunk = this.allocator.allocChunk(
         totalInstances,
         boundingBox
@@ -799,24 +835,24 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
     this.material.uniforms.uTex.value = texture;
     this.material.uniforms.uTex.needsUpdate = true;
 
+    canvas.style.cssText = `\
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 512px;
+      height: 512px;
+    `;
+    document.body.appendChild(canvas);
+
     this.sizes = pkg.sizes;
 
     this.visible = true;
   }
   update() {
-    /* localQuaternion.setFromRotationMatrix(
-      localMatrix.lookAt(
-        spritesheetMesh.getWorldPosition(localVector),
-        camera.position,
-        localVector2.set(0, 1, 0)
-      )
-    ); */
     const camera = useCamera();
     localEuler.setFromQuaternion(camera.quaternion, 'YXZ');
     localEuler.x = 0;
     localEuler.z = 0;
-    // localQuaternion.setFromEuler(localEuler);
-    // spritesheetMesh.updateMatrixWorld();
 
     // this.material.uniforms.cameraY.value = mod(-localEuler.y + Math.PI/2 + (Math.PI * 2) / numAngles / 2, Math.PI * 2) / (Math.PI * 2);
     this.material.uniforms.cameraY.value = localEuler.y;
