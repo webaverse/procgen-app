@@ -49,7 +49,7 @@ const meshLodSpecs = {
   },
 };
 const meshLodSpecKeys = Object.keys(meshLodSpecs).map(Number);
-class PolygonPackage {
+export class PolygonPackage {
   constructor(lodMeshes, textureNames) {
     this.lodMeshes = lodMeshes;
     this.textureNames = textureNames;
@@ -400,7 +400,7 @@ vec4 q = texture2D(qTexture, pUv).xyzw;
 
 //
 
-class SpritesheetPackage {
+export class SpritesheetPackage {
   constructor(canvas, offsets) {
     this.canvas = canvas;
     this.offsets = offsets;
