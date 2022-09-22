@@ -728,9 +728,6 @@ class LitterSpritesheetMesh extends ChunkedBatchedMesh {
             const sy = 1;
             const sz = 1; */
             const scale = this.sizes[instanceId];
-            if (scale === undefined) {
-              debugger;
-            }
             sTexture.image.data[sOffset + indexOffset] = scale;
             // sTexture.image.data[sOffset + indexOffset + 1] = scale;
             // sTexture.image.data[sOffset + indexOffset + 2] = scale;
