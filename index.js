@@ -135,6 +135,14 @@ export default e => {
     app.add(litterMesh);
     litterMesh.updateMatrixWorld();
 
+    /* const grassMesh = new GrassMesh({
+      instance,
+      gpuTaskManager,
+      physics,
+    });
+    app.add(grassMesh);
+    grassMesh.updateMatrixWorld(); */
+
     // genration events handling
     lodTracker.onChunkAdd(async chunk => {
       const key = procGenManager.getNodeHash(chunk);
@@ -142,7 +150,7 @@ export default e => {
       const generation = generationTaskManager.createGeneration(key);
       generation.addEventListener('geometryadd', e => {
         const {result} = e.data;
-        const {heightfield, vegetation} = result;
+        const {heightfield, vegetation, grass} = result;
         
         // heightfield
         terrainMesh.addChunk(chunk, heightfield);
@@ -151,6 +159,9 @@ export default e => {
       
         // vegetation
         litterMesh.addChunk(chunk, vegetation);
+        
+        // grass
+        // grassMesh.addChunk(chunk, grass);
       });
       generation.addEventListener('geometryremove', e => {
         // heightfield
@@ -160,24 +171,29 @@ export default e => {
 
         // vegetation
         litterMesh.removeChunk(chunk);
+
+        // grass
+        // grassMesh.removeChunk(chunk);
       });
 
       try {
         const signal = generation.getSignal();
+        const options = {
+          signal,
+        };
         const [
           heightfield,
           vegetation,
+          grass,
         ] = await Promise.all([
-          instance.generateChunk(chunk.min, chunk.lod, chunk.lodArray, {
-            signal,
-          }),
-          instance.generateVegetation(chunk.min, chunk.lod, litterUrls.length, {
-            signal,
-          }),
+          instance.generateChunk(chunk.min, chunk.lod, chunk.lodArray, options),
+          instance.generateVegetation(chunk.min, chunk.lod, litterUrls.length, options),
+          instance.generateGrass(chunk.min, chunk.lod, grassUrls.length, options),
         ]);
         generation.finish({
           heightfield,
           vegetation,
+          grass,
         });
       } catch (err) {
         if (err.isAbortError) {
