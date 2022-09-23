@@ -23,6 +23,9 @@ const meshLodSpecs = {
     targetError: 0.1,
   },
 };
+const maxNumGeometries = 16;
+const maxInstancesPerGeometryPerDrawCall = 256;
+const maxDrawCallsPerGeometry = 256;
 
 //
 
@@ -37,6 +40,9 @@ export class LitterMetaMesh extends THREE.Object3D {
     this.polygonMesh = new PolygonMesh({
       instance,
       lodCutoff: spriteLodCutoff,
+      maxNumGeometries,
+      maxInstancesPerGeometryPerDrawCall,
+      maxDrawCallsPerGeometry,
     });
     this.add(this.polygonMesh);
 
