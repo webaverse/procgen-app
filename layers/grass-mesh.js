@@ -3,28 +3,28 @@ import {PolygonPackage, PolygonMesh} from '../meshes/polygon-mesh.js';
 
 //
 
-const spriteLodCutoff = 32;
+const spriteLodCutoff = 8;
 const meshLodSpecs = {
   1: {
     targetRatio: 1,
     targetError: 0,
   },
   2: {
-    targetRatio: 0.5,
+    targetRatio: 0.3,
     targetError: 0.01,
   },
   4: {
-    targetRatio: 0.5,
+    targetRatio: 0.2,
     targetError: 0.01,
   },
-  8: {
+  /* 8: {
     targetRatio: 0.2,
-    targetError: 0.1,
+    targetError: 0.05,
   },
   16: {
-    targetRatio: 0.2,
+    targetRatio: 0.1,
     targetError: 0.1,
-  },
+  }, */
 };
 const maxNumGeometries = 2;
 const maxInstancesPerGeometryPerDrawCall = 8192;
