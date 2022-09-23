@@ -108,18 +108,13 @@ export class PolygonPackage {
 
 //
 
-const maxNumGeometries = 16;
-const maxInstancesPerGeometryPerDrawCall = 256;
-const maxDrawCallsPerGeometry = 256;
 export class PolygonMesh extends InstancedBatchedMesh {
   constructor({
     instance,
     lodCutoff,
-    // procGenInstance,
-    // lodMeshes = [],
-    // shapeAddresses = [],
-    // physicsGeometries = [],
-    // physics = null,
+    maxNumGeometries,
+    maxInstancesPerGeometryPerDrawCall,
+    maxDrawCallsPerGeometry,
   } = {}) {
     // allocator
     const allocator = new InstancedGeometryAllocator([
@@ -155,7 +150,7 @@ export class PolygonMesh extends InstancedBatchedMesh {
       // normalMap: atlasTextures.normalMap,
       side: THREE.DoubleSide,
       transparent: true,
-      alphaTest: 0.5,
+      alphaTest: 0.1,
       onBeforeCompile: (shader) => {
         shader.uniforms.pTexture = {
           value: attributeTextures.p,
@@ -233,9 +228,7 @@ vec4 q = texture2D(qTexture, pUv).xyzw;
   }
 
   addChunk(chunk, chunkResult) {
-    const vegetationData = chunkResult;
-
-    if (chunk.lod < this.lodCutoff && vegetationData.instances.length > 0) {
+    if (chunk.lod < this.lodCutoff && chunkResult.instances.length > 0) {
       const _renderLitterPolygonGeometry = (drawCall, ps, qs) => {
         const pTexture = drawCall.getTexture('p');
         const pOffset = drawCall.getTextureOffset('p');
@@ -305,7 +298,7 @@ vec4 q = texture2D(qTexture, pUv).xyzw;
         )
       );
       const lodIndex = Math.log2(chunk.lod);
-      const {instances} = vegetationData;
+      const {instances} = chunkResult;
       const drawChunks = Array(instances.length);
       for (let i = 0; i < instances.length; i++) {
         const {
