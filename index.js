@@ -101,7 +101,7 @@ export default e => {
     const gpuTaskManager = new GPUTaskManager();
     const generationTaskManager = new GenerationTaskManager();
 
-    /* // meshes
+    // meshes
     const terrainMesh = new TerrainMesh({
       instance,
       gpuTaskManager,
@@ -117,7 +117,7 @@ export default e => {
     });
     waterMesh.frustumCulled = false;
     app.add(waterMesh);
-    waterMesh.updateMatrixWorld(); */
+    waterMesh.updateMatrixWorld();
 
     const barrierMesh = new BarrierMesh({
       instance,
@@ -127,13 +127,13 @@ export default e => {
     app.add(barrierMesh);
     barrierMesh.updateMatrixWorld();
 
-    const litterMesh = new LitterMetaMesh({
+    /* const litterMesh = new LitterMetaMesh({
       instance,
       gpuTaskManager,
       physics,
     });
     app.add(litterMesh);
-    litterMesh.updateMatrixWorld();
+    litterMesh.updateMatrixWorld(); */
 
     /* const grassMesh = new GrassMesh({
       instance,
@@ -153,24 +153,24 @@ export default e => {
         const {heightfield, vegetation, grass} = result;
         
         // heightfield
-        // terrainMesh.addChunk(chunk, heightfield);
-        // waterMesh.addChunk(chunk, heightfield);
+        terrainMesh.addChunk(chunk, heightfield);
+        waterMesh.addChunk(chunk, heightfield);
         barrierMesh.addChunk(chunk, heightfield);
       
         // vegetation
-        litterMesh.addChunk(chunk, vegetation);
+        // litterMesh.addChunk(chunk, vegetation);
         
         // grass
         // grassMesh.addChunk(chunk, grass);
       });
       generation.addEventListener('geometryremove', e => {
         // heightfield
-        // terrainMesh.removeChunk(chunk);
-        // waterMesh.removeChunk(chunk);
+        terrainMesh.removeChunk(chunk);
+        waterMesh.removeChunk(chunk);
         barrierMesh.removeChunk(chunk);
 
         // vegetation
-        litterMesh.removeChunk(chunk);
+        // litterMesh.removeChunk(chunk);
 
         // grass
         // grassMesh.removeChunk(chunk);
@@ -183,17 +183,17 @@ export default e => {
         };
         const [
           heightfield,
-          vegetation,
-          grass,
+          // vegetation,
+          // grass,
         ] = await Promise.all([
           instance.generateChunk(chunk.min, chunk.lod, chunk.lodArray, options),
-          instance.generateVegetation(chunk.min, chunk.lod, litterUrls.length, options),
-          instance.generateGrass(chunk.min, chunk.lod, grassUrls.length, options),
+          // instance.generateVegetation(chunk.min, chunk.lod, litterUrls.length, options),
+          // instance.generateGrass(chunk.min, chunk.lod, grassUrls.length, options),
         ]);
         generation.finish({
           heightfield,
-          vegetation,
-          grass,
+          // vegetation,
+          // grass,
         });
       } catch (err) {
         if (err.isAbortError) {
@@ -212,7 +212,13 @@ export default e => {
     });
 
     // load
-    await litterMesh.loadUrls(litterUrls);
+    const _loadUrls = async () => {
+      await Promise.all([
+        // litterMesh.loadUrls(litterUrls),
+        // grassMesh.loadUrls(grassUrls),
+      ]);
+    };
+    await _loadUrls();
 
     // frame handling
     frameCb = () => {
@@ -245,7 +251,7 @@ export default e => {
       _updateLodTracker();
 
       const _updateLitteMesh = () => {
-        litterMesh.update();
+        // litterMesh.update();
       };
       _updateLitteMesh();
 
