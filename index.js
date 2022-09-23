@@ -8,8 +8,8 @@ const {GenerationTaskManager} = useGenerationTask();
 import {TerrainMesh} from './layers/terrain-mesh.js';
 import {WaterMesh} from './layers/water-mesh.js';
 import {BarrierMesh} from './layers/barrier-mesh.js';
-import {LitterMetaMesh} from './layers/litter-mesh.js';
-import {GrassMesh} from './layers/grass-mesh.js';
+import {LitterMetaMesh, litterUrls} from './layers/litter-mesh.js';
+import {GrassMesh, grassUrls} from './layers/grass-mesh.js';
 
 // locals
 
@@ -19,52 +19,6 @@ const localVector3 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
-
-// urls
-
-const procgenAssetsBaseUrl = `https://webaverse.github.io/procgen-assets/`;
-const urlSpecs = {
-  trees: [
-    `Tree_1_1.glb`,
-    `Tree_1_2.glb`,
-    `Tree_2_1.glb`,
-    `Tree_2_2.glb`,
-    `Tree_3_1.glb`,
-    `Tree_3_2.glb`,
-    `Tree_4_1.glb`,
-    `Tree_4_2.glb`,
-    `Tree_4_3.glb`,
-    `Tree_5_1.glb`,
-    `Tree_5_2.glb`,
-    `Tree_6_1.glb`,
-    `Tree_6_2.glb`,
-  ].map(u => {
-    return `${procgenAssetsBaseUrl}vegetation/garden-trees/${u}`;
-  }),
-  ores: [
-    `BlueOre_deposit_low.glb`,
-    `Iron_Deposit_low.glb`,
-    `Ore_Blue_low.glb`,
-    `Ore_BrownRock_low.glb`,
-    `Ore_Deposit_Red.glb`,
-    `Ore_Red_low.glb`,
-    `Ore_metal_low.glb`,
-    `Ore_wood_low.glb`,
-    `Rock_ore_Deposit_low.glb`,
-    `TreeOre_low.glb`,
-  ].map(u => {
-    return `${procgenAssetsBaseUrl}/litter/ores/${u}`;
-  }),
-  grasses: [
-    `FieldLongerGrass_v3_Fuji.glb`,
-    `DesertGrass_v2_fuji.glb`,
-  ].map(u => {
-    return `${procgenAssetsBaseUrl}/grass/${u}`;
-  }),
-};
-const litterUrls = urlSpecs.trees.slice(0, 1)
-  .concat(urlSpecs.ores.slice(0, 1));
-const grassUrls = urlSpecs.grasses;
 
 // main
 
@@ -212,13 +166,13 @@ export default e => {
     });
 
     // load
-    const _loadUrls = async () => {
+    const _waitForLoad = async () => {
       await Promise.all([
-        litterMesh.loadUrls(litterUrls),
-        grassMesh.loadUrls(grassUrls),
+        litterMesh.waitForLoad(),
+        grassMesh.waitForLoad(),
       ]);
     };
-    await _loadUrls();
+    await _waitForLoad();
 
     // frame handling
     frameCb = () => {

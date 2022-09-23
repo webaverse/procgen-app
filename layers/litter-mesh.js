@@ -1,6 +1,12 @@
 import * as THREE from 'three';
 import {PolygonPackage, PolygonMesh} from '../meshes/polygon-mesh.js';
 import {SpritesheetPackage, SpritesheetMesh} from '../meshes/spritesheet-mesh.js';
+import {urlSpecs} from '../constants';
+
+//
+
+export const litterUrls = urlSpecs.trees.slice(0, 1)
+  .concat(urlSpecs.ores.slice(0, 1));
 
 //
 
@@ -65,13 +71,13 @@ export class LitterMetaMesh extends THREE.Object3D {
     this.polygonMesh.removeChunk(chunk);
     this.spritesheetMesh.removeChunk(chunk);
   }
-  async loadUrls(urls) {
+  async waitForLoad() {
     const [
       polygonPackage,
       spritesheetPackage,
     ] = await Promise.all([
-      PolygonPackage.loadUrls(urls, meshLodSpecs, this.physics),
-      SpritesheetPackage.loadUrls(urls),
+      PolygonPackage.loadUrls(litterUrls, meshLodSpecs, this.physics),
+      SpritesheetPackage.loadUrls(litterUrls),
     ]);
     this.polygonMesh.setPackage(polygonPackage);
     this.spritesheetMesh.setPackage(spritesheetPackage);
