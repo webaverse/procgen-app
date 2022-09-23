@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {PolygonPackage, PolygonMesh} from '../meshes/polygon-mesh.js';
-import {urlSpecs} from '../constants.js';
+import {urlSpecs} from '../assets.js';
 
 //
 

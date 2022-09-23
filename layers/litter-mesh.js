@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {PolygonPackage, PolygonMesh} from '../meshes/polygon-mesh.js';
 import {SpritesheetPackage, SpritesheetMesh} from '../meshes/spritesheet-mesh.js';
-import {urlSpecs} from '../constants';
+import {urlSpecs} from '../assets.js';
 
 //
 
