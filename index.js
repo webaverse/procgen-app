@@ -132,6 +132,13 @@ export default e => {
 
       try {
         const signal = generation.getSignal();
+        const generateFlags = {
+          terrain: true,
+          water: true,
+          barrier: true,
+          vegetation: true,
+          grass: true,
+        };
         const options = {
           signal,
         };
@@ -140,7 +147,7 @@ export default e => {
           vegetation,
           grass,
         ] = await Promise.all([
-          instance.generateChunk(chunk.min, chunk.lod, chunk.lodArray, options),
+          instance.generateChunk(chunk.min, chunk.lod, chunk.lodArray, generateFlags, options),
           instance.generateVegetation(chunk.min, chunk.lod, litterUrls.length, options),
           instance.generateGrass(chunk.min, chunk.lod, grassUrls.length, options),
         ]);
