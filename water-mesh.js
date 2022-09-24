@@ -195,9 +195,9 @@ export class WaterMesh extends BufferedMesh {
             localQuaternion,
             localVector3D2
           );
-          this.physics.disableGeometryQueries(physicsObject);
+          this.physics.disableGeometryQueries(physicsObject); // disable each physicsObject
           this.physicsObjectsMap.set(key, physicsObject);
-          this.currentChunkMap.set(chunk.min.x + ',' + chunk.min.y, physicsObject); // use string of chunk.min as a key to map every physicsObject
+          this.currentChunkMap.set(chunk.min.x + ',' + chunk.min.y, physicsObject); // use string of chunk.min as a key to map each physicsObject
           this.currentWaterHeightMap.set(chunk.min.x + ',' + chunk.min.y, waterGeometry.positions[1]); // use string of chunk.min as a key to map the posY of each chunk
         }
       };
@@ -250,7 +250,7 @@ export class WaterMesh extends BufferedMesh {
     const currentChunkPhysicObject = this.currentChunkMap.get(lastUpdateCoordKey); // use lodTracker.lastUpdateCoord as a key to check which chunk player currently at 
     const waterSurfacePos = this.currentWaterHeightMap.get(lastUpdateCoordKey); // use lodTracker.lastUpdateCoord as a key to check the pos y of the current chunk
     let contactWater = false;
-    if (currentChunkPhysicObject) {
+    if (currentChunkPhysicObject) { // if we get the physicObject of the current chunk, then use overlapBox to check whether player contact the water
       this.physics.enableGeometryQueries(currentChunkPhysicObject);
       if (localPlayer.avatar) {
         let collisionIds;
@@ -270,6 +270,8 @@ export class WaterMesh extends BufferedMesh {
       }
       this.physics.disableGeometryQueries(currentChunkPhysicObject);
     }
+
+    // handle swimming action
     if (contactWater) {
       this.material.color.setHex( 0x0000ff ); // for testing
       if(waterSurfacePos >= localPlayer.position.y - localPlayer.avatar.height + localPlayer.avatar.height * 0.8){
