@@ -48,6 +48,11 @@ export class TerrainMesh extends BufferedMesh {
           Type: Float32Array,
           itemSize: 4,
         },
+        {
+          name: 'materialsWeights',
+          Type: Float32Array,
+          itemSize: 4,
+        },
         /* {
           name: 'biomesUvs2',
           Type: Float32Array,
@@ -128,6 +133,7 @@ export class TerrainMesh extends BufferedMesh {
         // let biomesOffset = geometryBinding.getAttributeOffset('biomes');
         // let biomesWeightsOffset = geometryBinding.getAttributeOffset('biomesWeights');
         let biomesUvs1Offset = geometryBinding.getAttributeOffset('biomesUvs1');
+        let materialsWeightsOffset = geometryBinding.getAttributeOffset('materialsWeights');
         // let biomesUvs2Offset = geometryBinding.getAttributeOffset('biomesUvs2');
         // let seedsOffset = geometryBinding.getAttributeOffset('seed');
         // let skylightsOffset = geometryBinding.getAttributeOffset('skylights');
@@ -170,6 +176,12 @@ export class TerrainMesh extends BufferedMesh {
           biomesUvs1Offset,
           terrainGeometry.biomesUvs1.length,
           terrainGeometry.biomesUvs1,
+          0
+        );
+        geometry.attributes.materialsWeights.update(
+          materialsWeightsOffset,
+          terrainGeometry.materialsWeights.length,
+          terrainGeometry.materialsWeights,
           0
         );
         /* geometry.attributes.biomesUvs2.update(
