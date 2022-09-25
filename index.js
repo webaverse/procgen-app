@@ -7,9 +7,9 @@ const {GenerationTaskManager} = useGenerationTask();
 
 import {TerrainMesh} from './layers/terrain-mesh.js';
 import {WaterMesh} from './layers/water-mesh.js';
-// import {BarrierMesh} from './layers/barrier-mesh.js';
-// import {LitterMetaMesh, litterUrls} from './layers/litter-mesh.js';
-// import {GrassMesh, grassUrls} from './layers/grass-mesh.js';
+import {BarrierMesh} from './layers/barrier-mesh.js';
+import {LitterMetaMesh, litterUrls} from './layers/litter-mesh.js';
+import {GrassMesh, grassUrls} from './layers/grass-mesh.js';
 
 // locals
 
@@ -48,7 +48,7 @@ export default e => {
     // lodTracker.debugMesh.updateMatrixWorld();
 
     lodTracker.onPostUpdate(currentCoord => {
-      // barrierMesh.updateChunk(currentCoord);
+      barrierMesh.updateChunk(currentCoord);
     });
 
     // managers
@@ -74,29 +74,29 @@ export default e => {
     app.add(waterMesh);
     waterMesh.updateMatrixWorld();
 
-    // const barrierMesh = new BarrierMesh({
-    //   instance,
-    //   gpuTaskManager,
-    // });
-    // barrierMesh.frustumCulled = false;
-    // app.add(barrierMesh);
-    // barrierMesh.updateMatrixWorld();
+    const barrierMesh = new BarrierMesh({
+      instance,
+      gpuTaskManager,
+    });
+    barrierMesh.frustumCulled = false;
+    app.add(barrierMesh);
+    barrierMesh.updateMatrixWorld();
 
-    // const litterMesh = new LitterMetaMesh({
-    //   instance,
-    //   gpuTaskManager,
-    //   physics,
-    // });
-    // app.add(litterMesh);
-    // litterMesh.updateMatrixWorld();
+    const litterMesh = new LitterMetaMesh({
+      instance,
+      gpuTaskManager,
+      physics,
+    });
+    app.add(litterMesh);
+    litterMesh.updateMatrixWorld();
 
-    // const grassMesh = new GrassMesh({
-    //   instance,
-    //   gpuTaskManager,
-    //   physics,
-    // });
-    // app.add(grassMesh);
-    // grassMesh.updateMatrixWorld();
+    const grassMesh = new GrassMesh({
+      instance,
+      gpuTaskManager,
+      physics,
+    });
+    app.add(grassMesh);
+    grassMesh.updateMatrixWorld();
 
     // genration events handling
     lodTracker.onChunkAdd(async chunk => {
@@ -110,25 +110,25 @@ export default e => {
         // heightfield
         terrainMesh.addChunk(chunk, heightfield);
         waterMesh.addChunk(chunk, heightfield);
-        // barrierMesh.addChunk(chunk, heightfield);
+        barrierMesh.addChunk(chunk, heightfield);
       
         // vegetation
-        // litterMesh.addChunk(chunk, vegetation);
+        litterMesh.addChunk(chunk, vegetation);
         
         // grass
-        // grassMesh.addChunk(chunk, grass);
+        grassMesh.addChunk(chunk, grass);
       });
       generation.addEventListener('geometryremove', e => {
         // heightfield
         terrainMesh.removeChunk(chunk);
         waterMesh.removeChunk(chunk);
-        // barrierMesh.removeChunk(chunk);
+        barrierMesh.removeChunk(chunk);
 
         // vegetation
-        // litterMesh.removeChunk(chunk);
+        litterMesh.removeChunk(chunk);
 
         // grass
-        // grassMesh.removeChunk(chunk);
+        grassMesh.removeChunk(chunk);
       });
 
       try {
@@ -136,9 +136,9 @@ export default e => {
         const generateFlags = {
           terrain: true,
           water: true,
-          // barrier: true,
-          // vegetation: true,
-          // grass: true,
+          barrier: true,
+          vegetation: true,
+          grass: true,
         };
         const options = {
           signal,
@@ -149,13 +149,13 @@ export default e => {
           grass,
         ] = await Promise.all([
           instance.generateChunk(chunk.min, chunk.lod, chunk.lodArray, generateFlags, options),
-          // instance.generateVegetation(chunk.min, chunk.lod, litterUrls.length, options),
-          // instance.generateGrass(chunk.min, chunk.lod, grassUrls.length, options),
+          instance.generateVegetation(chunk.min, chunk.lod, litterUrls.length, options),
+          instance.generateGrass(chunk.min, chunk.lod, grassUrls.length, options),
         ]);
         generation.finish({
           heightfield,
-          // vegetation,
-          // grass,
+          vegetation,
+          grass,
         });
       } catch (err) {
         if (err.isAbortError) {
@@ -176,8 +176,8 @@ export default e => {
     // load
     const _waitForLoad = async () => {
       await Promise.all([
-        // litterMesh.waitForLoad(),
-        // grassMesh.waitForLoad(),
+        litterMesh.waitForLoad(),
+        grassMesh.waitForLoad(),
       ]);
     };
     await _waitForLoad();
@@ -213,7 +213,7 @@ export default e => {
       _updateLodTracker();
 
       const _updateLitteMesh = () => {
-        // litterMesh.update(); // update spritesheet uniforms
+        litterMesh.update(); // update spritesheet uniforms
       };
       _updateLitteMesh();
 
