@@ -133,6 +133,13 @@ export default e => {
 
       try {
         const signal = generation.getSignal();
+        const generateFlags = {
+          terrain: true,
+          water: true,
+          barrier: true,
+          vegetation: true,
+          grass: true,
+        };
         const options = {
           signal,
         };
