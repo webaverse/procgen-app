@@ -104,18 +104,22 @@ export default e => {
       const generation = generationTaskManager.createGeneration(key);
       generation.addEventListener('geometryadd', e => {
         const {result} = e.data;
-        const {heightfield, vegetation, grass} = result;
-        
+        const {heightfield, vegetation} = result;
+        const vegetationInstances = vegetation.instances;
+        const {grassInstances} = heightfield;
+
+        // console.log('got heightfield', heightfield);
+
         // heightfield
         terrainMesh.addChunk(chunk, heightfield);
         waterMesh.addChunk(chunk, heightfield);
         barrierMesh.addChunk(chunk, heightfield);
       
         // vegetation
-        litterMesh.addChunk(chunk, vegetation);
+        litterMesh.addChunk(chunk, vegetationInstances);
         
         // grass
-        grassMesh.addChunk(chunk, grass);
+        grassMesh.addChunk(chunk, grassInstances);
       });
       generation.addEventListener('geometryremove', e => {
         // heightfield
@@ -139,22 +143,33 @@ export default e => {
           vegetation: true,
           grass: true,
         };
+        const numGrassInstances = grassUrls.length;
+        const numVegetationInstances = litterUrls.length;
         const options = {
           signal,
         };
         const [
           heightfield,
           vegetation,
-          grass,
         ] = await Promise.all([
-          instance.generateChunk(chunk.min, chunk.lod, chunk.lodArray, generateFlags, options),
-          instance.generateVegetation(chunk.min, chunk.lod, litterUrls.length, options),
-          instance.generateGrass(chunk.min, chunk.lod, grassUrls.length, options),
+          instance.generateChunk(
+            chunk.min,
+            chunk.lod,
+            chunk.lodArray,
+            generateFlags,
+            numGrassInstances,
+            options
+          ),
+          instance.generateVegetation(
+            chunk.min,
+            chunk.lod,
+            numVegetationInstances,
+            options
+          ),
         ]);
         generation.finish({
           heightfield,
           vegetation,
-          grass,
         });
       } catch (err) {
         if (err.isAbortError) {
