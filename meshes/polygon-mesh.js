@@ -228,7 +228,8 @@ vec4 q = texture2D(qTexture, pUv).xyzw;
   }
 
   addChunk(chunk, chunkResult) {
-    if (chunk.lod < this.lodCutoff && chunkResult.instances.length > 0) {
+    const instances = chunkResult;
+    if (chunk.lod < this.lodCutoff && instances.length > 0) {
       const _renderLitterPolygonGeometry = (drawCall, ps, qs) => {
         const pTexture = drawCall.getTexture('p');
         const pOffset = drawCall.getTextureOffset('p');
@@ -298,7 +299,6 @@ vec4 q = texture2D(qTexture, pUv).xyzw;
         )
       );
       const lodIndex = Math.log2(chunk.lod);
-      const {instances} = chunkResult;
       const drawChunks = Array(instances.length);
       for (let i = 0; i < instances.length; i++) {
         const {
