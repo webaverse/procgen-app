@@ -227,6 +227,7 @@ export class WaterMesh extends BufferedMesh {
     }
   }
   update() {
+    // handle water physic
     const localPlayer = useLocalPlayer();
     const lastUpdateCoordKey = this.lastUpdateCoord.x + ',' + this.lastUpdateCoord.y; 
     const currentChunkPhysicObject = this.currentChunkMap.get(lastUpdateCoordKey); // use lodTracker.lastUpdateCoord as a key to check which chunk player currently at 
