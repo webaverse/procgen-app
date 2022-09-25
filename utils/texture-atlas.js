@@ -2,11 +2,11 @@ import * as THREE from 'three';
 
 // Taken from https://github.com/mrdoob/three.js/issues/758
 const _getImageData = (image) => {
-  var canvas = document.createElement('canvas');
+  const canvas = document.createElement('canvas');
   canvas.width = image.width;
   canvas.height = image.height;
 
-  var context = canvas.getContext('2d');
+  const context = canvas.getContext('2d');
   context.drawImage(image, 0, 0);
 
   return context.getImageData(0, 0, image.width, image.height);
@@ -21,6 +21,16 @@ class TextureAtlas {
         fn();
       });
     };
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 1024;
+    canvas.style.position = 'absolute';
+    canvas.style.top = '0';
+    const ctx = canvas.getContext("2d");
+
+    document.body.appendChild(canvas);
+    console.log(canvas);
 
     this.manager = new THREE.LoadingManager();
     this.loader = new THREE.TextureLoader(this.manager);
@@ -54,12 +64,7 @@ class TextureAtlas {
         const curTexture = atlas.textures[t];
         const curData = _getImageData(curTexture.image);
         const offset = t * (4 * 1024 * 1024);
-
-        const currBuffer = curData.data.buffer;
-        const d = new Uint8Array(currBuffer);
-        console.log(d);
-
-        data.set(d, offset);
+        data.set(curData, offset);
       }
 
       const dataTexture = new THREE.DataArrayTexture(
