@@ -7,9 +7,9 @@ const {GenerationTaskManager} = useGenerationTask();
 
 import {TerrainMesh} from './layers/terrain-mesh.js';
 import {WaterMesh} from './layers/water-mesh.js';
-import {BarrierMesh} from './layers/barrier-mesh.js';
-import {LitterMetaMesh, litterUrls} from './layers/litter-mesh.js';
-import {GrassMesh, grassUrls} from './layers/grass-mesh.js';
+// import {BarrierMesh} from './layers/barrier-mesh.js';
+// import {LitterMetaMesh, litterUrls} from './layers/litter-mesh.js';
+// import {GrassMesh, grassUrls} from './layers/grass-mesh.js';
 
 // locals
 
