@@ -1,16 +1,18 @@
 import * as THREE from 'three';
 
+import metaversefile from 'metaversefile';
+const {useRenderer} = metaversefile;
+
+const baseUrl = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
+
+const renderer = useRenderer();
+
 // Taken from https://github.com/mrdoob/three.js/issues/758
-const _getImageData = (image) => {
-  const canvas = document.createElement('canvas');
-  canvas.width = image.width;
-  canvas.height = image.height;
+const _addImageToCanvas = (image) => {
 
-  const context = canvas.getContext('2d');
-  context.drawImage(image, 0, 0);
-
-  return context.getImageData(0, 0, image.width, image.height);
 }
+
+const IMAGE_SIZE = 1024;
 
 class TextureAtlas {
   constructor() {
@@ -21,16 +23,6 @@ class TextureAtlas {
         fn();
       });
     };
-
-    const canvas = document.createElement('canvas');
-    canvas.width = 1024;
-    canvas.height = 1024;
-    canvas.style.position = 'absolute';
-    canvas.style.top = '0';
-    const ctx = canvas.getContext("2d");
-
-    document.body.appendChild(canvas);
-    console.log(canvas);
 
     this.manager = new THREE.LoadingManager();
     this.loader = new THREE.TextureLoader(this.manager);
@@ -56,35 +48,39 @@ class TextureAtlas {
   }
 
   onLoad() {
+    console.log(renderer.capabilities.maxTextureSize);
     for (const k in this.textures) {
       const atlas = this.textures[k];
-      const data = new Uint8Array(atlas.textures.length * 4 * 1024 * 1024);
+
+      const canvas = document.createElement('canvas');
+      const atlasSize = 4;
+      const width = IMAGE_SIZE * atlasSize;
+      const height = IMAGE_SIZE * atlasSize;
+
+      canvas.width = width;
+      canvas.height = height;
+
+      // canvas.style.position = 'absolute';
+      // canvas.style.top = '0';
+      // document.body.appendChild(canvas);
+
+      const context = canvas.getContext('2d');
 
       for (let t = 0; t < atlas.textures.length; t++) {
         const curTexture = atlas.textures[t];
-        const curData = _getImageData(curTexture.image);
-        const offset = t * (4 * 1024 * 1024);
-        data.set(curData, offset);
+        const image = curTexture.image;
+        const x = t % atlasSize;
+        const y = Math.floor(t / atlasSize);
+
+        image && context.drawImage(image, x * IMAGE_SIZE, y * IMAGE_SIZE);
       }
 
-      const dataTexture = new THREE.DataArrayTexture(
-        data,
-        1024,
-        1024,
-        atlas.textures.length
-      );
-      dataTexture.format = THREE.RGBAFormat;
-      dataTexture.type = THREE.UnsignedByteType;
-    //   dataTexture.minFilter = THREE.LinearMipMapLinearFilter;
-    //   dataTexture.magFilter = THREE.NearestFilter;
-      dataTexture.wrapS = THREE.RepeatWrapping;
-      dataTexture.wrapT = THREE.RepeatWrapping;
-    //   dataTexture.generateMipmaps = true;
-    //   dataTexture.anisotropy = 4;
+      // * Using a canvas texture is necessary
+      const atlasTexture = new THREE.CanvasTexture(canvas) 
+      atlasTexture.wrapS = atlasTexture.wrapT = THREE.RepeatWrapping;
 
-      atlas.atlas = dataTexture;
+      atlas.atlas = atlasTexture;
     }
-
     this.onLoadFn();
   }
 }
