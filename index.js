@@ -7,9 +7,9 @@ const {GenerationTaskManager} = useGenerationTask();
 
 import {TerrainMesh} from './layers/terrain-mesh.js';
 import {WaterMesh} from './layers/water-mesh.js';
-import {BarrierMesh} from './layers/barrier-mesh.js';
-import {LitterMetaMesh, litterUrls} from './layers/litter-mesh.js';
-import {GrassMesh, grassUrls} from './layers/grass-mesh.js';
+// import {BarrierMesh} from './layers/barrier-mesh.js';
+// import {LitterMetaMesh, litterUrls} from './layers/litter-mesh.js';
+// import {GrassMesh, grassUrls} from './layers/grass-mesh.js';
 
 // locals
 
@@ -47,9 +47,9 @@ export default e => {
     // lodTracker.debugMesh.position.y = 0.1;
     // lodTracker.debugMesh.updateMatrixWorld();
 
-    lodTracker.onPostUpdate(currentCoord => {
-      barrierMesh.updateChunk(currentCoord);
-    });
+    // lodTracker.onPostUpdate(currentCoord => {
+    //   barrierMesh.updateChunk(currentCoord);
+    // });
 
     // managers
     const gpuTaskManager = new GPUTaskManager();
@@ -73,29 +73,29 @@ export default e => {
     app.add(waterMesh);
     waterMesh.updateMatrixWorld();
 
-    const barrierMesh = new BarrierMesh({
-      instance,
-      gpuTaskManager,
-    });
-    barrierMesh.frustumCulled = false;
-    app.add(barrierMesh);
-    barrierMesh.updateMatrixWorld();
+    // const barrierMesh = new BarrierMesh({
+    //   instance,
+    //   gpuTaskManager,
+    // });
+    // barrierMesh.frustumCulled = false;
+    // app.add(barrierMesh);
+    // barrierMesh.updateMatrixWorld();
 
-    const litterMesh = new LitterMetaMesh({
-      instance,
-      gpuTaskManager,
-      physics,
-    });
-    app.add(litterMesh);
-    litterMesh.updateMatrixWorld();
+    // const litterMesh = new LitterMetaMesh({
+    //   instance,
+    //   gpuTaskManager,
+    //   physics,
+    // });
+    // app.add(litterMesh);
+    // litterMesh.updateMatrixWorld();
 
-    const grassMesh = new GrassMesh({
-      instance,
-      gpuTaskManager,
-      physics,
-    });
-    app.add(grassMesh);
-    grassMesh.updateMatrixWorld();
+    // const grassMesh = new GrassMesh({
+    //   instance,
+    //   gpuTaskManager,
+    //   physics,
+    // });
+    // app.add(grassMesh);
+    // grassMesh.updateMatrixWorld();
 
     // genration events handling
     lodTracker.onChunkAdd(async chunk => {
@@ -112,25 +112,25 @@ export default e => {
         // heightfield
         terrainMesh.addChunk(chunk, heightfield);
         waterMesh.addChunk(chunk, heightfield);
-        barrierMesh.addChunk(chunk, heightfield);
+        // barrierMesh.addChunk(chunk, heightfield);
       
-        // vegetation
-        litterMesh.addChunk(chunk, vegetationInstances);
+        // // vegetation
+        // litterMesh.addChunk(chunk, vegetationInstances);
         
-        // grass
-        grassMesh.addChunk(chunk, grassInstances);
+        // // grass
+        // grassMesh.addChunk(chunk, grassInstances);
       });
       generation.addEventListener('geometryremove', e => {
         // heightfield
         terrainMesh.removeChunk(chunk);
         waterMesh.removeChunk(chunk);
-        barrierMesh.removeChunk(chunk);
+        // barrierMesh.removeChunk(chunk);
 
-        // vegetation
-        litterMesh.removeChunk(chunk);
+        // // vegetation
+        // litterMesh.removeChunk(chunk);
 
-        // grass
-        grassMesh.removeChunk(chunk);
+        // // grass
+        // grassMesh.removeChunk(chunk);
       });
 
       try {
@@ -142,8 +142,8 @@ export default e => {
           vegetation: true,
           grass: true,
         };
-        const numVegetationInstances = litterUrls.length;
-        const numGrassInstances = grassUrls.length;
+        // const numVegetationInstances = litterUrls.length;
+        // const numGrassInstances = grassUrls.length;
         const options = {
           signal,
         };
@@ -152,8 +152,8 @@ export default e => {
           chunk.lod,
           chunk.lodArray,
           generateFlags,
-          numVegetationInstances,
-          numGrassInstances,
+          0,
+          0,
           options
         );
         generation.finish({
@@ -176,13 +176,13 @@ export default e => {
     });
 
     // load
-    const _waitForLoad = async () => {
-      await Promise.all([
-        litterMesh.waitForLoad(),
-        grassMesh.waitForLoad(),
-      ]);
-    };
-    await _waitForLoad();
+    // const _waitForLoad = async () => {
+    //   await Promise.all([
+    //     litterMesh.waitForLoad(),
+    //     grassMesh.waitForLoad(),
+    //   ]);
+    // };
+    // await _waitForLoad();
 
     // frame handling
     frameCb = () => {
@@ -215,7 +215,7 @@ export default e => {
       _updateLodTracker();
 
       const _updateLitteMesh = () => {
-        litterMesh.update(); // update spritesheet uniforms
+        // litterMesh.update(); // update spritesheet uniforms
       };
       _updateLitteMesh();
 
