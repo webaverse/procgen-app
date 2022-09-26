@@ -255,8 +255,8 @@ export class WaterMesh extends BufferedMesh {
     const hasSwim = !!swimAction;
     if (contactWater) {
       this.material.color.setHex( 0x0000ff ); // for testing
-      if(waterSurfaceHeight >= player.position.y - player.avatar.height + player.avatar.height * 0.8){
-        if(!hasSwim){
+      if (waterSurfaceHeight >= player.position.y - player.avatar.height + player.avatar.height * 0.8) {
+        if (!hasSwim) {
           const swimAction = {
               type: 'swim',
               onSurface: false,
