@@ -251,10 +251,12 @@ export class WaterMesh extends BufferedMesh {
     return false;
   }
   handleSwimAction(contactWater, player, waterSurfaceHeight) {
+    const swimAction = player.getAction('swim');
+    const hasSwim = !!swimAction;
     if (contactWater) {
       this.material.color.setHex( 0x0000ff ); // for testing
       if(waterSurfaceHeight >= player.position.y - player.avatar.height + player.avatar.height * 0.8){
-        if(!player.hasAction('swim')){
+        if(!hasSwim){
           const swimAction = {
               type: 'swim',
               onSurface: false,
@@ -265,25 +267,25 @@ export class WaterMesh extends BufferedMesh {
         }
         // handle onSurface
         if (waterSurfaceHeight < player.position.y - player.avatar.height + player.avatar.height * 0.85) {
-          if (player.hasAction('swim') && !player.getAction('swim').onSurface) {
-            player.getAction('swim').onSurface = true;
+          if (hasSwim && !swimAction.onSurface) {
+            swimAction.onSurface = true;
           }
         }
         else {
-          if (player.hasAction('swim') && player.getAction('swim').onSurface) {
-            player.getAction('swim').onSurface = false;
+          if (hasSwim && swimAction.onSurface) {
+            swimAction.onSurface = false;
           }
         }
       }
       else{
-          if (player.hasAction('swim')) {
+          if (hasSwim) {
             player.removeAction('swim');
           }
       }  
     } 
     else {
       this.material.color.setHex( 0xff0000 ); // for testing
-      if (player.hasAction('swim')) {
+      if (hasSwim) {
         player.removeAction('swim');
       }
     }
