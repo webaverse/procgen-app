@@ -198,8 +198,9 @@ export class WaterMesh extends BufferedMesh {
           );
           this.physics.disableGeometryQueries(physicsObject); // disable each physicsObject
           this.physicsObjectsMap.set(key, physicsObject);
-          this.chunkPhysicObjcetMap.set(chunk.min.x + ',' + chunk.min.y, physicsObject); // use string of chunk.min as a key to map each physicsObject
-          this.waterHeightMap.set(chunk.min.x + ',' + chunk.min.y, waterGeometry.positions[1]); // use string of chunk.min as a key to map the posY of each chunk
+          const chunkKey = chunk.min.x + ',' + chunk.min.y;
+          this.chunkPhysicObjcetMap.set(chunkKey, physicsObject); // use string of chunk.min as a key to map each physicsObject
+          this.waterHeightMap.set(chunkKey, waterGeometry.positions[1]); // use string of chunk.min as a key to map the posY of each chunk
         }
       };
       _handlePhysics();
@@ -219,6 +220,19 @@ export class WaterMesh extends BufferedMesh {
         this.allocator.free(geometryBinding);
         this.geometryBindings.delete(key);
       }
+    }
+    {
+      const physicsObject = this.physicsObjectsMap.get(key);
+
+      if (physicsObject) {
+        this.physics.removeGeometry(physicsObject);
+        this.physicsObjectsMap.delete(key);
+      }
+    }
+    {
+      const chunkKey = chunk.min.x + ',' + chunk.min.y;
+      this.chunkPhysicObjcetMap.delete(chunkKey);
+      this.waterHeightMap.delete(chunkKey);
     }
     {
       const task = this.gpuTasks.get(key);
