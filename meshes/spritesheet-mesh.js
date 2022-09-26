@@ -368,10 +368,10 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
     this.allocatedChunks = new Map();
   }
   addChunk(chunk, chunkResult) {
-    const vegetationData = chunkResult;
+    const instances = chunkResult;
 
-    if (chunk.lod >= this.lodCutoff && vegetationData.instances.length > 0) {
-      const _renderLitterSpriteGeometry = (drawCall, vegetationData) => {
+    if (chunk.lod >= this.lodCutoff && instances.length > 0) {
+      const _renderLitterSpriteGeometry = (drawCall, instances) => {
         const pTexture = drawCall.getTexture('p');
         const pOffset = drawCall.getTextureOffset('p');
         // const qTexture = drawCall.getTexture('q');
@@ -381,7 +381,6 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
         const itemIndexTexture = drawCall.getTexture('itemIndex');
         const itemIndexOffset = drawCall.getTextureOffset('itemIndex');
 
-        const {instances} = vegetationData;
         let index = 0;
         for (let i = 0; i < instances.length; i++) {
           const instance = instances[i];
@@ -453,7 +452,6 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
       );
       const totalInstances = (() => {
         let sum = 0;
-        const {instances} = vegetationData;
         for (let i = 0; i < instances.length; i++) {
           const instance = instances[i];
           const {ps} = instance;
@@ -466,7 +464,7 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
         totalInstances,
         boundingBox
       );
-      _renderLitterSpriteGeometry(drawChunk, vegetationData);
+      _renderLitterSpriteGeometry(drawChunk, instances);
 
       const key = procGenManager.getNodeHash(chunk);
       this.allocatedChunks.set(key, drawChunk);

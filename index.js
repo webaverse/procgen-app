@@ -86,6 +86,7 @@ export default e => {
     // const litterMesh = new LitterMetaMesh({
     //   instance,
     //   gpuTaskManager,
+    //   physics,
     // });
     // app.add(litterMesh);
     // litterMesh.updateMatrixWorld();
@@ -105,29 +106,32 @@ export default e => {
       const generation = generationTaskManager.createGeneration(key);
       generation.addEventListener('geometryadd', e => {
         const {result} = e.data;
-        const {heightfield, vegetation, grass} = result;
-        
+        const {heightfield} = result;
+        const {vegetationInstances, grassInstances} = heightfield;
+
+        // console.log('got heightfield', heightfield);
+
         // heightfield
         terrainMesh.addChunk(chunk, heightfield);
-        // waterMesh.addChunk(chunk, heightfield);
+        waterMesh.addChunk(chunk, heightfield);
         // barrierMesh.addChunk(chunk, heightfield);
       
-        // vegetation
-        // litterMesh.addChunk(chunk, vegetation);
+        // // vegetation
+        // litterMesh.addChunk(chunk, vegetationInstances);
         
-        // grass
-        // grassMesh.addChunk(chunk, grass);
+        // // grass
+        // grassMesh.addChunk(chunk, grassInstances);
       });
       generation.addEventListener('geometryremove', e => {
         // heightfield
         terrainMesh.removeChunk(chunk);
-        // waterMesh.removeChunk(chunk);
+        waterMesh.removeChunk(chunk);
         // barrierMesh.removeChunk(chunk);
 
-        // vegetation
+        // // vegetation
         // litterMesh.removeChunk(chunk);
 
-        // grass
+        // // grass
         // grassMesh.removeChunk(chunk);
       });
 
@@ -140,22 +144,22 @@ export default e => {
           vegetation: true,
           grass: true,
         };
+        // const numVegetationInstances = litterUrls.length;
+        // const numGrassInstances = grassUrls.length;
         const options = {
           signal,
         };
-        const [
-          heightfield,
-          // vegetation,
-          // grass,
-        ] = await Promise.all([
-          instance.generateChunk(chunk.min, chunk.lod, chunk.lodArray, options),
-          // instance.generateVegetation(chunk.min, chunk.lod, litterUrls.length, options),
-          // instance.generateGrass(chunk.min, chunk.lod, grassUrls.length, options),
-        ]);
+        const heightfield = await instance.generateChunk(
+          chunk.min,
+          chunk.lod,
+          chunk.lodArray,
+          generateFlags,
+          0,
+          0,
+          options
+        );
         generation.finish({
           heightfield,
-          // vegetation,
-          // grass,
         });
       } catch (err) {
         if (err.isAbortError) {
