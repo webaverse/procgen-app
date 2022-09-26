@@ -226,71 +226,80 @@ export class WaterMesh extends BufferedMesh {
       this.gpuTasks.delete(key);
     }
   }
-  update() {
-    // handle water physic
-    const localPlayer = useLocalPlayer();
-    const lastUpdateCoordKey = this.lastUpdateCoord.x + ',' + this.lastUpdateCoord.y; 
-    const currentChunkPhysicObject = this.currentChunkMap.get(lastUpdateCoordKey); // use lodTracker.lastUpdateCoord as a key to check which chunk player currently at 
-    const waterSurfacePos = this.currentWaterHeightMap.get(lastUpdateCoordKey); // use lodTracker.lastUpdateCoord as a key to check the pos y of the current chunk
-    let contactWater = false;
-    if (currentChunkPhysicObject) { // if we get the physicObject of the current chunk, then use overlapBox to check whether player contact the water
-      this.physics.enableGeometryQueries(currentChunkPhysicObject);
-      if (localPlayer.avatar) {
-        let collisionIds;
-        const height = localPlayer.avatar.height * 0.9;
-        const width = localPlayer.avatar.shoulderWidth
-        if (localPlayer.position.y > waterSurfacePos) {
-          collisionIds = this.physics.overlapBox(width, height, width, localPlayer.position, localPlayer.quaternion).objectIds;
-        }
-        else {
-          localVector.set(localPlayer.position.x, waterSurfacePos, localPlayer.position.z);
-          collisionIds = this.physics.overlapBox(width, height, width, localVector, localPlayer.quaternion).objectIds;
-        } 
-        for (const collisionId of collisionIds) {
-          if (collisionId === currentChunkPhysicObject.physicsId)
-            contactWater = true;
+  checkWaterContact(currentChunkPhysicObject, player, waterSurfaceHeight) {
+    // use overlapBox to check whether player contact the water
+    this.physics.enableGeometryQueries(currentChunkPhysicObject);
+    if (player.avatar) {
+      let collisionIds;
+      const height = player.avatar.height * 0.9;
+      const width = player.avatar.shoulderWidth
+      if (player.position.y > waterSurfaceHeight) {
+        collisionIds = this.physics.overlapBox(width, height, width, player.position, player.quaternion).objectIds;
+      }
+      else {
+        localVector.set(player.position.x, waterSurfaceHeight, player.position.z);
+        collisionIds = this.physics.overlapBox(width, height, width, localVector, player.quaternion).objectIds;
+      } 
+      for (const collisionId of collisionIds) {
+        if (collisionId === currentChunkPhysicObject.physicsId) {
+          this.physics.disableGeometryQueries(currentChunkPhysicObject);
+          return true;
         }
       }
-      this.physics.disableGeometryQueries(currentChunkPhysicObject);
     }
-
-    // handle swimming action
+    this.physics.disableGeometryQueries(currentChunkPhysicObject);
+    return false;
+  }
+  handleSwimAction(contactWater, player, waterSurfaceHeight) {
     if (contactWater) {
       this.material.color.setHex( 0x0000ff ); // for testing
-      if(waterSurfacePos >= localPlayer.position.y - localPlayer.avatar.height + localPlayer.avatar.height * 0.8){
-        if(!localPlayer.hasAction('swim')){
-          //console.log('add');
+      if(waterSurfaceHeight >= player.position.y - player.avatar.height + player.avatar.height * 0.8){
+        if(!player.hasAction('swim')){
           const swimAction = {
               type: 'swim',
               onSurface: false,
               swimDamping: 1,
               animationType: 'breaststroke'
           };
-          localPlayer.setControlAction(swimAction);
+          player.setControlAction(swimAction);
         }
-
-        if (waterSurfacePos < localPlayer.position.y - localPlayer.avatar.height + localPlayer.avatar.height * 0.85) {
-          if (localPlayer.hasAction('swim') && !localPlayer.getAction('swim').onSurface) {
-            localPlayer.getAction('swim').onSurface = true;
+        // handle onSurface
+        if (waterSurfaceHeight < player.position.y - player.avatar.height + player.avatar.height * 0.85) {
+          if (player.hasAction('swim') && !player.getAction('swim').onSurface) {
+            player.getAction('swim').onSurface = true;
           }
         }
         else {
-          if (localPlayer.hasAction('swim') && localPlayer.getAction('swim').onSurface) {
-            localPlayer.getAction('swim').onSurface = false;
+          if (player.hasAction('swim') && player.getAction('swim').onSurface) {
+            player.getAction('swim').onSurface = false;
           }
         }
       }
       else{
-          if (localPlayer.hasAction('swim')) {
-            localPlayer.removeAction('swim');
+          if (player.hasAction('swim')) {
+            player.removeAction('swim');
           }
       }  
     } 
     else {
       this.material.color.setHex( 0xff0000 ); // for testing
-      if (localPlayer.hasAction('swim')) {
-        localPlayer.removeAction('swim');
+      if (player.hasAction('swim')) {
+        player.removeAction('swim');
       }
+    }
+  }
+  update() {
+    const localPlayer = useLocalPlayer();
+    const lastUpdateCoordKey = this.lastUpdateCoord.x + ',' + this.lastUpdateCoord.y; 
+    const currentChunkPhysicObject = this.currentChunkMap.get(lastUpdateCoordKey); // use lodTracker.lastUpdateCoord as a key to check which chunk player currently at 
+
+    // handel water physic and swimming action if we get the physicObject of the current chunk
+    if (currentChunkPhysicObject) { 
+      const waterSurfaceHeight = this.currentWaterHeightMap.get(lastUpdateCoordKey); // use lodTracker.lastUpdateCoord as a key to check the water height of the current chunk
+      const contactWater = this.checkWaterContact(currentChunkPhysicObject, localPlayer, waterSurfaceHeight); // check whether player contact the water
+
+      // handle swimming action
+      this.handleSwimAction(contactWater, localPlayer, waterSurfaceHeight);
     }
   }
 }
