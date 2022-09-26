@@ -104,9 +104,8 @@ export default e => {
       const generation = generationTaskManager.createGeneration(key);
       generation.addEventListener('geometryadd', e => {
         const {result} = e.data;
-        const {heightfield, vegetation} = result;
-        const vegetationInstances = vegetation.instances;
-        const {grassInstances} = heightfield;
+        const {heightfield} = result;
+        const {vegetationInstances, grassInstances} = heightfield;
 
         // console.log('got heightfield', heightfield);
 
@@ -143,33 +142,22 @@ export default e => {
           vegetation: true,
           grass: true,
         };
-        const numGrassInstances = grassUrls.length;
         const numVegetationInstances = litterUrls.length;
+        const numGrassInstances = grassUrls.length;
         const options = {
           signal,
         };
-        const [
-          heightfield,
-          vegetation,
-        ] = await Promise.all([
-          instance.generateChunk(
-            chunk.min,
-            chunk.lod,
-            chunk.lodArray,
-            generateFlags,
-            numGrassInstances,
-            options
-          ),
-          instance.generateVegetation(
-            chunk.min,
-            chunk.lod,
-            numVegetationInstances,
-            options
-          ),
-        ]);
+        const heightfield = await instance.generateChunk(
+          chunk.min,
+          chunk.lod,
+          chunk.lodArray,
+          generateFlags,
+          numVegetationInstances,
+          numGrassInstances,
+          options
+        );
         generation.finish({
           heightfield,
-          vegetation,
         });
       } catch (err) {
         if (err.isAbortError) {
