@@ -226,9 +226,9 @@ export class WaterMesh extends BufferedMesh {
       this.gpuTasks.delete(key);
     }
   }
-  checkWaterContact(currentChunkPhysicObject, player, waterSurfaceHeight) {
+  checkWaterContact(chunkPhysicObject, player, waterSurfaceHeight) {
     // use overlapBox to check whether player contact the water
-    this.physics.enableGeometryQueries(currentChunkPhysicObject);
+    this.physics.enableGeometryQueries(chunkPhysicObject);
     if (player.avatar) {
       let collisionIds;
       const height = player.avatar.height * 0.9;
@@ -241,13 +241,13 @@ export class WaterMesh extends BufferedMesh {
         collisionIds = this.physics.overlapBox(width, height, width, localVector, player.quaternion).objectIds;
       } 
       for (const collisionId of collisionIds) {
-        if (collisionId === currentChunkPhysicObject.physicsId) {
-          this.physics.disableGeometryQueries(currentChunkPhysicObject);
+        if (collisionId === chunkPhysicObject.physicsId) {
+          this.physics.disableGeometryQueries(chunkPhysicObject);
           return true;
         }
       }
     }
-    this.physics.disableGeometryQueries(currentChunkPhysicObject);
+    this.physics.disableGeometryQueries(chunkPhysicObject);
     return false;
   }
   handleSwimAction(contactWater, player, waterSurfaceHeight) {
