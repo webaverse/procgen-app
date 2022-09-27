@@ -281,11 +281,6 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
         }
       `,
       transparent: true,
-      // depthWrite: false,
-      // polygonOffset: true,
-      // polygonOffsetFactor: -2,
-      // polygonOffsetUnits: 1,
-      // side: THREE.DoubleSide,
     });
     super(geometry, material, allocator);
     this.frustumCulled = false;
