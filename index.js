@@ -10,6 +10,7 @@ import {WaterMesh} from './layers/water-mesh.js';
 import {BarrierMesh} from './layers/barrier-mesh.js';
 import {LitterMetaMesh, litterUrls} from './layers/litter-mesh.js';
 import {GrassMesh, grassUrls} from './layers/grass-mesh.js';
+import {HudMesh, hudUrls} from './layers/hud-mesh.js';
 
 // locals
 
@@ -97,6 +98,14 @@ export default e => {
     app.add(grassMesh);
     grassMesh.updateMatrixWorld();
 
+    const hudMesh = new HudMesh({
+      instance,
+      gpuTaskManager,
+      physics,
+    });
+    app.add(hudMesh);
+    hudMesh.updateMatrixWorld();
+
     // genration events handling
     lodTracker.onChunkAdd(async chunk => {
       const key = procGenManager.getNodeHash(chunk);
@@ -105,7 +114,7 @@ export default e => {
       generation.addEventListener('geometryadd', e => {
         const {result} = e.data;
         const {heightfield} = result;
-        const {vegetationInstances, grassInstances} = heightfield;
+        const {vegetationInstances, grassInstances, poiInstances} = heightfield;
 
         // console.log('got heightfield', heightfield);
 
@@ -119,6 +128,9 @@ export default e => {
         
         // grass
         grassMesh.addChunk(chunk, grassInstances);
+
+        // hud
+        hudMesh.addChunk(chunk, poiInstances);
       });
       generation.addEventListener('geometryremove', e => {
         // heightfield
@@ -131,6 +143,9 @@ export default e => {
 
         // grass
         grassMesh.removeChunk(chunk);
+
+        // hud
+        hudMesh.removeChunk(chunk);
       });
 
       try {
@@ -141,9 +156,11 @@ export default e => {
           barrier: true,
           vegetation: true,
           grass: true,
+          poi: true,
         };
         const numVegetationInstances = litterUrls.length;
         const numGrassInstances = grassUrls.length;
+        const numPoiInstances = hudUrls.length;
         const options = {
           signal,
         };
@@ -154,6 +171,7 @@ export default e => {
           generateFlags,
           numVegetationInstances,
           numGrassInstances,
+          numPoiInstances,
           options
         );
         generation.finish({
