@@ -279,8 +279,8 @@ export class IconMesh extends ChunkedBatchedMesh {
   setPackage(pkg) {
     const {canvas} = pkg;
 
-    this.material.uTex.value = canvas;
-    this.material.uTex.needsUpdate = true;
+    this.material.uniforms.uTex.value = canvas;
+    this.material.uniforms.uTex.needsUpdate = true;
 
     this.visible = true;
   }
