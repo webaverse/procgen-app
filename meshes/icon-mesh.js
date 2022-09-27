@@ -151,6 +151,8 @@ export class IconMesh extends ChunkedBatchedMesh {
           return position + 2.0 * cross(q.xyz, cross(q.xyz, position) + q.w * position);
         }
 
+        const float heightOffsetY = 1.;
+
         void main() {
           int instanceIndex = gl_DrawID * ${maxInstancesPerDrawCall} + gl_InstanceID;
           const float width = ${attributeTextures.p.image.width.toFixed(8)};
@@ -167,6 +169,8 @@ export class IconMesh extends ChunkedBatchedMesh {
             transformed = rotate_vertex_position(transformed, cameraQuat);
 
             transformed += p;
+
+            transformed.y += heightOffsetY;
           }
 
           vec4 mvPosition = modelViewMatrix * vec4(transformed, 1.0);
