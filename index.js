@@ -198,6 +198,7 @@ export default e => {
       await Promise.all([
         litterMesh.waitForLoad(),
         grassMesh.waitForLoad(),
+        hudMesh.waitForLoad(),
       ]);
     };
     await _waitForLoad();
