@@ -49,8 +49,7 @@ export class WaterMesh extends BufferedMesh {
     );
 
     const {geometry} = allocator;
-    const material = new THREE.MeshNormalMaterial();
-
+    
     super(geometry);
 
     this.instance = instance;
@@ -67,6 +66,9 @@ export class WaterMesh extends BufferedMesh {
     this.chunkPhysicObjcetMap = new Map();
     this.waterHeightMap = new Map();
     this.lastUpdateCoord = new THREE.Vector2();
+
+    this.lastSwimmingHand = null;
+    this.swimDamping = 1;
   }
   addChunk(chunk, chunkResult) {
     const key = procGenManager.getNodeHash(chunk);
@@ -240,6 +242,7 @@ export class WaterMesh extends BufferedMesh {
       this.gpuTasks.delete(key);
     }
   }
+
   checkWaterContact(chunkPhysicObject, player, waterSurfaceHeight) {
     // use overlapBox to check whether player contact the water
     this.physics.enableGeometryQueries(chunkPhysicObject);
@@ -263,6 +266,20 @@ export class WaterMesh extends BufferedMesh {
     }
     this.physics.disableGeometryQueries(chunkPhysicObject);
     return false;
+  }
+  getSwimDamping(player) {
+    if (this.lastSwimmingHand !== player.avatarCharacterSfx.currentSwimmingHand) {
+      this.lastSwimmingHand = player.avatarCharacterSfx.currentSwimmingHand;
+      if (player.avatarCharacterSfx.currentSwimmingHand !== null) {
+        return 1;
+      }
+    }
+    if (this.swimDamping < 4.2 && this.lastSwimmingHand) {
+      return this.swimDamping *= 1.03;
+    }
+    else {
+      return 4.2;
+    }
   }
   handleSwimAction(contactWater, player, waterSurfaceHeight) {
     const swimAction = player.getAction('swim');
@@ -303,7 +320,19 @@ export class WaterMesh extends BufferedMesh {
         player.removeAction('swim');
       }
     }
+
+    // handel swimming damping.
+    if (hasSwim) {
+      if (swimAction.animationType === 'breaststroke') {
+        this.swimDamping = this.getSwimDamping(player);
+      }
+      else {
+        this.swimDamping = 1;
+      }
+      swimAction.swimDamping = this.swimDamping;
+    }   
   }
+  
   update() {
     const localPlayer = useLocalPlayer();
     const lastUpdateCoordKey = this.lastUpdateCoord.x + ',' + this.lastUpdateCoord.y; 
