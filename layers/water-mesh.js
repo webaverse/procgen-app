@@ -205,7 +205,9 @@ export class WaterMesh extends BufferedMesh {
           this.waterHeightMap.set(chunkKey, waterGeometry.positions[1]); // use string of chunk.min as a key to map the posY of each chunk
         }
       };
-      _handlePhysics();
+      if (waterGeometry.indices.length !== 0) {
+        _handlePhysics();
+      }
     });
     this.gpuTasks.set(key, task);
   }
