@@ -16,7 +16,7 @@ import {
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
-const localEuler = new THREE.Euler();
+// const localEuler = new THREE.Euler();
 const localBox = new THREE.Box3();
 
 //
@@ -108,8 +108,16 @@ export class IconMesh extends ChunkedBatchedMesh {
           value: null,
           needsUpdate: null,
         },
-        cameraY: {
+        /* cameraY: {
           value: 0,
+          needsUpdate: false,
+        }, */
+        cameraPos: {
+          value: new THREE.Vector3(),
+          needsUpdate: false,
+        },
+        cameraQuat: {
+          value: new THREE.Vector4(),
           needsUpdate: false,
         },
         iconsPerRow: {
@@ -134,8 +142,14 @@ export class IconMesh extends ChunkedBatchedMesh {
 
         uniform sampler2D pTexture;
         uniform sampler2D itemIndexTexture;
+        uniform vec3 cameraPos;
+        uniform vec4 cameraQuat;
         varying vec2 vUv;
         varying float vItemIndex;
+
+        vec3 rotate_vertex_position(vec3 position, vec4 q) {
+          return position + 2.0 * cross(q.xyz, cross(q.xyz, position) + q.w * position);
+        }
 
         void main() {
           int instanceIndex = gl_DrawID * ${maxInstancesPerDrawCall} + gl_InstanceID;
@@ -150,6 +164,8 @@ export class IconMesh extends ChunkedBatchedMesh {
           // transform position
           vec3 transformed = position;
           {
+            transformed = rotate_vertex_position(transformed, cameraQuat);
+
             transformed += p;
           }
 
@@ -172,21 +188,23 @@ export class IconMesh extends ChunkedBatchedMesh {
         varying float vItemIndex;
 
         void main() {
-          float itemX = mod(vItemIndex, iconsPerRow);
+          /* float itemX = mod(vItemIndex, iconsPerRow);
           float itemY = floor(vItemIndex / iconsPerRow);
           vec2 uv =
             vec2(0., 1. - 1./iconsPerRow) + // last icon
-            vec2(itemX, -itemY) / iconsPerRow; // select icon
+            vec2(itemX, -itemY) / iconsPerRow; // select icon */
+          vec2 uv = vUv;
 
           gl_FragColor = texture(
             uTex,
             uv
           );
 
-          const float alphaTest = 0.5;
+          /* const float alphaTest = 0.5;
           if (gl_FragColor.a < alphaTest) {
             discard;
-          }
+          } */
+          gl_FragColor.r += 1.;
           gl_FragColor.a = 1.;
         }
       `,
@@ -208,10 +226,18 @@ export class IconMesh extends ChunkedBatchedMesh {
     const {ps, instances} = chunkResult;
     if (chunk.lod < this.lodCutoff && instances.length > 0) {
       const _renderIconGeometry = (drawCall, ps, instances) => {
+        // console.log('got ps', ps.slice());
         const pTexture = drawCall.getTexture('p');
         const pOffset = drawCall.getTextureOffset('p');
         const itemIndexTexture = drawCall.getTexture('itemIndex');
         const itemIndexOffset = drawCall.getTextureOffset('itemIndex');
+
+        /* if (ps.length / 3 !== instances.length) {
+          debugger;
+        } */
+        /* if (instances.length > maxInstancesPerDrawCall) {
+          debugger;
+        } */
 
         for (let i = 0; i < instances.length; i++) {
           const instanceId = instances[i];
@@ -220,11 +246,20 @@ export class IconMesh extends ChunkedBatchedMesh {
           const px = ps[i * 3];
           const py = ps[i * 3 + 1];
           const pz = ps[i * 3 + 2];
-          pTexture.image.data[pOffset + i] = px;
-          pTexture.image.data[pOffset + i + 1] = py;
-          pTexture.image.data[pOffset + i + 2] = pz;
+          pTexture.image.data[pOffset + i * 4] = px;
+          pTexture.image.data[pOffset + i * 4 + 1] = py;
+          pTexture.image.data[pOffset + i * 4 + 2] = pz;
 
-          itemIndexTexture.image.data[itemIndexOffset + i] = instanceId;
+          itemIndexTexture.image.data[itemIndexOffset + i * 4] = instanceId;
+
+          /* pTexture.image.data[pOffset + indexOffset] = px;
+          pTexture.image.data[pOffset + indexOffset + 1] = py;
+          pTexture.image.data[pOffset + indexOffset + 2] = pz;
+
+          offsetTexture.image.data[offsetOffset + indexOffset] = this.offsets[instanceId * 4];
+          offsetTexture.image.data[offsetOffset + indexOffset + 1] = this.offsets[instanceId * 4 + 1];
+          offsetTexture.image.data[offsetOffset + indexOffset + 2] = this.offsets[instanceId * 4 + 2];
+          offsetTexture.image.data[offsetOffset + indexOffset + 3] = this.offsets[instanceId * 4 + 3]; */
         }
 
         drawCall.updateTexture('p', pOffset, ps.length / 3 * 4);
@@ -264,12 +299,21 @@ export class IconMesh extends ChunkedBatchedMesh {
   }
   update() {
     const camera = useCamera();
-    localEuler.setFromQuaternion(camera.quaternion, 'YXZ');
+    /* localEuler.setFromQuaternion(camera.quaternion, 'YXZ');
     localEuler.x = 0;
     localEuler.z = 0;
 
     this.material.uniforms.cameraY.value = localEuler.y;
-    this.material.uniforms.cameraY.needsUpdate = true;
+    this.material.uniforms.cameraY.needsUpdate = true; */
+
+    this.material.uniforms.cameraPos.value.copy(camera.position);
+    this.material.uniforms.cameraPos.needsUpdate = true;
+
+    this.material.uniforms.cameraQuat.value.x = camera.quaternion.x;
+    this.material.uniforms.cameraQuat.value.y = camera.quaternion.y;
+    this.material.uniforms.cameraQuat.value.z = camera.quaternion.z;
+    this.material.uniforms.cameraQuat.value.w = camera.quaternion.w;
+    this.material.uniforms.cameraQuat.needsUpdate = true;
   }
   
   setPackage(pkg) {
