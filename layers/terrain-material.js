@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {EXRLoader} from 'three/examples/jsm/loaders/EXRLoader.js';
 import metaversefile from 'metaversefile';
-import TextureAtlas from '../utils/texture-atlas';
+import TextureAtlas, { DIFFUSE, NORMAL, TEXTURE_PER_ROW } from '../utils/texture-atlas';
 
 const baseUrl = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
 
@@ -32,9 +32,6 @@ const _loadTexture = async (path) => {
 
   return texture;
 };
-
-const DIFFUSE = 'diffuse';
-const NORMAL = 'normal';
 
 const loadTerrainMaterial = async () => {
   // const rockDiffMap = await _loadKTX2(
@@ -169,6 +166,10 @@ const loadTerrainMaterial = async () => {
       const mapParseFragment = /* glsl */`
         #include <map_pars_fragment>
 
+        precision highp sampler2D;
+        precision highp float;
+        precision highp int;
+
         varying vec4 vMaterialsWeights;
 
         flat varying ivec4 vBiomeTypes; 
@@ -211,9 +212,20 @@ const loadTerrainMaterial = async () => {
           float e = 0.14;
           return saturate((x*(a*x+b))/(x*(c*x+d)+e));
         }
+
         // ! based on this article : https://iquilezles.org/articles/texturerepetition
-        vec4 textureNoTile(in sampler2D textureSample, float textureSlice, in vec2 uv ) {
-          float k = vec3(texture2D(uNoiseTexture, 0.0025*uv)).x; // cheap (cache friendly) lookup
+        vec2 mirrorFract(vec2 uv) {
+          return asin(sin(PI*(uv-0.5)))/PI+0.5;
+        }
+        vec4 textureNoTile(sampler2D textureSample, int textureIndex, vec2 uv ) {
+          int index = textureIndex;
+          float ax = float(index % ${TEXTURE_PER_ROW});
+          float ay = floor(float(index) / float(${TEXTURE_PER_ROW}));
+          vec2 textureOffset = vec2(ax, ay);
+          vec2 textureSize = vec2(1. / float(${17.1}));
+          vec2 newUv = mirrorFract(uv) * textureSize + textureOffset;
+
+          float k = vec3(texture2D(uNoiseTexture, 0.0025*newUv)).x; // cheap (cache friendly) lookup
           float l = k*8.0;
           float f = fract(l);
           
@@ -224,8 +236,8 @@ const loadTerrainMaterial = async () => {
           vec2 offa = vec2(hash4(vec2(30.0,7.0)*ia)); // can replace with any other hash
           vec2 offb = vec2(hash4(vec2(30.0,7.0)*ib)); // can replace with any other hash
 
-          vec4 cola = texture2D(textureSample, vec2(uv + offa));
-          vec4 colb = texture2D(textureSample, vec2(uv + offb));
+          vec4 cola = texture2D(textureSample, vec2(newUv + offa));
+          vec4 colb = texture2D(textureSample, vec2(newUv + offb));
 
           return mix(cola, colb, smoothstep(0.2,0.8,f-0.1*sum(cola.xyz-colb.xyz)));
         }
@@ -245,10 +257,10 @@ const loadTerrainMaterial = async () => {
           float rockWeight = vMaterialsWeights.y;
 
           // TODO : use vMaterial as index
-          samples[0] = textureNoTile(inputTextures, 0.f, uv);
-          samples[1] = textureNoTile(inputTextures, 0.f, uv);
-          samples[2] = textureNoTile(inputTextures, 0.f, uv);
-          samples[3] = textureNoTile(inputTextures, 0.f, uv);
+          samples[0] = textureNoTile(inputTextures, 0, uv);
+          samples[1] = textureNoTile(inputTextures, 1, uv);
+          samples[2] = textureNoTile(inputTextures, 0, uv);
+          samples[3] = textureNoTile(inputTextures, 0, uv);
 
           vec4 weights = vec4(grassWeight, rockWeight, 0., 0.);
 

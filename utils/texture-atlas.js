@@ -1,19 +1,23 @@
 import * as THREE from 'three';
 
 import metaversefile from 'metaversefile';
-const {useRenderer} = metaversefile;
+const { useRenderer } = metaversefile;
 
 const baseUrl = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
 
 const renderer = useRenderer();
 
-// Taken from https://github.com/mrdoob/three.js/issues/758
-const _addImageToCanvas = (image) => {
-
-}
+const _adjustTextureSettings = (texture, encoding = THREE.LinearEncoding) => {
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.encoding = encoding;
+  texture.anisotropy = 16;
+};
 
 const IMAGE_SIZE = 1024;
+export const TEXTURE_PER_ROW = 2;
 
+export const DIFFUSE = 'diffuse';
+export const NORMAL = 'normal';
 class TextureAtlas {
   constructor() {
     this.onLoadFunctions = [];
@@ -35,7 +39,7 @@ class TextureAtlas {
 
   load(atlas, names) {
     this.textures[atlas] = {
-      textures: names.map(n => this.loader.load(n)),
+      textures: names.map((n) => this.loader.load(n)),
     };
   }
 
@@ -48,14 +52,12 @@ class TextureAtlas {
   }
 
   onLoad() {
-    console.log(renderer.capabilities.maxTextureSize);
+    // console.log(renderer.capabilities.maxTextureSize);
     for (const k in this.textures) {
       const atlas = this.textures[k];
-
       const canvas = document.createElement('canvas');
-      const atlasSize = 4;
-      const width = IMAGE_SIZE * atlasSize;
-      const height = IMAGE_SIZE * atlasSize;
+      const width = IMAGE_SIZE * TEXTURE_PER_ROW;
+      const height = IMAGE_SIZE * TEXTURE_PER_ROW;
 
       canvas.width = width;
       canvas.height = height;
@@ -67,17 +69,27 @@ class TextureAtlas {
       const context = canvas.getContext('2d');
 
       for (let t = 0; t < atlas.textures.length; t++) {
-        const curTexture = atlas.textures[t];
-        const image = curTexture.image;
-        const x = t % atlasSize;
-        const y = Math.floor(t / atlasSize);
+        const texture = atlas.textures[t];
+        _adjustTextureSettings(texture);
+
+        const image = texture.image;
+        const x = t % TEXTURE_PER_ROW;
+        const y = Math.floor(t / TEXTURE_PER_ROW);
 
         image && context.drawImage(image, x * IMAGE_SIZE, y * IMAGE_SIZE);
       }
 
       // * Using a canvas texture is necessary
-      const atlasTexture = new THREE.CanvasTexture(canvas) 
-      atlasTexture.wrapS = atlasTexture.wrapT = THREE.RepeatWrapping;
+      const atlasTexture = new THREE.CanvasTexture(canvas);
+
+      switch (k) {
+        case DIFFUSE:
+          _adjustTextureSettings(atlasTexture, THREE.sRGBEncoding);
+          break;
+        default:
+          _adjustTextureSettings(atlasTexture);
+          break;
+      }
 
       atlas.atlas = atlasTexture;
     }
