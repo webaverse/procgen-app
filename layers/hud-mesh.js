@@ -31,6 +31,9 @@ export class HudMesh extends THREE.Object3D {
   removeChunk(chunk) {
     this.iconMesh.removeChunk(chunk);
   }
+  update() {
+    this.iconMesh.update();
+  }
   async waitForLoad() {
     const iconPackage = await IconPackage.loadUrls(hudUrls);
     this.iconMesh.setPackage(iconPackage);

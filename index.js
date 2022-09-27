@@ -233,10 +233,15 @@ export default e => {
       };
       _updateLodTracker();
 
-      const _updateLitteMesh = () => {
+      const _updateLitterMesh = () => {
         litterMesh.update(); // update spritesheet uniforms
       };
-      _updateLitteMesh();
+      _updateLitterMesh();
+
+      const _updateHudMesh = () => {
+        hudMesh.update(); // update icon uniforms
+      };
+      _updateHudMesh();
 
       gpuTaskManager.update();
     };
