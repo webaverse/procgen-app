@@ -13,7 +13,7 @@ const _adjustTextureSettings = (texture, encoding = THREE.LinearEncoding) => {
   texture.anisotropy = 16;
 };
 
-const IMAGE_SIZE = 1024;
+export const TEXTURE_IMAGE_SIZE = 1024;
 export const TEXTURE_PER_ROW = 2;
 
 export const DIFFUSE = 'diffuse';
@@ -56,8 +56,8 @@ class TextureAtlas {
     for (const k in this.textures) {
       const atlas = this.textures[k];
       const canvas = document.createElement('canvas');
-      const width = IMAGE_SIZE * TEXTURE_PER_ROW;
-      const height = IMAGE_SIZE * TEXTURE_PER_ROW;
+      const width = TEXTURE_IMAGE_SIZE * TEXTURE_PER_ROW;
+      const height = TEXTURE_IMAGE_SIZE * TEXTURE_PER_ROW;
 
       canvas.width = width;
       canvas.height = height;
@@ -76,7 +76,7 @@ class TextureAtlas {
         const x = t % TEXTURE_PER_ROW;
         const y = Math.floor(t / TEXTURE_PER_ROW);
 
-        image && context.drawImage(image, x * IMAGE_SIZE, y * IMAGE_SIZE);
+        image && context.drawImage(image, x * TEXTURE_IMAGE_SIZE, y * TEXTURE_IMAGE_SIZE);
       }
 
       // * Using a canvas texture is necessary

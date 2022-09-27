@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {EXRLoader} from 'three/examples/jsm/loaders/EXRLoader.js';
 import metaversefile from 'metaversefile';
-import TextureAtlas, { DIFFUSE, NORMAL, TEXTURE_PER_ROW } from '../utils/texture-atlas';
+import TextureAtlas, { DIFFUSE, NORMAL, TEXTURE_IMAGE_SIZE, TEXTURE_PER_ROW } from '../utils/texture-atlas';
 
 const baseUrl = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
 
@@ -213,16 +213,22 @@ const loadTerrainMaterial = async () => {
           return saturate((x*(a*x+b))/(x*(c*x+d)+e));
         }
 
-        // ! based on this article : https://iquilezles.org/articles/texturerepetition
         vec2 mirrorFract(vec2 uv) {
           return abs(2. * (fract(0.5 * uv + 0.5))-1.);
         }
+
+        // ! based on this article : https://iquilezles.org/articles/texturerepetition
         vec4 textureNoTile(sampler2D textureSample, int textureIndex, vec2 uv ) {
-          int index = textureIndex;
-          float ax = float(index % ${TEXTURE_PER_ROW});
-          float ay = floor(float(index) / float(${TEXTURE_PER_ROW}));
-          vec2 textureSize = vec2(1. / float(${17.125}));
-          vec2 textureOffset = vec2(ax, ay) * textureSize;
+          // uv/=16.;
+          const int TEXTURE_PER_ROW = ${TEXTURE_PER_ROW};
+          const int TEXTURE_IMAGE_SIZE = ${TEXTURE_IMAGE_SIZE};
+
+          float ax = float(textureIndex % TEXTURE_PER_ROW);
+          float ay = floor(float(textureIndex) / float(TEXTURE_PER_ROW));
+
+          vec2 textureSize = vec2(1.0 / float(TEXTURE_PER_ROW * 2));
+          vec2 textureOffset = vec2(ax, ay);
+
           vec2 newUv = mirrorFract(uv) * textureSize + textureOffset;
 
           float k = vec3(texture2D(uNoiseTexture, 0.0025*newUv)).x; // cheap (cache friendly) lookup
@@ -257,8 +263,8 @@ const loadTerrainMaterial = async () => {
           float rockWeight = vMaterialsWeights.y;
 
           // TODO : use vMaterial as index
-          samples[0] = textureNoTile(inputTextures, 1, uv);
-          samples[1] = textureNoTile(inputTextures, 1, uv);
+          samples[0] = textureNoTile(inputTextures, 0, uv);
+          samples[1] = textureNoTile(inputTextures, 0, uv);
           samples[2] = textureNoTile(inputTextures, 0, uv);
           samples[3] = textureNoTile(inputTextures, 0, uv);
 
