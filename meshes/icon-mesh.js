@@ -112,10 +112,6 @@ export class IconMesh extends ChunkedBatchedMesh {
           value: 0,
           needsUpdate: false,
         },
-        /* numIcons: {
-          value: numIcons,
-          needsUpdate: true,
-        }, */
         iconsPerRow: {
           value: iconsPerRow,
           needsUpdate: true,
