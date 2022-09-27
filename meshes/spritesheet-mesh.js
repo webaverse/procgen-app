@@ -304,8 +304,6 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
       const _renderLitterSpriteGeometry = (drawCall, instances) => {
         const pTexture = drawCall.getTexture('p');
         const pOffset = drawCall.getTextureOffset('p');
-        // const qTexture = drawCall.getTexture('q');
-        // const qOffset = drawCall.getTextureOffset('q');
         const offsetTexture = drawCall.getTexture('offset');
         const offsetOffset = drawCall.getTextureOffset('offset');
         const itemIndexTexture = drawCall.getTexture('itemIndex');
