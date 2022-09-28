@@ -141,7 +141,7 @@ export class IconMesh extends ChunkedBatchedMesh {
         uniform vec3 cameraPos;
         uniform vec4 cameraQuat;
         varying vec2 vUv;
-        varying float vItemIndex;
+        flat varying float vItemIndex;
 
         vec3 rotate_vertex_position(vec3 position, vec4 q) {
           return position + 2.0 * cross(q.xyz, cross(q.xyz, position) + q.w * position);
@@ -185,26 +185,28 @@ export class IconMesh extends ChunkedBatchedMesh {
         uniform sampler2D uTex;
         uniform float iconsPerRow;
         varying vec2 vUv;
-        varying float vItemIndex;
+        flat varying float vItemIndex;
 
         void main() {
-          /* float itemX = mod(vItemIndex, iconsPerRow);
+          float itemX = mod(vItemIndex, iconsPerRow);
           float itemY = floor(vItemIndex / iconsPerRow);
           vec2 uv =
             vec2(0., 1. - 1./iconsPerRow) + // last icon
-            vec2(itemX, -itemY) / iconsPerRow; // select icon */
-          vec2 uv = vUv;
+            vec2(itemX, -itemY) / iconsPerRow + // select icon
+            vUv / iconsPerRow; // offset within icon
+          // vec2 uv = vUv;
 
+          // gl_FragColor = vec4(uv.x, 0., uv.y, 1.);
           gl_FragColor = texture(
             uTex,
             uv
           );
 
-          /* const float alphaTest = 0.5;
+          const float alphaTest = 0.5;
           if (gl_FragColor.a < alphaTest) {
             discard;
-          } */
-          gl_FragColor.r += 1.;
+          }
+          // gl_FragColor.r += 1.;
           gl_FragColor.a = 1.;
         }
       `,
@@ -313,7 +315,12 @@ export class IconMesh extends ChunkedBatchedMesh {
   setPackage(pkg) {
     const {canvas} = pkg;
 
-    this.material.uniforms.uTex.value = canvas;
+    const texture = new THREE.Texture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.needsUpdate = true;
+
+    this.material.uniforms.uTex.value = texture;
     this.material.uniforms.uTex.needsUpdate = true;
 
     this.visible = true;
