@@ -175,7 +175,7 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
         uniform vec3 cameraPos;
         uniform float cameraY;
         varying vec2 vUv;
-        varying float vItemIndex;
+        flat varying float vItemIndex;
         varying float vY;
 
         vec3 rotate_vertex_position(vec3 position, vec4 q) { 
@@ -248,7 +248,7 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
         uniform float numFramesPerRow;
         uniform float spritesheetsPerRow;
         varying vec2 vUv;
-        varying float vItemIndex;
+        flat varying float vItemIndex;
         varying float vY;
 
         void main() {
