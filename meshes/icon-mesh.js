@@ -299,12 +299,6 @@ export class IconMesh extends ChunkedBatchedMesh {
   }
   update() {
     const camera = useCamera();
-    /* localEuler.setFromQuaternion(camera.quaternion, 'YXZ');
-    localEuler.x = 0;
-    localEuler.z = 0;
-
-    this.material.uniforms.cameraY.value = localEuler.y;
-    this.material.uniforms.cameraY.needsUpdate = true; */
 
     this.material.uniforms.cameraPos.value.copy(camera.position);
     this.material.uniforms.cameraPos.needsUpdate = true;
