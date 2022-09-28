@@ -108,10 +108,6 @@ export class IconMesh extends ChunkedBatchedMesh {
           value: null,
           needsUpdate: null,
         },
-        /* cameraY: {
-          value: 0,
-          needsUpdate: false,
-        }, */
         cameraPos: {
           value: new THREE.Vector3(),
           needsUpdate: false,
