@@ -3,7 +3,7 @@ import metaversefile from 'metaversefile';
 const {useCamera, useProcGenManager, useGeometries, useAtlasing, useGeometryBatching, useGeometryChunking, useLoaders, usePhysics, useSpriting} = metaversefile;
 const procGenManager = useProcGenManager();
 const {createAppUrlSpriteSheet} = useSpriting();
-const {DoubleSidedPlaneGeometry} = useGeometries();
+// const {DoubleSidedPlaneGeometry} = useGeometries();
 const {ChunkedBatchedMesh, ChunkedGeometryAllocator} = useGeometryChunking();
 import {
   // bufferSize,
@@ -95,7 +95,7 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
     instance,
     lodCutoff,
   }) {
-    const baseGeometry = new DoubleSidedPlaneGeometry(1, 1);
+    const baseGeometry = new THREE.PlaneGeometry(1, 1);
     const allocator = new ChunkedGeometryAllocator(baseGeometry, [
       {
         name: 'p',

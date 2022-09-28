@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import metaversefile from 'metaversefile';
 const {useCamera, useGeometries, useGeometryChunking, useProcGenManager} = metaversefile;
 const procGenManager = useProcGenManager();
-const {DoubleSidedPlaneGeometry} = useGeometries();
+// const {DoubleSidedPlaneGeometry} = useGeometries();
 const {ChunkedBatchedMesh, ChunkedGeometryAllocator} = useGeometryChunking();
 import {
   // bufferSize,
@@ -75,7 +75,7 @@ export class IconMesh extends ChunkedBatchedMesh {
     lodCutoff,
   } = {}) {
     // allocator
-    const baseGeometry = new DoubleSidedPlaneGeometry(1, 1);
+    const baseGeometry = new THREE.PlaneGeometry(1, 1);
     const allocator = new ChunkedGeometryAllocator(baseGeometry, [
       {
         name: 'p',
