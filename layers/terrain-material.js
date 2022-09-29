@@ -74,7 +74,9 @@ const loadTerrainMaterial = async () => {
 
   textureAtlas.load(DIFFUSE, [
     baseUrl + '../assets/textures/stylized_grass/stylized_grass1_d.png',
-    baseUrl + '../assets/textures/dirt/dirt1_d.png'
+    baseUrl + '../assets/textures/dirt/dirt1_d.png',
+    // baseUrl + '../assets/textures/stylized_grass/stylized_grass1_d.png',
+    // baseUrl + '../assets/textures/dirt/dirt1_d.png'
   ]);
 
   const _loadNormal = () => {
@@ -84,7 +86,9 @@ const loadTerrainMaterial = async () => {
 
   textureAtlas.load(NORMAL, [
     baseUrl + '../assets/textures/stylized_grass/stylized_grass1_n.png',
-    baseUrl + '../assets/textures/dirt/dirt1_n.png'
+    baseUrl + '../assets/textures/dirt/dirt1_n.png',
+    // baseUrl + '../assets/textures/stylized_grass/stylized_grass1_n.png',
+    // baseUrl + '../assets/textures/dirt/dirt1_n.png'
   ]);
 
 
@@ -188,8 +192,10 @@ const loadTerrainMaterial = async () => {
         uniform sampler2D uNoiseTexture;
         uniform sampler2D uGrassDiff;
   
-        float TRI_SCALE = 0.1;
-        float TRI_SHARPNESS = 7.5;
+        const float TRI_SCALE = 0.1;
+        const float TRI_SHARPNESS = 7.5;
+        const float TEXTURE_PER_ROW = float(${TEXTURE_PER_ROW});
+        const float TEXTURE_SIZE = 1.0 / TEXTURE_PER_ROW;
 
         vec4 blendSamples(vec4 samples[4], vec4 weights) {
           float weightSum = weights.x + weights.y + weights.z + weights.w;
@@ -213,37 +219,35 @@ const loadTerrainMaterial = async () => {
           return saturate((x*(a*x+b))/(x*(c*x+d)+e));
         }
 
-        vec2 mirrorFract(vec2 uv) {
-          return abs(2. * (fract(0.5 * uv + 0.5))-1.);
+        vec2 getSubTextureOffset(int textureIndex){
+          float ax = mod(float(textureIndex), TEXTURE_PER_ROW);
+          float ay = floor(float(textureIndex) / TEXTURE_PER_ROW);
+
+          return vec2(ax, ay) * TEXTURE_SIZE;
         }
 
-        // ! based on this article : https://iquilezles.org/articles/texturerepetition
+        vec4 subTexture2D(sampler2D textureSample, vec2 tileUv, vec2 textureOffset) {
+          vec2 subUv = fract(tileUv) * TEXTURE_SIZE + textureOffset;
+          return texture2D(textureSample, subUv);
+        }
+
+        // * based on this article : https://iquilezles.org/articles/texturerepetition
         vec4 textureNoTile(sampler2D textureSample, int textureIndex, vec2 uv ) {
-          // uv/=16.;
-          const int TEXTURE_PER_ROW = ${TEXTURE_PER_ROW};
-          const int TEXTURE_IMAGE_SIZE = ${TEXTURE_IMAGE_SIZE};
-
-          float ax = float(textureIndex % TEXTURE_PER_ROW);
-          float ay = floor(float(textureIndex) / float(TEXTURE_PER_ROW));
-
-          vec2 textureSize = vec2(1.0 / float(TEXTURE_PER_ROW * 2));
-          vec2 textureOffset = vec2(ax, ay);
-
-          vec2 newUv = mirrorFract(uv) * textureSize + textureOffset;
-
-          float k = vec3(texture2D(uNoiseTexture, 0.0025*newUv)).x; // cheap (cache friendly) lookup
+          float k = vec3(texture2D(uNoiseTexture, 0.0025*uv)).x; // cheap (cache friendly) lookup
           float l = k*8.0;
           float f = fract(l);
           
-          float ia = floor(l+0.5); // suslik's method (see comments)
+          float ia = floor(l+0.5);
           float ib = floor(l);
           f = min(f, 1.0-f)*2.0;
 
           vec2 offa = vec2(hash4(vec2(30.0,7.0)*ia)); // can replace with any other hash
           vec2 offb = vec2(hash4(vec2(30.0,7.0)*ib)); // can replace with any other hash
 
-          vec4 cola = texture2D(textureSample, vec2(newUv + offa));
-          vec4 colb = texture2D(textureSample, vec2(newUv + offb));
+          vec2 textureOffset = getSubTextureOffset(textureIndex);
+
+          vec4 cola = subTexture2D(textureSample, uv + offa, textureOffset);
+          vec4 colb = subTexture2D(textureSample, uv + offb, textureOffset);
 
           return mix(cola, colb, smoothstep(0.2,0.8,f-0.1*sum(cola.xyz-colb.xyz)));
         }
@@ -251,20 +255,12 @@ const loadTerrainMaterial = async () => {
         vec4 blendBiomes(sampler2D inputTextures, vec2 uv) {
           vec4 samples[4];
 
-          // samples[0] = textureNoTile(inputTextures, vBiomeTypes.x, uv);
-          // samples[1] = textureNoTile(inputTextures, vBiomeTypes.y, uv);
-          // samples[2] = textureNoTile(inputTextures, vBiomeTypes.z, uv);
-          // samples[3] = textureNoTile(inputTextures, vBiomeTypes.w, uv);
-          // float slope = max(0.f, 1.f - vObjectNormal.y);
-          // float blend = clamp(slope * 2.5 - 0.1, 0., 1.);
-          // float grassW = 1.0 - blend;
-          // float rockW = blend;
           float grassWeight = vMaterialsWeights.x;
           float rockWeight = vMaterialsWeights.y;
 
           // TODO : use vMaterial as index
           samples[0] = textureNoTile(inputTextures, 0, uv);
-          samples[1] = textureNoTile(inputTextures, 0, uv);
+          samples[1] = textureNoTile(inputTextures, 1, uv);
           samples[2] = textureNoTile(inputTextures, 0, uv);
           samples[3] = textureNoTile(inputTextures, 0, uv);
 
@@ -356,7 +352,7 @@ const loadTerrainMaterial = async () => {
         #include <normal_fragment_maps>
 
         vec3 triplanarNormalColor = triplanarNormal(vPosition, vObjectNormal, uNormalMap).xyz;
-        // normal = normalize(vNormalMatrix * triplanarNormalColor); 
+        normal = normalize(vNormalMatrix * triplanarNormalColor); 
       `;
 
       const aoMapFragment = /* glsl */`

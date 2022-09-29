@@ -67,13 +67,13 @@ export default e => {
     app.add(terrainMesh);
     terrainMesh.updateMatrixWorld();
 
-    const waterMesh = new WaterMesh({
-      instance,
-      gpuTaskManager,
-    });
-    waterMesh.frustumCulled = false;
-    app.add(waterMesh);
-    waterMesh.updateMatrixWorld();
+    // const waterMesh = new WaterMesh({
+    //   instance,
+    //   gpuTaskManager,
+    // });
+    // waterMesh.frustumCulled = false;
+    // app.add(waterMesh);
+    // waterMesh.updateMatrixWorld();
 
     // const barrierMesh = new BarrierMesh({
     //   instance,
@@ -113,7 +113,7 @@ export default e => {
 
         // heightfield
         terrainMesh.addChunk(chunk, heightfield);
-        waterMesh.addChunk(chunk, heightfield);
+        // waterMesh.addChunk(chunk, heightfield);
         // barrierMesh.addChunk(chunk, heightfield);
       
         // // vegetation
@@ -125,7 +125,7 @@ export default e => {
       generation.addEventListener('geometryremove', e => {
         // heightfield
         terrainMesh.removeChunk(chunk);
-        waterMesh.removeChunk(chunk);
+        // waterMesh.removeChunk(chunk);
         // barrierMesh.removeChunk(chunk);
 
         // // vegetation

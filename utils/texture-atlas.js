@@ -7,10 +7,15 @@ const baseUrl = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
 
 const renderer = useRenderer();
 
-const _adjustTextureSettings = (texture, encoding = THREE.LinearEncoding) => {
+const _adjustAtlasTextureSettings = (texture, encoding = THREE.LinearEncoding) => {
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+
+  // * disabling mipmaps to stop texture bleed in the shader
+  texture.generateMipmaps = false;
+  texture.minFilter = THREE.NearestMipMapLinearFilter;
+  texture.magFilter = THREE.NearestFilter;
   texture.encoding = encoding;
-  texture.anisotropy = 16;
+  texture.flipY = false;
 };
 
 export const TEXTURE_IMAGE_SIZE = 1024;
@@ -62,17 +67,16 @@ class TextureAtlas {
       canvas.width = width;
       canvas.height = height;
 
-      // canvas.style.position = 'absolute';
-      // canvas.style.top = '0';
-      // document.body.appendChild(canvas);
+      canvas.style.position = 'absolute';
+      canvas.style.top = k == DIFFUSE ? '0' : '2048px';
+      document.body.appendChild(canvas);
 
       const context = canvas.getContext('2d');
 
       for (let t = 0; t < atlas.textures.length; t++) {
         const texture = atlas.textures[t];
-        _adjustTextureSettings(texture);
-
         const image = texture.image;
+
         const x = t % TEXTURE_PER_ROW;
         const y = Math.floor(t / TEXTURE_PER_ROW);
 
@@ -84,10 +88,10 @@ class TextureAtlas {
 
       switch (k) {
         case DIFFUSE:
-          _adjustTextureSettings(atlasTexture, THREE.sRGBEncoding);
+          _adjustAtlasTextureSettings(atlasTexture, THREE.sRGBEncoding);
           break;
         default:
-          _adjustTextureSettings(atlasTexture);
+          _adjustAtlasTextureSettings(atlasTexture);
           break;
       }
 
