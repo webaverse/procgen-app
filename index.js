@@ -48,8 +48,8 @@ export default e => {
     // lodTracker.debugMesh.position.y = 0.1;
     // lodTracker.debugMesh.updateMatrixWorld();
 
-    lodTracker.onPostUpdate(currentCoord => {
-      barrierMesh.updateChunk(currentCoord);
+    lodTracker.onPostUpdate(position => {
+      // barrierMesh.updateChunk(position);
     });
 
     // managers
@@ -74,13 +74,13 @@ export default e => {
     app.add(waterMesh);
     waterMesh.updateMatrixWorld();
 
-    const barrierMesh = new BarrierMesh({
+    /* const barrierMesh = new BarrierMesh({
       instance,
       gpuTaskManager,
     });
     barrierMesh.frustumCulled = false;
     app.add(barrierMesh);
-    barrierMesh.updateMatrixWorld();
+    barrierMesh.updateMatrixWorld(); */
 
     const litterMesh = new LitterMetaMesh({
       instance,
@@ -121,7 +121,7 @@ export default e => {
         // heightfield
         terrainMesh.addChunk(chunk, heightfield);
         waterMesh.addChunk(chunk, heightfield);
-        barrierMesh.addChunk(chunk, heightfield);
+        // barrierMesh.addChunk(chunk, heightfield);
       
         // vegetation
         litterMesh.addChunk(chunk, vegetationInstances);
@@ -136,7 +136,7 @@ export default e => {
         // heightfield
         terrainMesh.removeChunk(chunk);
         waterMesh.removeChunk(chunk);
-        barrierMesh.removeChunk(chunk);
+        // barrierMesh.removeChunk(chunk);
 
         // vegetation
         litterMesh.removeChunk(chunk);
