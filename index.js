@@ -6,7 +6,7 @@ const {GPUTaskManager} = useGPUTask();
 const {GenerationTaskManager} = useGenerationTask();
 
 import {TerrainMesh} from './layers/terrain-mesh.js';
-import {WaterMesh} from './layers/water-mesh.js';
+// import {WaterMesh} from './layers/water-mesh.js';
 // import {BarrierMesh} from './layers/barrier-mesh.js';
 // import {LitterMetaMesh, litterUrls} from './layers/litter-mesh.js';
 // import {GrassMesh, grassUrls} from './layers/grass-mesh.js';
@@ -139,10 +139,10 @@ export default e => {
         const signal = generation.getSignal();
         const generateFlags = {
           terrain: true,
-          water: true,
-          barrier: true,
-          vegetation: true,
-          grass: true,
+          water: false,
+          barrier: false,
+          vegetation: false,
+          grass: false,
         };
         // const numVegetationInstances = litterUrls.length;
         // const numGrassInstances = grassUrls.length;

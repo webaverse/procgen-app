@@ -1,26 +1,12 @@
 import * as THREE from 'three';
 import {EXRLoader} from 'three/examples/jsm/loaders/EXRLoader.js';
-import metaversefile from 'metaversefile';
-import TextureAtlas, { DIFFUSE, NORMAL, TEXTURE_IMAGE_SIZE, TEXTURE_PER_ROW } from '../utils/texture-atlas';
+import TextureAtlas, { DIFFUSE, NORMAL, TEXTURE_IMAGE_SIZE, _calculateTexturePerRow } from '../utils/texture-atlas';
 
 const baseUrl = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
 
-const { useLoaders, useScene } = metaversefile;
-
-const rootScene = useScene();
 const exrLoader = new EXRLoader();
 const textureLoader = new THREE.TextureLoader();
-const { ktx2Loader } = useLoaders();
 
-const _loadKTX2 = async (path) => {
-  const texture = await ktx2Loader.loadAsync(baseUrl + path);
-  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-
-  // higher samples improve the quality
-  texture.anisotropy = 16;
-
-  return texture;
-};
 const _loadExr = async (path) => {
   const texture = exrLoader.loadAsync(baseUrl + path);
   return texture;
@@ -33,33 +19,29 @@ const _loadTexture = async (path) => {
   return texture;
 };
 
+
+const DIFFUSE_PATHS = [
+  baseUrl + '../assets/textures/stylized_grass/stylized_grass1_d.png',
+  baseUrl + '../assets/textures/dirt/dirt1_d.png'
+];
+
+const NORMAL_PATHS = [
+  baseUrl + '../assets/textures/stylized_grass/stylized_grass1_n.png',
+  baseUrl + '../assets/textures/dirt/dirt1_n.png',
+];
+
+export const NUM_MATERIALS = DIFFUSE_PATHS.length; // TODO : get this number from wasm
+
 const loadTerrainMaterial = async () => {
-  // const rockDiffMap = await _loadKTX2(
-  //   '../assets/textures/rock/rock_06_diff_8k.ktx2'
-  // );
-  // rockDiffMap.encoding = THREE.sRGBEncoding;
-
-  // const rockRoughnessMap = await _loadKTX2(
-  //   '../assets/textures/rock/rock_06_rough_8k.ktx2'
-  // );
-  // rockRoughnessMap.encoding = THREE.LinearEncoding;
-
-  // const rockNormalMap = await _loadKTX2(
-  //   '../assets/textures/rock/rock_06_nor_dx_8k.ktx2'
-  // );
-  // rockNormalMap.encoding = THREE.LinearEncoding;
-
-  // const rockAoMap = await _loadKTX2(
-  //   '../assets/textures/rock/rock_06_nor_dx_8k.ktx2'
-  // );
-  // rockNormalMap.encoding = THREE.LinearEncoding;
-
   const materialUniforms = {
+    // texture atlases
     uDiffMap: {},
+    uNormalMap: {},
     uRoughnessMap: {},
     uMetalnessMap: {},
-    uNormalMap: {},
     uAoMap: {},
+
+    // noise texture
     uNoiseTexture: {},
   };
 
@@ -68,53 +50,18 @@ const loadTerrainMaterial = async () => {
   const textureAtlas = new TextureAtlas();
 
   const _loadDiffuse = () => {
-   materialUniforms.uDiffMap.value = textureAtlas.data[DIFFUSE].atlas;
+    materialUniforms.uDiffMap.value = textureAtlas.data[DIFFUSE].atlas;
   };
   textureAtlas.runOnLoad(_loadDiffuse);
 
-  textureAtlas.load(DIFFUSE, [
-    baseUrl + '../assets/textures/stylized_grass/stylized_grass1_d.png',
-    baseUrl + '../assets/textures/dirt/dirt1_d.png',
-    // baseUrl + '../assets/textures/stylized_grass/stylized_grass1_d.png',
-    // baseUrl + '../assets/textures/dirt/dirt1_d.png'
-  ]);
+  textureAtlas.load(DIFFUSE, DIFFUSE_PATHS);
 
   const _loadNormal = () => {
     materialUniforms.uNormalMap.value = textureAtlas.data[NORMAL].atlas;
   };
   textureAtlas.runOnLoad(_loadNormal);
 
-  textureAtlas.load(NORMAL, [
-    baseUrl + '../assets/textures/stylized_grass/stylized_grass1_n.png',
-    baseUrl + '../assets/textures/dirt/dirt1_n.png',
-    // baseUrl + '../assets/textures/stylized_grass/stylized_grass1_n.png',
-    // baseUrl + '../assets/textures/dirt/dirt1_n.png'
-  ]);
-
-
-  // const grassDiffMap = await _loadTexture('../assets/textures/stylized_grass/stylized_grass1_d.png');
-  // grassDiffMap.encoding = THREE.sRGBEncoding;
-
-  // const grassNormalMap = await _loadTexture('../assets/textures/stylized_grass/stylized_grass1_n.png');
-  // grassNormalMap.encoding = THREE.LinearEncoding;
-
-  // const grassRoughnessMap = await _loadTexture('../assets/textures/stylized_grass/stylized_grass_r.png');
-  // grassRoughnessMap.encoding = THREE.LinearEncoding;
-
-  // const grassMetalnessMap = await _loadTexture('../assets/textures/stylized_grass/stylized_grass_m.png');
-  // grassMetalnessMap.encoding = THREE.LinearEncoding;
-
-  // const rockDiffMap = await _loadTexture('../assets/textures/dirt/dirt1_d.png');
-  // rockDiffMap.encoding = THREE.sRGBEncoding;
-
-  // const rockNormalMap = await _loadTexture('../assets/textures/dirt/dirt1_n.png');
-  // rockNormalMap.encoding = THREE.LinearEncoding;
-
-  // const rockRoughnessMap = await _loadTexture('../assets/textures/dirt/dirt_r.png');
-  // rockRoughnessMap.encoding = THREE.LinearEncoding;
-
-  // const rockMetalnessMap = await _loadTexture('../assets/textures/dirt/dirt_m.png');
-  // rockMetalnessMap.encoding = THREE.LinearEncoding;
+  textureAtlas.load(NORMAL, NORMAL_PATHS);
 
   const noiseTexture = await _loadTexture('../assets/textures/simplex-noise.png');
   noiseTexture.encoding = THREE.LinearEncoding;
@@ -136,30 +83,19 @@ const loadTerrainMaterial = async () => {
       const uvParseVertex = /* glsl */`
         #include <uv_pars_vertex>
 
-        // attribute ivec4 biomeTypes = ivec4(0); // TODO: implement biome types as an attribute
-        // attribute vec4 biomeWeights = vec4(1., 0., 0., 0.);
         attribute vec4 materialsWeights;
 
         varying vec4 vMaterialsWeights;
 
-        flat varying ivec4 vBiomeTypes; 
-        varying vec4 vBiomeWeights;
-
         varying mat3 vNormalMatrix;
         varying vec3 vPosition;
         varying vec3 vObjectNormal;
-
-        ivec4 biomeTypes = ivec4(0);
-        vec4 biomeWeights = vec4(1., 1., 1., 1.);
       `;
 
       const worldPosVertex = /* glsl */`
        #include <worldpos_vertex>
 
        vMaterialsWeights = materialsWeights;
-
-       vBiomeTypes = biomeTypes;
-       vBiomeWeights = biomeWeights;
 
        vPosition = transformed;
        vNormalMatrix = normalMatrix;
@@ -176,9 +112,6 @@ const loadTerrainMaterial = async () => {
 
         varying vec4 vMaterialsWeights;
 
-        flat varying ivec4 vBiomeTypes; 
-        varying vec4 vBiomeWeights;
-
         varying vec3 vPosition;
         varying mat3 vNormalMatrix;
         varying vec3 vObjectNormal;
@@ -190,11 +123,10 @@ const loadTerrainMaterial = async () => {
         uniform sampler2D uAoMap;
 
         uniform sampler2D uNoiseTexture;
-        uniform sampler2D uGrassDiff;
   
         const float TRI_SCALE = 0.1;
         const float TRI_SHARPNESS = 7.5;
-        const float TEXTURE_PER_ROW = float(${TEXTURE_PER_ROW});
+        const float TEXTURE_PER_ROW = float(${textureAtlas.texturePerRow});
         const float TEXTURE_SIZE = 1.0 / TEXTURE_PER_ROW;
 
         vec4 blendSamples(vec4 samples[4], vec4 weights) {
@@ -226,33 +158,45 @@ const loadTerrainMaterial = async () => {
           return vec2(ax, ay) * TEXTURE_SIZE;
         }
 
-        vec4 subTexture2D(sampler2D textureSample, vec2 tileUv, vec2 textureOffset) {
+        // sub texture in atlas
+        vec4 subTexture2D(sampler2D textureSample, vec2 tileUv, vec2 textureOffset, vec2 duvdx, vec2 duvdy) {
           vec2 subUv = fract(tileUv) * TEXTURE_SIZE + textureOffset;
-          return texture2D(textureSample, subUv);
+          return textureGrad(textureSample, subUv, duvdx, duvdy);
         }
 
         // * based on this article : https://iquilezles.org/articles/texturerepetition
         vec4 textureNoTile(sampler2D textureSample, int textureIndex, vec2 uv ) {
+          // sample variation pattern
           float k = vec3(texture2D(uNoiseTexture, 0.0025*uv)).x; // cheap (cache friendly) lookup
+
+          // compute index
           float l = k*8.0;
           float f = fract(l);
-          
+
+          // suslik's method
           float ia = floor(l+0.5);
           float ib = floor(l);
           f = min(f, 1.0-f)*2.0;
 
+          // offsets for the different virtual patterns
           vec2 offa = vec2(hash4(vec2(30.0,7.0)*ia)); // can replace with any other hash
           vec2 offb = vec2(hash4(vec2(30.0,7.0)*ib)); // can replace with any other hash
 
           vec2 textureOffset = getSubTextureOffset(textureIndex);
 
-          vec4 cola = subTexture2D(textureSample, uv + offa, textureOffset);
-          vec4 colb = subTexture2D(textureSample, uv + offb, textureOffset);
+          // compute derivatives for mip-mapping
+          vec2 duvdx = dFdx(uv);
+          vec2 duvdy = dFdy(uv);
 
+          // sample the two closest virtual patterns
+          vec4 cola = subTexture2D(textureSample, uv + offa, textureOffset, duvdx, duvdy);
+          vec4 colb = subTexture2D(textureSample, uv + offb, textureOffset, duvdx, duvdy);
+
+          // interpolate between the two virtual patterns
           return mix(cola, colb, smoothstep(0.2,0.8,f-0.1*sum(cola.xyz-colb.xyz)));
         }
 
-        vec4 blendBiomes(sampler2D inputTextures, vec2 uv) {
+        vec4 blendMaterials(sampler2D inputTextures, vec2 uv) {
           vec4 samples[4];
 
           float grassWeight = vMaterialsWeights.x;
@@ -274,9 +218,9 @@ const loadTerrainMaterial = async () => {
           vec2 uvY = inputPosition.xz * TRI_SCALE;
           vec2 uvZ = inputPosition.xy * TRI_SCALE;
           
-          vec4 colX = blendBiomes(inputTextures, uvX);
-          vec4 colY = blendBiomes(inputTextures, uvY);
-          vec4 colZ = blendBiomes(inputTextures, uvZ);
+          vec4 colX = blendMaterials(inputTextures, uvX);
+          vec4 colY = blendMaterials(inputTextures, uvY);
+          vec4 colZ = blendMaterials(inputTextures, uvZ);
  
           vec3 blendWeight = pow(abs(inputNormal), vec3(TRI_SHARPNESS));
           blendWeight /= dot(blendWeight,vec3(1));
@@ -291,9 +235,9 @@ const loadTerrainMaterial = async () => {
           vec2 uvY = inputPosition.xz * TRI_SCALE;
           vec2 uvZ = inputPosition.xy * TRI_SCALE;
           
-          vec4 colX = blendBiomes(inputTextures, uvX);
-          vec4 colY = blendBiomes(inputTextures, uvY);
-          vec4 colZ = blendBiomes(inputTextures, uvZ);
+          vec4 colX = blendMaterials(inputTextures, uvX);
+          vec4 colY = blendMaterials(inputTextures, uvY);
+          vec4 colZ = blendMaterials(inputTextures, uvZ);
 
           // Tangent space normal maps
           vec3 tx = colX.xyz * vec3(2,2,2) - vec3(1,1,1);
@@ -325,6 +269,7 @@ const loadTerrainMaterial = async () => {
               clamp(tbnY * ty, -1.0, 1.0) * weights.y +
               clamp(tbnZ * tz, -1.0, 1.0) * weights.z
               );
+
           return vec4(worldNormal, 0.0);
         }
       `;
@@ -336,6 +281,15 @@ const loadTerrainMaterial = async () => {
         triplanarDiffColor.rgb = ACESFilmicToneMapping(triplanarDiffColor.rgb);
         diffuseColor *= triplanarDiffColor;
       `;
+
+      const normalFragmentMaps = /* glsl */`
+        #include <normal_fragment_maps>
+
+        vec3 triplanarNormalColor = triplanarNormal(vPosition, vObjectNormal, uNormalMap).xyz;
+        normal = normalize(vNormalMatrix * triplanarNormalColor); 
+      `;
+
+      // * The maps below are disabled for now
       const roughnessMapFragment = /* glsl */`
         #include <roughnessmap_fragment>
 
@@ -347,12 +301,6 @@ const loadTerrainMaterial = async () => {
 
         // vec4 texelMetalness = triplanarMap(vPosition, vObjectNormal, uMetalnessMap);
         // metalnessFactor *= texelMetalness.g;
-      `;
-      const normalFragmentMaps = /* glsl */`
-        #include <normal_fragment_maps>
-
-        vec3 triplanarNormalColor = triplanarNormal(vPosition, vObjectNormal, uNormalMap).xyz;
-        normal = normalize(vNormalMatrix * triplanarNormalColor); 
       `;
 
       const aoMapFragment = /* glsl */`
