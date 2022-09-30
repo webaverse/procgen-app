@@ -83,8 +83,10 @@ const loadTerrainMaterial = async () => {
       const uvParseVertex = /* glsl */`
         #include <uv_pars_vertex>
 
+        attribute ivec4 materials;
         attribute vec4 materialsWeights;
 
+        flat varying ivec4 vMaterials;
         varying vec4 vMaterialsWeights;
 
         varying mat3 vNormalMatrix;
@@ -95,6 +97,7 @@ const loadTerrainMaterial = async () => {
       const worldPosVertex = /* glsl */`
        #include <worldpos_vertex>
 
+       vMaterials = materials;
        vMaterialsWeights = materialsWeights;
 
        vPosition = transformed;
@@ -110,6 +113,7 @@ const loadTerrainMaterial = async () => {
         precision highp float;
         precision highp int;
 
+        flat varying ivec4 vMaterials;
         varying vec4 vMaterialsWeights;
 
         varying vec3 vPosition;
@@ -199,18 +203,12 @@ const loadTerrainMaterial = async () => {
         vec4 blendMaterials(sampler2D inputTextures, vec2 uv) {
           vec4 samples[4];
 
-          float grassWeight = vMaterialsWeights.x;
-          float rockWeight = vMaterialsWeights.y;
+          samples[0] = textureNoTile(inputTextures, vMaterials.x, uv);
+          samples[1] = textureNoTile(inputTextures, vMaterials.y, uv);
+          samples[2] = textureNoTile(inputTextures, vMaterials.z, uv);
+          samples[3] = textureNoTile(inputTextures, vMaterials.w, uv);
 
-          // TODO : use vMaterial as index
-          samples[0] = textureNoTile(inputTextures, 0, uv);
-          samples[1] = textureNoTile(inputTextures, 1, uv);
-          samples[2] = textureNoTile(inputTextures, 0, uv);
-          samples[3] = textureNoTile(inputTextures, 0, uv);
-
-          vec4 weights = vec4(grassWeight, rockWeight, 0., 0.);
-
-          return blendSamples(samples, weights);
+          return blendSamples(samples, vMaterialsWeights);
         }
 
         vec4 triplanarMap(vec3 inputPosition, vec3 inputNormal, sampler2D inputTextures){
