@@ -11,14 +11,6 @@ export const ENV_MAP = 'env';
 
 class TerrainPackage {
   constructor(textures) {
-    this.onLoadFunctions = [];
-
-    this.onLoadFn = () => {
-      this.onLoadFunctions.forEach((fn) => {
-        fn();
-      });
-    };
-
     this.textures = textures;
   }
 
@@ -63,12 +55,6 @@ class TerrainPackage {
     const pkg = new TerrainPackage(textures);
     return pkg;
   }
-
-  runOnLoad(onLoadFn) {
-    this.onLoadFunctions.push(onLoadFn);
-  }
-
-  onLoad() {}
 }
 
 export default TerrainPackage;
