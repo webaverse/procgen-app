@@ -1,15 +1,24 @@
-import * as THREE from 'three';
 import metaversefile from 'metaversefile';
+import * as THREE from 'three';
+import { urlSpecs } from '../assets.js';
 import {
-  bufferSize,
-  WORLD_BASE_HEIGHT,
-  MIN_WORLD_HEIGHT,
-  MAX_WORLD_HEIGHT,
+  bufferSize, MAX_WORLD_HEIGHT, MIN_WORLD_HEIGHT, WORLD_BASE_HEIGHT
 } from '../constants.js';
-import loadTerrainMaterial from './terrain-material.js';
-const {useProcGenManager, useGeometryBuffering} = metaversefile;
+import TerrainPackage, { DIFFUSE_MAP, ENV_MAP, NOISE_MAP, NORMAL_MAP } from '../meshes/terrain-package.js';
+import _createTerrainMaterial from './terrain-material.js';
+
+const DIFFUSE_MAP_PATHS = urlSpecs.terrainDiffuseMaps;
+const NORMAL_MAP_PATHS = urlSpecs.terrainNormalMaps;
+const ENV_MAP_PATH = urlSpecs.terrainEnvMap;
+const NOISE_MAP_PATH = urlSpecs.simplexMap;
+
+export const NUM_TERRAIN_MATERIALS = DIFFUSE_MAP_PATHS.length; // TODO : get this number from wasm
+const SUB_TEXTURE_SIZE = 1024;
+
+const {useProcGenManager, useGeometryBuffering, useAtlasing} = metaversefile;
 const {BufferedMesh, GeometryAllocator} = useGeometryBuffering();
 const procGenManager = useProcGenManager();
+const {CanvasTextureAtlas} = useAtlasing();
 
 //
 
@@ -93,15 +102,11 @@ export class TerrainMesh extends BufferedMesh {
 
     const {geometry} = allocator;
 
-    super(geometry);
+    const material = _createTerrainMaterial();
 
-    // loading the material
-    (async () => {
-      const material = await loadTerrainMaterial();
-      this.material = material;
-    })();
+    super(geometry, material);
 
-    // this.material = new THREE.MeshNormalMaterial();
+    this.visible = false;
 
     this.physics = physics;
 
@@ -352,5 +357,22 @@ export class TerrainMesh extends BufferedMesh {
       task.cancel();
       this.gpuTasks.delete(key);
     }
+  }
+
+  setPackage(pkg) {
+    const {textures} = pkg;
+    const diffuseAtlas = new CanvasTextureAtlas(textures[DIFFUSE_MAP], THREE.sRGBEncoding, SUB_TEXTURE_SIZE);
+    const normalAtlas = new CanvasTextureAtlas(textures[NORMAL_MAP], THREE.LinearEncoding, SUB_TEXTURE_SIZE);
+    this.material.uniforms.uDiffMap.value = diffuseAtlas.atlasTexture;
+    this.material.uniforms.uNormalMap.value = normalAtlas.atlasTexture;
+    this.material.uniforms.uNoiseTexture = textures[NOISE_MAP];
+    this.material.envMap = textures[ENV_MAP];
+
+    this.visible = true;
+  }
+
+  async waitForLoad() {
+    const terrainPackage = await TerrainPackage.loadUrls(DIFFUSE_MAP_PATHS, NORMAL_MAP_PATHS, ENV_MAP_PATH, NOISE_MAP_PATH);
+    this.setPackage(terrainPackage);
   }
 }

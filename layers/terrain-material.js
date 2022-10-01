@@ -1,38 +1,13 @@
 import * as THREE from 'three';
-import {EXRLoader} from 'three/examples/jsm/loaders/EXRLoader.js';
-import TextureAtlas, { DIFFUSE, NORMAL, TEXTURE_IMAGE_SIZE, _calculateTexturePerRow } from '../utils/texture-atlas';
+import metaversefile from 'metaversefile';
+import { NUM_TERRAIN_MATERIALS } from './terrain-mesh';
 
-const baseUrl = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
+const {useAtlasing} = metaversefile;
 
-const exrLoader = new EXRLoader();
-const textureLoader = new THREE.TextureLoader();
-
-const _loadExr = async (path) => {
-  const texture = exrLoader.loadAsync(baseUrl + path);
-  return texture;
-
-};
-const _loadTexture = async (path) => {
-  const texture = await textureLoader.loadAsync(baseUrl + path);
-  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-
-  return texture;
-};
+const {calculateCanvasAtlasTexturePerRow} = useAtlasing();
 
 
-const DIFFUSE_PATHS = [
-  baseUrl + '../assets/textures/stylized_grass/stylized_grass1_d.png',
-  baseUrl + '../assets/textures/dirt/dirt1_d.png'
-];
-
-const NORMAL_PATHS = [
-  baseUrl + '../assets/textures/stylized_grass/stylized_grass1_n.png',
-  baseUrl + '../assets/textures/dirt/dirt1_n.png',
-];
-
-export const NUM_MATERIALS = DIFFUSE_PATHS.length; // TODO : get this number from wasm
-
-const loadTerrainMaterial = async () => {
+const _createTerrainMaterial = () => {
   const materialUniforms = {
     // texture atlases
     uDiffMap: {},
@@ -45,33 +20,12 @@ const loadTerrainMaterial = async () => {
     uNoiseTexture: {},
   };
 
-  const envMap = await _loadExr('../assets/env.exr');
-
-  const textureAtlas = new TextureAtlas();
-
-  const _loadDiffuse = () => {
-    materialUniforms.uDiffMap.value = textureAtlas.data[DIFFUSE].atlas;
-  };
-  textureAtlas.runOnLoad(_loadDiffuse);
-
-  textureAtlas.load(DIFFUSE, DIFFUSE_PATHS);
-
-  const _loadNormal = () => {
-    materialUniforms.uNormalMap.value = textureAtlas.data[NORMAL].atlas;
-  };
-  textureAtlas.runOnLoad(_loadNormal);
-
-  textureAtlas.load(NORMAL, NORMAL_PATHS);
-
-  const noiseTexture = await _loadTexture('../assets/textures/simplex-noise.png');
-  noiseTexture.encoding = THREE.LinearEncoding;
-
-  materialUniforms.uNoiseTexture.value = noiseTexture;
+  const texturePerRow = calculateCanvasAtlasTexturePerRow(NUM_TERRAIN_MATERIALS);
 
   const material = new THREE.MeshStandardMaterial({
     roughness: 0.95,
     metalness: 0.1,
-    envMap: envMap,
+    // envMap: new THREE.Texture(),
     envMapIntensity: 1,
     onBeforeCompile: (shader) => {
       for (const k in materialUniforms) {
@@ -130,7 +84,7 @@ const loadTerrainMaterial = async () => {
   
         const float TRI_SCALE = 0.1;
         const float TRI_SHARPNESS = 7.5;
-        const float TEXTURE_PER_ROW = float(${textureAtlas.texturePerRow});
+        const float TEXTURE_PER_ROW = float(${texturePerRow});
         const float TEXTURE_SIZE = 1.0 / TEXTURE_PER_ROW;
 
         vec4 blendSamples(vec4 samples[4], vec4 weights) {
@@ -359,22 +313,9 @@ const loadTerrainMaterial = async () => {
     },
   });
 
-  // const testMesh = new THREE.Mesh(
-  //   new THREE.SphereGeometry(10),
-  //   new THREE.MeshStandardMaterial({
-  //     roughness: 1,
-  //     metalness: 0,
-  //     map: grassDiffMap,
-  //     normalMap: grassNormalMap,
-  //     roughnessMap: grassRoughnessMap,
-  //     metalnessMap: grassMetalnessMap,
-  //     envMap: envMap,
-  //     envMapIntensity: 1
-  //   })
-  // );
-  // rootScene.add(testMesh);
+  material.uniforms = materialUniforms;
 
   return material;
 };
 
-export default loadTerrainMaterial;
+export default _createTerrainMaterial;

@@ -198,6 +198,7 @@ export default e => {
     // load
     const _waitForLoad = async () => {
       await Promise.all([
+        terrainMesh.waitForLoad(),
         litterMesh.waitForLoad(),
         grassMesh.waitForLoad(),
         hudMesh.waitForLoad(),
