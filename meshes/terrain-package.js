@@ -83,14 +83,27 @@ class TerrainPackage {
     const {diffNames, normalNames, envName, noiseName} = paths;
 
     // * loading
-    const diffuseMapArray = await Promise.all(diffNames.map(_loadTexture));
-    const normalMapArray = await Promise.all(normalNames.map(_loadTexture));
-    const noiseTexture = await _loadTexture(noiseName);
-    const evnMapTexture = await _loadExr(envName);
+    const assetsArray = [
+      await Promise.all(diffNames.map(_loadTexture)),
+      await Promise.all(normalNames.map(_loadTexture)),
+      await _loadTexture(noiseName),
+      await _loadExr(envName),
+    ];
+    const assests = await Promise.all(assetsArray);
+
+    const diffuseMapArray = assests[0];
+    const normalMapArray = assests[1];
+    const noiseTexture = assests[2];
+    const evnMapTexture = assests[3];
 
     // * Baking
-    const bakeOptions = {diffuseMapArray, normalMapArray, noiseTexture, evnMapTexture};
-    const textures = _bakeTerrainTextures(bakeOptions)
+    const bakeOptions = {
+      diffuseMapArray,
+      normalMapArray,
+      noiseTexture,
+      evnMapTexture,
+    };
+    const textures = _bakeTerrainTextures(bakeOptions);
 
     // * Create new package
     const pkg = new TerrainPackage(textures);
