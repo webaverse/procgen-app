@@ -84,11 +84,12 @@ class TerrainPackage {
 
     // * loading
     const assetsArray = [
-      await Promise.all(diffNames.map(_loadTexture)),
-      await Promise.all(normalNames.map(_loadTexture)),
-      await _loadTexture(noiseName),
-      await _loadExr(envName),
+      Promise.all(diffNames.map(_loadTexture)),
+      Promise.all(normalNames.map(_loadTexture)),
+      _loadTexture(noiseName),
+      _loadExr(envName),
     ];
+
     const assests = await Promise.all(assetsArray);
 
     const diffuseMapArray = assests[0];
