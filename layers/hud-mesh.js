@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import {IconPackage, IconMesh} from '../meshes/icon-mesh.js';
-import {urlSpecs} from '../assets.js';
+import {glbUrlSpecs} from '../assets.js';
 
 //
 
-export const hudUrls = urlSpecs.huds;
+export const hudUrls = glbUrlSpecs.huds;
 
 //
 

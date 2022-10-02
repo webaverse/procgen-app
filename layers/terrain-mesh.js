@@ -1,11 +1,17 @@
-import * as THREE from 'three';
 import metaversefile from 'metaversefile';
-import {
-  bufferSize,
-  WORLD_BASE_HEIGHT,
-  MIN_WORLD_HEIGHT,
-  MAX_WORLD_HEIGHT,
-} from '../constants.js';
+import * as THREE from 'three';
+import {textureUrlSpecs} from '../assets.js';
+import {bufferSize, MAX_WORLD_HEIGHT, MIN_WORLD_HEIGHT, WORLD_BASE_HEIGHT} from '../constants.js';
+import TerrainPackage, { DIFFUSE_MAP, ENV_MAP, NOISE_MAP, NORMAL_MAP } from '../meshes/terrain-package.js';
+import _createTerrainMaterial from './terrain-material.js';
+
+const DIFFUSE_MAP_PATHS = textureUrlSpecs.terrainDiffuseMaps;
+const NORMAL_MAP_PATHS = textureUrlSpecs.terrainNormalMaps;
+const ENV_MAP_PATH = textureUrlSpecs.terrainEnvMap;
+const NOISE_MAP_PATH = textureUrlSpecs.simplexMap;
+
+export const NUM_TERRAIN_MATERIALS = DIFFUSE_MAP_PATHS.length; // TODO : get this number from wasm
+
 const {useProcGenManager, useGeometryBuffering} = metaversefile;
 const {BufferedMesh, GeometryAllocator} = useGeometryBuffering();
 const procGenManager = useProcGenManager();
@@ -47,6 +53,16 @@ export class TerrainMesh extends BufferedMesh {
           Type: Float32Array,
           itemSize: 4,
         },
+        {
+          name: 'materials',
+          Type: Int32Array,
+          itemSize: 4,
+        },
+        {
+          name: 'materialsWeights',
+          Type: Float32Array,
+          itemSize: 4,
+        },
         /* {
           name: 'biomesUvs2',
           Type: Float32Array,
@@ -82,15 +98,11 @@ export class TerrainMesh extends BufferedMesh {
 
     const {geometry} = allocator;
 
-    super(geometry);
+    const material = _createTerrainMaterial();
 
-    // loading the material
-    // (async () => {
-    //   const material = await loadTerrainMaterial();
-    //   this.material = material;
-    // })();
+    super(geometry, material);
 
-    this.material = new THREE.MeshNormalMaterial();
+    this.visible = false;
 
     this.physics = physics;
 
@@ -127,6 +139,8 @@ export class TerrainMesh extends BufferedMesh {
         // let biomesOffset = geometryBinding.getAttributeOffset('biomes');
         // let biomesWeightsOffset = geometryBinding.getAttributeOffset('biomesWeights');
         let biomesUvs1Offset = geometryBinding.getAttributeOffset('biomesUvs1');
+        let materialsOffset = geometryBinding.getAttributeOffset('materials');
+        let materialsWeightsOffset = geometryBinding.getAttributeOffset('materialsWeights');
         // let biomesUvs2Offset = geometryBinding.getAttributeOffset('biomesUvs2');
         // let seedsOffset = geometryBinding.getAttributeOffset('seed');
         // let skylightsOffset = geometryBinding.getAttributeOffset('skylights');
@@ -169,6 +183,18 @@ export class TerrainMesh extends BufferedMesh {
           biomesUvs1Offset,
           terrainGeometry.biomesUvs1.length,
           terrainGeometry.biomesUvs1,
+          0
+        );
+        geometry.attributes.materials.update(
+          materialsOffset,
+          terrainGeometry.materials.length,
+          terrainGeometry.materials,
+          0
+        );
+        geometry.attributes.materialsWeights.update(
+          materialsWeightsOffset,
+          terrainGeometry.materialsWeights.length,
+          terrainGeometry.materialsWeights,
           0
         );
         /* geometry.attributes.biomesUvs2.update(
@@ -327,5 +353,29 @@ export class TerrainMesh extends BufferedMesh {
       task.cancel();
       this.gpuTasks.delete(key);
     }
+  }
+
+  setPackage(pkg) {
+    const {textures} = pkg;
+
+    // * update material
+    this.material.uniforms.uDiffMap.value = textures[DIFFUSE_MAP];
+    this.material.uniforms.uNormalMap.value = textures[NORMAL_MAP];
+    this.material.uniforms.uNoiseTexture = textures[NOISE_MAP];
+    this.material.envMap = textures[ENV_MAP];
+
+    this.visible = true;
+  }
+
+  async waitForLoad() {
+    const paths = {
+      diffNames: DIFFUSE_MAP_PATHS,
+      normalNames: NORMAL_MAP_PATHS,
+      envName: ENV_MAP_PATH,
+      noiseName: NOISE_MAP_PATH,
+    };
+    const terrainPackage = await TerrainPackage.loadUrls(paths);
+
+    this.setPackage(terrainPackage);
   }
 }

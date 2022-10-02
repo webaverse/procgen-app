@@ -63,6 +63,8 @@ export default e => {
       physics,
     });
     terrainMesh.frustumCulled = false;
+    terrainMesh.castShadow = true;
+    terrainMesh.receiveShadow = true; 
     app.add(terrainMesh);
     terrainMesh.updateMatrixWorld();
 
@@ -196,6 +198,7 @@ export default e => {
     // load
     const _waitForLoad = async () => {
       await Promise.all([
+        terrainMesh.waitForLoad(),
         litterMesh.waitForLoad(),
         grassMesh.waitForLoad(),
         hudMesh.waitForLoad(),

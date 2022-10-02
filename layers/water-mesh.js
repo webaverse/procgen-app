@@ -45,7 +45,7 @@ export class WaterMesh extends BufferedMesh {
     );
 
     const {geometry} = allocator;
-    const material = new THREE.MeshNormalMaterial();
+    const material = new THREE.MeshStandardMaterial({color: '#78c7e3', metalness: 0.75, roughness: 0.1});
 
     super(geometry, material);
 
