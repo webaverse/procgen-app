@@ -1,24 +1,20 @@
 import metaversefile from 'metaversefile';
 import * as THREE from 'three';
-import { urlSpecs } from '../assets.js';
-import {
-  bufferSize, MAX_WORLD_HEIGHT, MIN_WORLD_HEIGHT, WORLD_BASE_HEIGHT
-} from '../constants.js';
+import {textureUrlSpecs} from '../assets.js';
+import {bufferSize, MAX_WORLD_HEIGHT, MIN_WORLD_HEIGHT, WORLD_BASE_HEIGHT} from '../constants.js';
 import TerrainPackage, { DIFFUSE_MAP, ENV_MAP, NOISE_MAP, NORMAL_MAP } from '../meshes/terrain-package.js';
 import _createTerrainMaterial from './terrain-material.js';
 
-const DIFFUSE_MAP_PATHS = urlSpecs.terrainDiffuseMaps;
-const NORMAL_MAP_PATHS = urlSpecs.terrainNormalMaps;
-const ENV_MAP_PATH = urlSpecs.terrainEnvMap;
-const NOISE_MAP_PATH = urlSpecs.simplexMap;
+const DIFFUSE_MAP_PATHS = textureUrlSpecs.terrainDiffuseMaps;
+const NORMAL_MAP_PATHS = textureUrlSpecs.terrainNormalMaps;
+const ENV_MAP_PATH = textureUrlSpecs.terrainEnvMap;
+const NOISE_MAP_PATH = textureUrlSpecs.simplexMap;
 
 export const NUM_TERRAIN_MATERIALS = DIFFUSE_MAP_PATHS.length; // TODO : get this number from wasm
-const SUB_TEXTURE_SIZE = 1024;
 
-const {useProcGenManager, useGeometryBuffering, useAtlasing} = metaversefile;
+const {useProcGenManager, useGeometryBuffering} = metaversefile;
 const {BufferedMesh, GeometryAllocator} = useGeometryBuffering();
 const procGenManager = useProcGenManager();
-const {CanvasTextureAtlas} = useAtlasing();
 
 //
 
@@ -361,10 +357,10 @@ export class TerrainMesh extends BufferedMesh {
 
   setPackage(pkg) {
     const {textures} = pkg;
-    const diffuseAtlas = new CanvasTextureAtlas(textures[DIFFUSE_MAP], THREE.sRGBEncoding, SUB_TEXTURE_SIZE);
-    const normalAtlas = new CanvasTextureAtlas(textures[NORMAL_MAP], THREE.LinearEncoding, SUB_TEXTURE_SIZE);
-    this.material.uniforms.uDiffMap.value = diffuseAtlas.atlasTexture;
-    this.material.uniforms.uNormalMap.value = normalAtlas.atlasTexture;
+
+    // * update material
+    this.material.uniforms.uDiffMap.value = textures[DIFFUSE_MAP];
+    this.material.uniforms.uNormalMap.value = textures[NORMAL_MAP];
     this.material.uniforms.uNoiseTexture = textures[NOISE_MAP];
     this.material.envMap = textures[ENV_MAP];
 
@@ -372,7 +368,14 @@ export class TerrainMesh extends BufferedMesh {
   }
 
   async waitForLoad() {
-    const terrainPackage = await TerrainPackage.loadUrls(DIFFUSE_MAP_PATHS, NORMAL_MAP_PATHS, ENV_MAP_PATH, NOISE_MAP_PATH);
+    const paths = {
+      diffNames: DIFFUSE_MAP_PATHS,
+      normalNames: NORMAL_MAP_PATHS,
+      envName: ENV_MAP_PATH,
+      noiseName: NOISE_MAP_PATH,
+    };
+    const terrainPackage = await TerrainPackage.loadUrls(paths);
+
     this.setPackage(terrainPackage);
   }
 }

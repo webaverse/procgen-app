@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import {PolygonPackage, PolygonMesh} from '../meshes/polygon-mesh.js';
 import {SpritesheetPackage, SpritesheetMesh} from '../meshes/spritesheet-mesh.js';
-import {urlSpecs} from '../assets.js';
+import {glbUrlSpecs} from '../assets.js';
 
 //
 
-export const litterUrls = urlSpecs.trees.slice(0, 1)
-  .concat(urlSpecs.ores.slice(0, 1));
+export const litterUrls = glbUrlSpecs.trees.slice(0, 1)
+  .concat(glbUrlSpecs.ores.slice(0, 1));
 
 //
 

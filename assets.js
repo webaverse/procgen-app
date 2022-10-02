@@ -1,19 +1,6 @@
 export const procgenAssetsBaseUrl = `https://webaverse.github.io/procgen-assets/`;
-export const urlSpecs = {
-  simplexMap: `${procgenAssetsBaseUrl}noise/simplex-noise.png`,
-  terrainEnvMap: `${procgenAssetsBaseUrl}terrain/envmaps/env.exr`,
-  terrainDiffuseMaps: [
-    'stylized_grass/stylized_grass_d.png',
-    'dirt/dirt_d.png'
-  ].map(u => {
-    return `${procgenAssetsBaseUrl}terrain/textures/${u}`;
-  }),
-  terrainNormalMaps: [
-    'stylized_grass/stylized_grass_n.png',
-    'dirt/dirt_n.png'
-  ].map(u => {
-    return `${procgenAssetsBaseUrl}terrain/textures/${u}`;
-  }),
+
+export const glbUrlSpecs = {
   trees: [
     `Tree_1_1.glb`,
     `Tree_1_2.glb`,
@@ -87,5 +74,22 @@ export const urlSpecs = {
     `water.svg`,
   ].map(u => {
     return `${procgenAssetsBaseUrl}/icons/${u}`;
+  }),
+};
+
+export const textureUrlSpecs = {
+  simplexMap: `${procgenAssetsBaseUrl}noise/simplex-noise.png`,
+  terrainEnvMap: `${procgenAssetsBaseUrl}terrain/envmaps/env.exr`,
+  terrainDiffuseMaps: [
+    'stylized_grass/stylized_grass_d.png',
+    'dirt/dirt_d.png'
+  ].map(u => {
+    return `${procgenAssetsBaseUrl}terrain/textures/${u}`;
+  }),
+  terrainNormalMaps: [
+    'stylized_grass/stylized_grass_n.png',
+    'dirt/dirt_n.png'
+  ].map(u => {
+    return `${procgenAssetsBaseUrl}terrain/textures/${u}`;
   }),
 };
