@@ -90,12 +90,12 @@ class TerrainPackage {
       _loadExr(envName),
     ];
 
-    const assests = await Promise.all(assetsArray);
+    const assets = await Promise.all(assetsArray);
 
-    const diffuseMapArray = assests[0];
-    const normalMapArray = assests[1];
-    const noiseTexture = assests[2];
-    const evnMapTexture = assests[3];
+    const diffuseMapArray = assets[0];
+    const normalMapArray = assets[1];
+    const noiseTexture = assets[2];
+    const evnMapTexture = assets[3];
 
     // * Baking
     const bakeOptions = {
