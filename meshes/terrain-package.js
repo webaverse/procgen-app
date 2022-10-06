@@ -11,10 +11,10 @@ const textureLoader = new THREE.TextureLoader();
 
 const SUB_TEXTURE_SIZE = 1024;
 
-export const DIFFUSE_MAP = 'diffuse';
-export const NORMAL_MAP = 'normal';
-export const NOISE_MAP = 'noise';
-export const ENV_MAP = 'env';
+export const DIFFUSE_MAP = 'diffuse-map';
+export const NORMAL_MAP = 'normal-map';
+export const NOISE_MAP = 'simplex-noise';
+export const ENV_MAP = 'environment-lighting';
 
 const _textureError = (err) => {
   console.error('Terrain Package : Loading texture failed : ', err);

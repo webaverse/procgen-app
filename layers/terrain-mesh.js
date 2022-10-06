@@ -361,7 +361,7 @@ export class TerrainMesh extends BufferedMesh {
     // * update material
     this.material.uniforms.uDiffMap.value = textures[DIFFUSE_MAP];
     this.material.uniforms.uNormalMap.value = textures[NORMAL_MAP];
-    this.material.uniforms.uNoiseTexture = textures[NOISE_MAP];
+    this.material.uniforms.uNoiseTexture.value = textures[NOISE_MAP];
     this.material.envMap = textures[ENV_MAP];
 
     this.visible = true;
