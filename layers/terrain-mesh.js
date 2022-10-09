@@ -53,7 +53,7 @@ export class TerrainMesh extends BufferedMesh {
           Type: Float32Array,
           itemSize: 4,
         },
-        {
+        /* {
           name: 'materials',
           Type: Int32Array,
           itemSize: 4,
@@ -62,7 +62,7 @@ export class TerrainMesh extends BufferedMesh {
           name: 'materialsWeights',
           Type: Float32Array,
           itemSize: 4,
-        },
+        }, */
         /* {
           name: 'biomesUvs2',
           Type: Float32Array,
@@ -139,8 +139,8 @@ export class TerrainMesh extends BufferedMesh {
         // let biomesOffset = geometryBinding.getAttributeOffset('biomes');
         // let biomesWeightsOffset = geometryBinding.getAttributeOffset('biomesWeights');
         let biomesUvs1Offset = geometryBinding.getAttributeOffset('biomesUvs1');
-        let materialsOffset = geometryBinding.getAttributeOffset('materials');
-        let materialsWeightsOffset = geometryBinding.getAttributeOffset('materialsWeights');
+        // let materialsOffset = geometryBinding.getAttributeOffset('materials');
+        // let materialsWeightsOffset = geometryBinding.getAttributeOffset('materialsWeights');
         // let biomesUvs2Offset = geometryBinding.getAttributeOffset('biomesUvs2');
         // let seedsOffset = geometryBinding.getAttributeOffset('seed');
         // let skylightsOffset = geometryBinding.getAttributeOffset('skylights');
@@ -185,7 +185,7 @@ export class TerrainMesh extends BufferedMesh {
           terrainGeometry.biomesUvs1,
           0
         );
-        geometry.attributes.materials.update(
+        /* geometry.attributes.materials.update(
           materialsOffset,
           terrainGeometry.materials.length,
           terrainGeometry.materials,
@@ -196,7 +196,7 @@ export class TerrainMesh extends BufferedMesh {
           terrainGeometry.materialsWeights.length,
           terrainGeometry.materialsWeights,
           0
-        );
+        ); */
         /* geometry.attributes.biomesUvs2.update(
           biomesUvs2Offset,
           terrainGeometry.biomesUvs2.length,
