@@ -227,13 +227,13 @@ export default e => {
         const cameraPosition = localVector2;
         const cameraQuaternion = localQuaternion;
 
-        lodTracker.update(playerPosition);
         instance.setCamera(
           playerPosition,
           cameraPosition,
           cameraQuaternion,
           camera.projectionMatrix
         );
+        lodTracker.update(playerPosition);
       };
       _updateLodTracker();
 
