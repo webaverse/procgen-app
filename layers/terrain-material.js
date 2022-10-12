@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import metaversefile from 'metaversefile';
-import { NUM_TERRAIN_MATERIALS } from './terrain-mesh';
+import { NUM_TERRAIN_MATERIALS } from './terrain-mesh.js';
 
 const {useAtlasing} = metaversefile;
 
