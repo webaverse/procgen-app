@@ -55,13 +55,13 @@ const _bakeTerrainTextures = (options) => {
 
   const diffuseAtlas = new CanvasTextureAtlas(
     diffuseMapArray,
-    THREE.sRGBEncoding,
-    SUB_TEXTURE_SIZE
+    SUB_TEXTURE_SIZE,
+    THREE.sRGBEncoding
   );
   const normalAtlas = new CanvasTextureAtlas(
     normalMapArray,
-    THREE.LinearEncoding,
-    SUB_TEXTURE_SIZE
+    SUB_TEXTURE_SIZE,
+    THREE.LinearEncoding
   );
 
   noiseTexture.wrapS = noiseTexture.wrapT = THREE.RepeatWrapping;

@@ -82,7 +82,7 @@ const _createTerrainMaterial = () => {
 
         uniform sampler2D uNoiseTexture;
   
-        const float TRI_SCALE = 0.1;
+        const float TRI_SCALE = 16.0;
         const float TRI_SHARPNESS = 7.5;
         const float TEXTURE_PER_ROW = float(${texturePerRow});
         const float TEXTURE_SIZE = 1.0 / TEXTURE_PER_ROW;
@@ -166,9 +166,9 @@ const _createTerrainMaterial = () => {
         }
 
         vec4 triplanarMap(vec3 inputPosition, vec3 inputNormal, sampler2D inputTextures){
-          vec2 uvX = inputPosition.zy * TRI_SCALE;
-          vec2 uvY = inputPosition.xz * TRI_SCALE;
-          vec2 uvZ = inputPosition.xy * TRI_SCALE;
+          vec2 uvX = inputPosition.zy * (1.f / TRI_SCALE);
+          vec2 uvY = inputPosition.xz * (1.f / TRI_SCALE);
+          vec2 uvZ = inputPosition.xy * (1.f / TRI_SCALE);
           
           vec4 colX = blendMaterials(inputTextures, uvX);
           vec4 colY = blendMaterials(inputTextures, uvY);
@@ -183,9 +183,9 @@ const _createTerrainMaterial = () => {
         vec4 triplanarNormal(vec3 inputPosition, vec3 inputNormal, sampler2D inputTextures) {
           // Tangent Reconstruction
           // Triplanar uvs
-          vec2 uvX = inputPosition.zy * TRI_SCALE;
-          vec2 uvY = inputPosition.xz * TRI_SCALE;
-          vec2 uvZ = inputPosition.xy * TRI_SCALE;
+          vec2 uvX = inputPosition.zy * (1.f / TRI_SCALE);
+          vec2 uvY = inputPosition.xz * (1.f / TRI_SCALE);
+          vec2 uvZ = inputPosition.xy * (1.f / TRI_SCALE);
           
           vec4 colX = blendMaterials(inputTextures, uvX);
           vec4 colY = blendMaterials(inputTextures, uvY);

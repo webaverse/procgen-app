@@ -99,14 +99,27 @@ export const textureUrlSpecs = {
   terrainEnvMap: `${procgenAssetsBaseUrl}terrain/envmaps/env.exr`,
   terrainDiffuseMaps: [
     'stylized_grass/stylized_grass_d.png',
-    'dirt/dirt_d.png'
+    'dirt/dirt_d.png',
+    'stylized_rock/stylized_rock_d.png',
   ].map(u => {
     return `${procgenAssetsBaseUrl}terrain/textures/${u}`;
   }),
   terrainNormalMaps: [
     'stylized_grass/stylized_grass_n.png',
-    'dirt/dirt_n.png'
+    'dirt/dirt_n.png',
+    'stylized_rock/stylized_rock_n.png',
   ].map(u => {
     return `${procgenAssetsBaseUrl}terrain/textures/${u}`;
   }),
+
+  // terrainDiffuseMaps: [
+  //   'simple_rock/rock_d.png',
+  // ].map(u => {
+  //   return `${BASE_URL}assets/${u}`;
+  // }),
+  // terrainNormalMaps: [
+  //   'simple_rock/rock_n.png',
+  // ].map(u => {
+  //   return `${BASE_URL}assets/${u}`;
+  // }),
 };
