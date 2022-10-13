@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-// import easing from './easing.js';
 import metaversefile from 'metaversefile';
 const {useApp, useFrame, useCamera, useLocalPlayer, usePhysics, useProcGenManager, useGPUTask, useGenerationTask} = metaversefile;
 const {GPUTaskManager} = useGPUTask();
@@ -7,7 +6,7 @@ const {GenerationTaskManager} = useGenerationTask();
 
 import {TerrainMesh} from './layers/terrain-mesh.js';
 import {WaterMesh} from './layers/water-mesh.js';
-import {BarrierMesh} from './layers/barrier-mesh.js';
+// import {BarrierMesh} from './layers/barrier-mesh.js';
 import {LitterMetaMesh, litterUrls} from './layers/litter-mesh.js';
 import {GrassMesh, grassUrls} from './layers/grass-mesh.js';
 import {HudMesh, hudUrls} from './layers/hud-mesh.js';
