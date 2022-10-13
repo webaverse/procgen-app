@@ -1,12 +1,12 @@
-import metaversefile from 'metaversefile';
 import * as THREE from 'three';
-import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
+import metaversefile from 'metaversefile';
+const {useLoaders, useAtlasing} = metaversefile;
 
-const {useAtlasing} = metaversefile;
+const loaders = useLoaders();
+const {exrLoader} = loaders;
 
 const {CanvasTextureAtlas} = useAtlasing();
 
-const exrLoader = new EXRLoader();
 const textureLoader = new THREE.TextureLoader();
 
 const SUB_TEXTURE_SIZE = 1024;
