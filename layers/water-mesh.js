@@ -17,6 +17,11 @@ const localQuaternion = new THREE.Quaternion();
 const localVector = new THREE.Vector3();
 //
 
+// constants
+const normalDamping = 1;
+const maxDamping = 4.2;
+const dampingRate = 1.03;
+
 const getHashKey = (x, y) => {
   return ((x & 0xFFF) << 20) | ((y & 0xFFF) << 8);
 }
@@ -277,14 +282,14 @@ export class WaterMesh extends BufferedMesh {
     if (this.lastSwimmingHand !== player.avatarCharacterSfx.currentSwimmingHand) {
       this.lastSwimmingHand = player.avatarCharacterSfx.currentSwimmingHand;
       if (player.avatarCharacterSfx.currentSwimmingHand !== null) {
-        return 1;
+        return normalDamping;
       }
     }
-    if (this.swimDamping < 4.2 && this.lastSwimmingHand) {
-      return this.swimDamping *= 1.03;
+    if (this.swimDamping < maxDamping && this.lastSwimmingHand) {
+      return this.swimDamping *= dampingRate;
     }
     else {
-      return 4.2;
+      return maxDamping;
     }
   }
   handleSwimAction(contactWater, player, waterSurfaceHeight) {
@@ -333,7 +338,7 @@ export class WaterMesh extends BufferedMesh {
         this.swimDamping = this.getSwimDamping(player);
       }
       else {
-        this.swimDamping = 1;
+        this.swimDamping = normalDamping;
       }
       swimAction.swimDamping = this.swimDamping;
     }   
