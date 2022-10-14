@@ -259,7 +259,7 @@ export class WaterMesh extends BufferedMesh {
     this.physics.enableGeometryQueries(chunkPhysicObject);
     if (player.avatar) {
       let collisionIds;
-      const height = player.avatar.height * 0.9;
+      const height = player.avatar.height;
       const width = player.avatar.shoulderWidth
       if (player.position.y > waterSurfaceHeight) {
         collisionIds = this.physics.overlapBox(width, height, width, player.position, player.quaternion).objectIds;
