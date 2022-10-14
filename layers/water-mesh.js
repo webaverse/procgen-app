@@ -21,6 +21,7 @@ const localVector = new THREE.Vector3();
 const normalDamping = 1;
 const maxDamping = 4.2;
 const dampingRate = 1.03;
+const BREASTSTROKE = 'breaststroke';
 
 const getHashKey = (x, y) => {
   return ((x & 0xFFF) << 20) | ((y & 0xFFF) << 8);
@@ -305,7 +306,7 @@ export class WaterMesh extends BufferedMesh {
               type: 'swim',
               onSurface: false,
               swimDamping: 1,
-              animationType: 'breaststroke'
+              animationType: BREASTSTROKE
           };
           player.setControlAction(swimAction);
         }
@@ -336,7 +337,7 @@ export class WaterMesh extends BufferedMesh {
 
     // handel swimming damping.
     if (hasSwim) {
-      if (swimAction.animationType === 'breaststroke') {
+      if (swimAction.animationType === BREASTSTROKE) {
         this.swimDamping = this.getSwimDamping(player);
       }
       else {
