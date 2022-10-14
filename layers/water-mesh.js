@@ -17,6 +17,10 @@ const localQuaternion = new THREE.Quaternion();
 const localVector = new THREE.Vector3();
 //
 
+const getHashKey = (x, y) => {
+  return ((x & 0xFFF) << 20) | ((y & 0xFFF) << 8);
+}
+
 export class WaterMesh extends BufferedMesh {
   constructor({
     instance,
@@ -200,7 +204,7 @@ export class WaterMesh extends BufferedMesh {
           );
           this.physics.disableGeometryQueries(physicsObject); // disable each physicsObject
           this.physicsObjectsMap.set(key, physicsObject);
-          const chunkKey = chunk.min.x + ',' + chunk.min.y;
+          const chunkKey = getHashKey(chunk.min.x, chunk.min.y);
           this.chunkPhysicObjcetMap.set(chunkKey, physicsObject); // use string of chunk.min as a key to map each physicsObject
           this.waterHeightMap.set(chunkKey, waterGeometry.positions[1]); // use string of chunk.min as a key to map the posY of each chunk
         }
@@ -234,7 +238,7 @@ export class WaterMesh extends BufferedMesh {
       }
     }
     {
-      const chunkKey = chunk.min.x + ',' + chunk.min.y;
+      const chunkKey = getHashKey(chunk.min.x, chunk.min.y);
       this.chunkPhysicObjcetMap.delete(chunkKey);
       this.waterHeightMap.delete(chunkKey);
     }
@@ -337,7 +341,7 @@ export class WaterMesh extends BufferedMesh {
   
   update() {
     const localPlayer = useLocalPlayer();
-    const lastUpdateCoordKey = this.lastUpdateCoord.x + ',' + this.lastUpdateCoord.y; 
+    const lastUpdateCoordKey = getHashKey(this.lastUpdateCoord.x, this.lastUpdateCoord.y); 
     const currentChunkPhysicObject = this.chunkPhysicObjcetMap.get(lastUpdateCoordKey); // use lodTracker.lastUpdateCoord as a key to check which chunk player currently at 
 
     // handel water physic and swimming action if we get the physicObject of the current chunk
