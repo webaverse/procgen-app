@@ -22,6 +22,7 @@ const normalDamping = 1;
 const maxDamping = 4.2;
 const dampingRate = 1.03;
 const BREASTSTROKE = 'breaststroke';
+const waterHeight = 0;
 
 const getHashKey = (x, y) => {
   return ((x & 0xFFF) << 20) | ((y & 0xFFF) << 8);
@@ -74,7 +75,6 @@ export class WaterMesh extends BufferedMesh {
     this.physics = physics;
     this.physicsObjectsMap = new Map();
     this.chunkPhysicObjcetMap = new Map();
-    this.waterHeightMap = new Map();
     this.lastUpdateCoord = new THREE.Vector2();
 
     this.lastSwimmingHand = null;
@@ -211,8 +211,7 @@ export class WaterMesh extends BufferedMesh {
           this.physics.disableGeometryQueries(physicsObject); // disable each physicsObject
           this.physicsObjectsMap.set(key, physicsObject);
           const chunkKey = getHashKey(chunk.min.x, chunk.min.y);
-          this.chunkPhysicObjcetMap.set(chunkKey, physicsObject); // use string of chunk.min as a key to map each physicsObject
-          this.waterHeightMap.set(chunkKey, waterGeometry.positions[1]); // use string of chunk.min as a key to map the posY of each chunk
+          this.chunkPhysicObjcetMap.set(chunkKey, physicsObject); // use chunk.min as a key to map each physicsObject
         }
       };
       if (waterGeometry.indices.length !== 0) {
@@ -246,7 +245,6 @@ export class WaterMesh extends BufferedMesh {
     {
       const chunkKey = getHashKey(chunk.min.x, chunk.min.y);
       this.chunkPhysicObjcetMap.delete(chunkKey);
-      this.waterHeightMap.delete(chunkKey);
     }
     {
       const task = this.gpuTasks.get(key);
@@ -354,11 +352,10 @@ export class WaterMesh extends BufferedMesh {
 
     // handel water physic and swimming action if we get the physicObject of the current chunk
     if (currentChunkPhysicObject) { 
-      const currentWaterSurfaceHeight = this.waterHeightMap.get(lastUpdateCoordKey); // use lodTracker.lastUpdateCoord as a key to check the water height of the current chunk
-      const contactWater = this.checkWaterContact(currentChunkPhysicObject, localPlayer, currentWaterSurfaceHeight); // check whether player contact the water
+      const contactWater = this.checkWaterContact(currentChunkPhysicObject, localPlayer, waterHeight); // check whether player contact the water
 
       // handle swimming action
-      this.handleSwimAction(contactWater, localPlayer, currentWaterSurfaceHeight);
+      this.handleSwimAction(contactWater, localPlayer, waterHeight);
     }
   }
 }
