@@ -274,7 +274,9 @@ export class WaterMesh extends BufferedMesh {
         collisionIds = this.physics.overlapBox(width, height, width, localVector, player.quaternion).objectIds;
       } 
       for (const collisionId of collisionIds) {
-        if (collisionId === chunkPhysicObject.physicsId) { // if we get the collisionId which is the id of the current chunk
+        if (collisionId === chunkPhysicObject.physicsId) { 
+          // if we get the collisionId which is the id of the current chunk, then return true (avatar contact the water)
+          // Also disable the queries so that we could still go into the water
           this.physics.disableGeometryQueries(chunkPhysicObject);
           return true;
         }
