@@ -296,20 +296,20 @@ export class WaterMesh extends BufferedMesh {
     const hasSwim = !!swimAction;
     if (contactWater) {
       this.material.color.setHex( 0x0000ff ); // for testing
-      const characterNeckHeight = player.avatar.height * 0.05;
-      const characterHeadHeight = player.avatar.height * 0.2;
-      if (waterSurfaceHeight >= player.position.y - (characterNeckHeight + characterHeadHeight)) { // if water is higher than player's neck
+      const addSwimAction = waterSurfaceHeight >= player.position.y - player.avatar.height * 0.25; // if waterheight is higher than 75% player's height, then add swim action 
+      if (addSwimAction) {
         if (!hasSwim) {
           const swimAction = {
               type: 'swim',
               onSurface: false,
-              swimDamping: 1,
+              swimDamping: normalDamping,
               animationType: BREASTSTROKE
           };
           player.setControlAction(swimAction);
         }
         // check whether player is swimming on the water surface
-        if (waterSurfaceHeight < player.position.y - characterHeadHeight) {
+        const addOnSurface = waterSurfaceHeight < player.position.y - player.avatar.height * 0.2; // if waterheight is lower than 80% player's height, then add onSurface action 
+        if (addOnSurface) {
           if (hasSwim && !swimAction.onSurface) {
             swimAction.onSurface = true;
           }
@@ -320,7 +320,7 @@ export class WaterMesh extends BufferedMesh {
           }
         }
       }
-      else{ // shallow water
+      else{ // shallow water (waterheight is lower than 75% of player's height)
           if (hasSwim) {
             player.removeAction('swim');
           }
