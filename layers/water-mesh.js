@@ -23,6 +23,12 @@ const maxDamping = 4.2;
 const dampingRate = 1.03;
 const BREASTSTROKE = 'breaststroke';
 const waterHeight = 0;
+const initialSwimAction = {
+  type: 'swim',
+  onSurface: false,
+  swimDamping: normalDamping,
+  animationType: BREASTSTROKE
+};
 
 const getHashKey = (x, y) => {
   return ((x & 0xFFF) << 20) | ((y & 0xFFF) << 8);
@@ -299,13 +305,7 @@ export class WaterMesh extends BufferedMesh {
       const addSwimAction = waterSurfaceHeight >= player.position.y - player.avatar.height * 0.25; // if waterheight is higher than 75% player's height, then add swim action 
       if (addSwimAction) {
         if (!hasSwim) {
-          const swimAction = {
-              type: 'swim',
-              onSurface: false,
-              swimDamping: normalDamping,
-              animationType: BREASTSTROKE
-          };
-          player.setControlAction(swimAction);
+          player.setControlAction(initialSwimAction);
         }
         // check whether player is swimming on the water surface
         const addOnSurface = waterSurfaceHeight < player.position.y - player.avatar.height * 0.2; // if waterheight is lower than 80% player's height, then add onSurface action 
