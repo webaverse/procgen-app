@@ -317,9 +317,9 @@ export class WaterMesh extends BufferedMesh {
         hasSwim && this.setOnSurfaceAction(swimAction, addOnSurface);
       }
       else{ // shallow water (waterheight is lower than 75% of player's height)
-          if (hasSwim) {
-            player.removeAction('swim');
-          }
+        if (hasSwim) {
+          player.removeAction('swim');
+        }
       }  
     } 
     else {
