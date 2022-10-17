@@ -299,6 +299,9 @@ export class WaterMesh extends BufferedMesh {
       return maxDamping;
     }
   }
+  setOnSurfaceAction(swimAction, onSurface) {
+    swimAction.onSurface = onSurface;
+  }
   handleSwimAction(contactWater, player, waterSurfaceHeight) {
     const swimAction = player.getAction('swim');
     const hasSwim = !!swimAction;
@@ -311,16 +314,7 @@ export class WaterMesh extends BufferedMesh {
         }
         // check whether player is swimming on the water surface
         const addOnSurface = waterSurfaceHeight < player.position.y - player.avatar.height * 0.2; // if waterheight is lower than 80% player's height, then add onSurface action 
-        if (addOnSurface) {
-          if (hasSwim && !swimAction.onSurface) {
-            swimAction.onSurface = true;
-          }
-        }
-        else {
-          if (hasSwim && swimAction.onSurface) {
-            swimAction.onSurface = false;
-          }
-        }
+        hasSwim && this.setOnSurfaceAction(swimAction, addOnSurface);
       }
       else{ // shallow water (waterheight is lower than 75% of player's height)
           if (hasSwim) {
