@@ -6,7 +6,6 @@ const {useAtlasing} = metaversefile;
 
 const {calculateCanvasAtlasTexturePerRow} = useAtlasing();
 
-
 const _createTerrainMaterial = () => {
   const materialUniforms = {
     // texture atlases
@@ -82,8 +81,7 @@ const _createTerrainMaterial = () => {
 
         uniform sampler2D uNoiseTexture;
   
-        const float TRI_SCALE = 16.0;
-        const float TRI_SHARPNESS = 7.5;
+        const float TEXTURE_SCALE = 40.0;
         const float TEXTURE_PER_ROW = float(${texturePerRow});
         const float TEXTURE_SIZE = 1.0 / TEXTURE_PER_ROW;
 
@@ -150,6 +148,7 @@ const _createTerrainMaterial = () => {
           vec4 cola = subTexture2D(textureSample, uv + offa, textureOffset, duvdx, duvdy);
           vec4 colb = subTexture2D(textureSample, uv + offb, textureOffset, duvdx, duvdy);
 
+
           // interpolate between the two virtual patterns
           return mix(cola, colb, smoothstep(0.2,0.8,f-0.1*sum(cola.xyz-colb.xyz)));
         }
@@ -165,100 +164,46 @@ const _createTerrainMaterial = () => {
           return blendSamples(samples, vMaterialsWeights);
         }
 
-        vec4 triplanarMap(vec3 inputPosition, vec3 inputNormal, sampler2D inputTextures){
-          vec2 uvX = inputPosition.zy * (1.f / TRI_SCALE);
-          vec2 uvY = inputPosition.xz * (1.f / TRI_SCALE);
-          vec2 uvZ = inputPosition.xy * (1.f / TRI_SCALE);
-          
-          vec4 colX = blendMaterials(inputTextures, uvX);
-          vec4 colY = blendMaterials(inputTextures, uvY);
-          vec4 colZ = blendMaterials(inputTextures, uvZ);
- 
-          vec3 blendWeight = pow(abs(inputNormal), vec3(TRI_SHARPNESS));
-          blendWeight /= dot(blendWeight,vec3(1));
-
-          return colX * blendWeight.x + colY * blendWeight.y + colZ * blendWeight.z;
-        }
-
-        vec4 triplanarNormal(vec3 inputPosition, vec3 inputNormal, sampler2D inputTextures) {
-          // Tangent Reconstruction
-          // Triplanar uvs
-          vec2 uvX = inputPosition.zy * (1.f / TRI_SCALE);
-          vec2 uvY = inputPosition.xz * (1.f / TRI_SCALE);
-          vec2 uvZ = inputPosition.xy * (1.f / TRI_SCALE);
-          
-          vec4 colX = blendMaterials(inputTextures, uvX);
-          vec4 colY = blendMaterials(inputTextures, uvY);
-          vec4 colZ = blendMaterials(inputTextures, uvZ);
-
-          // Tangent space normal maps
-          vec3 tx = colX.xyz * vec3(2,2,2) - vec3(1,1,1);
-          vec3 ty = colY.xyz * vec3(2,2,2) - vec3(1,1,1);
-          vec3 tz = colZ.xyz * vec3(2,2,2) - vec3(1,1,1);
-          vec3 weights = abs(inputNormal);
-          weights = weights / (weights.x + weights.y + weights.z);
-
-          // Get the sign (-1 or 1) of the surface normal
-          vec3 axis = sign(inputNormal);
-
-          // Construct tangent to world matrices for each axis
-          vec3 tangentX = normalize(cross(inputNormal, vec3(0.0, axis.x, 0.0)));
-          vec3 bitangentX = normalize(cross(tangentX, inputNormal)) * axis.x;
-          mat3 tbnX = mat3(tangentX, bitangentX, inputNormal);
-
-          vec3 tangentY = normalize(cross(inputNormal, vec3(0.0, 0.0, axis.y)));
-          vec3 bitangentY = normalize(cross(tangentY, inputNormal)) * axis.y;
-          mat3 tbnY = mat3(tangentY, bitangentY, inputNormal);
-
-          vec3 tangentZ = normalize(cross(inputNormal, vec3(0.0, -axis.z, 0.0)));
-          vec3 bitangentZ = normalize(-cross(tangentZ, inputNormal)) * axis.z;
-          mat3 tbnZ = mat3(tangentZ, bitangentZ, inputNormal);
-
-          // Apply tangent to world matrix and triblend
-          // Using clamp() because the cross products may be NANs
-          vec3 worldNormal = normalize(
-              clamp(tbnX * tx, -1.0, 1.0) * weights.x +
-              clamp(tbnY * ty, -1.0, 1.0) * weights.y +
-              clamp(tbnZ * tz, -1.0, 1.0) * weights.z
-              );
-
-          return vec4(worldNormal, 0.0);
+        vec4 mapTextures(vec3 inputPosition, vec3 inputNormal, sampler2D inputTextures){
+          vec2 textureUv = inputPosition.xz * (1.f / TEXTURE_SCALE);
+          vec4 textureColor = blendMaterials(inputTextures, textureUv);
+          return textureColor;
         }
       `;
 
       const mapFragment = /* glsl */`
         #include <map_fragment>
  
-        vec4 triplanarDiffColor = triplanarMap(vPosition, vObjectNormal, uDiffMap);
-        triplanarDiffColor.rgb = ACESFilmicToneMapping(triplanarDiffColor.rgb);
-        diffuseColor *= triplanarDiffColor;
+        vec4 diffMapColor = mapTextures(vPosition, vObjectNormal, uDiffMap);
+        diffMapColor.rgb = ACESFilmicToneMapping(diffMapColor.rgb);
+        diffuseColor *= diffMapColor;
       `;
 
       const normalFragmentMaps = /* glsl */`
         #include <normal_fragment_maps>
 
-        vec3 triplanarNormalColor = triplanarNormal(vPosition, vObjectNormal, uNormalMap).xyz;
-        normal = normalize(vNormalMatrix * triplanarNormalColor); 
+        vec3 normalMapColor = mapTextures(vPosition, vObjectNormal, uNormalMap).xyz;
+        normal = normalize(vNormalMatrix * normalMapColor); 
       `;
 
       // * The maps below are disabled for now
       const roughnessMapFragment = /* glsl */`
         #include <roughnessmap_fragment>
 
-        // vec4 texelRoughness = triplanarMap(vPosition, vObjectNormal, uRoughnessMap);
+        // vec4 texelRoughness = mapTextures(vPosition, vObjectNormal, uRoughnessMap);
         // roughnessFactor *= texelRoughness.g;
       `;
       const metalnessMapFragment = /* glsl */`
         #include <metalnessmap_fragment>
 
-        // vec4 texelMetalness = triplanarMap(vPosition, vObjectNormal, uMetalnessMap);
+        // vec4 texelMetalness = mapTextures(vPosition, vObjectNormal, uMetalnessMap);
         // metalnessFactor *= texelMetalness.g;
       `;
 
       const aoMapFragment = /* glsl */`
         #include <aomap_fragment>
 
-        // vec4 triplanarAoColor = triplanarMap(vPosition, vObjectNormal, uAoMap);
+        // vec4 triplanarAoColor = mapTextures(vPosition, vObjectNormal, uAoMap);
 
         // float ambientOcclusion = triplanarAoColor.r;
         // reflectedLight.indirectDiffuse *= ambientOcclusion;

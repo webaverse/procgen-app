@@ -5,7 +5,7 @@ const BASE_URL = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
 
 export const glbUrlSpecs = {
   // trees: [
-  //   `tree-basic.glb`,
+  //   'assets/mobs/SimpleFence_RepeatingUV_Guilty.glb',
   // ].map(u => `${BASE_URL}/${u}`),
 
   trees: [
@@ -43,7 +43,7 @@ export const glbUrlSpecs = {
   }),
 
   // grasses: [
-  //   'grass-basic.glb',
+  //   'assets/grass/ToonGrass_v1.2_Guilty.glb',
   // ].map(u => {
   //   return `${BASE_URL}/${u}`;
   // }),
@@ -101,6 +101,7 @@ export const textureUrlSpecs = {
     'stylized_grass/stylized_grass_d.png',
     'dirt/dirt_d.png',
     'stylized_rock/stylized_rock_d.png',
+    'stylized_stone/stylized_stone_d.png',
   ].map(u => {
     return `${procgenAssetsBaseUrl}terrain/textures/${u}`;
   }),
@@ -108,18 +109,22 @@ export const textureUrlSpecs = {
     'stylized_grass/stylized_grass_n.png',
     'dirt/dirt_n.png',
     'stylized_rock/stylized_rock_n.png',
+    'stylized_stone/stylized_stone_n.png',
   ].map(u => {
     return `${procgenAssetsBaseUrl}terrain/textures/${u}`;
   }),
-
   // terrainDiffuseMaps: [
-  //   'simple_rock/rock_d.png',
+    // 'stylized_stone/stylized_stone_d.png',
+    // 'stylized_stone/stylized_stone_d.png',
+    // 'stylized_stone/stylized_stone_d.png',
   // ].map(u => {
-  //   return `${BASE_URL}assets/${u}`;
+    // return `${BASE_URL}assets/textures/${u}`;
   // }),
   // terrainNormalMaps: [
-  //   'simple_rock/rock_n.png',
+    // 'stylized_stone/stylized_stone_n.png',
+    // 'stylized_stone/stylized_stone_n.png',
+    // 'stylized_stone/stylized_stone_n.png',
   // ].map(u => {
-  //   return `${BASE_URL}assets/${u}`;
+    // return `${BASE_URL}assets/textures/${u}`;
   // }),
 };
