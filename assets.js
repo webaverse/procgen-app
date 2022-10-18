@@ -39,7 +39,7 @@ export const glbUrlSpecs = {
     'Rock_ore_Deposit_low.glb',
     'TreeOre_low.glb',
   ].map(u => {
-    return `${procgenAssetsBaseUrl}/litter/ores/${u}`;
+    return `${procgenAssetsBaseUrl}litter/ores/${u}`;
   }),
 
   // grasses: [
@@ -51,7 +51,7 @@ export const glbUrlSpecs = {
   grasses: [
     'testgrass_dualquad.glb',
   ].map(u => {
-    return `${procgenAssetsBaseUrl}/grass/${u}`;
+    return `${procgenAssetsBaseUrl}grass/${u}`;
   }),
 
   huds: [
@@ -90,7 +90,7 @@ export const glbUrlSpecs = {
     'unicorn.svg',
     'water.svg',
   ].map(u => {
-    return `${procgenAssetsBaseUrl}/icons/${u}`;
+    return `${procgenAssetsBaseUrl}icons/${u}`;
   }),
 };
 
