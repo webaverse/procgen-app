@@ -18,15 +18,18 @@ const localVector = new THREE.Vector3();
 //
 
 // constants
-const normalDamping = 1;
-const maxDamping = 4.2;
-const dampingRate = 1.03;
+const SWIM_HEIGHT_THRESHOLD = 0.75;
+const SWIM_ONSURFACE_RANGE = 0.05;
+const NORMAL_DAMPING = 1;
+const MAX_DAMPING = 4.2;
+const DAMPING_RATE = 1.03;
 const BREASTSTROKE = 'breaststroke';
-const waterHeight = 0;
-const initialSwimAction = {
-  type: 'swim',
+const WATER_HEIGHT = 0;
+const SWIM_ACTION = 'swim';
+const INITIAL_SWIM_ACTION = {
+  type: SWIM_ACTION,
   onSurface: false,
-  swimDamping: normalDamping,
+  swimDamping: NORMAL_DAMPING,
   animationType: BREASTSTROKE
 };
 
@@ -35,11 +38,7 @@ const getHashKey = (x, y) => {
 }
 
 export class WaterMesh extends BufferedMesh {
-  constructor({
-    instance,
-    gpuTaskManager,
-    physics
-  }) {
+  constructor({ instance, gpuTaskManager, physics }) {
     const allocator = new GeometryAllocator(
       [
         {
@@ -65,8 +64,8 @@ export class WaterMesh extends BufferedMesh {
       }
     );
 
-    const {geometry} = allocator;
-    
+    const { geometry } = allocator;
+
     super(geometry);
 
     this.instance = instance;
@@ -76,7 +75,12 @@ export class WaterMesh extends BufferedMesh {
     this.gpuTasks = new Map();
     this.geometryBindings = new Map();
 
-    this.material = new THREE.MeshBasicMaterial( {color: 0x0000ff, side: THREE.DoubleSide, transparent: true, opacity: 0.9} );
+    this.material = new THREE.MeshBasicMaterial({
+      color: 0x0000ff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.9,
+    });
     this.geometry = geometry;
     this.physics = physics;
     this.physicsObjectsMap = new Map();
@@ -137,8 +141,8 @@ export class WaterMesh extends BufferedMesh {
         );
         geometry.index.update(indexOffset, waterGeometry.indices.length);
       };
-      const _handleWaterMesh = waterGeometry => {
-        const {chunkSize} = this.instance;
+      const _handleWaterMesh = (waterGeometry) => {
+        const { chunkSize } = this.instance;
 
         const boundingBox = localBox.set(
           localVector3D.set(
@@ -171,7 +175,7 @@ export class WaterMesh extends BufferedMesh {
         const geometryBinding = this.allocator.alloc(
           waterGeometry.positions.length,
           waterGeometry.indices.length,
-          boundingBox,
+          boundingBox
           // min,
           // max,
           // this.appMatrix,
@@ -186,7 +190,7 @@ export class WaterMesh extends BufferedMesh {
 
         this.geometryBindings.set(key, geometryBinding);
       };
-      const waterGeometry = chunkResult.waterGeometry
+      const waterGeometry = chunkResult.waterGeometry;
       _handleWaterMesh(waterGeometry);
 
       const _handlePhysics = async () => {
@@ -199,8 +203,10 @@ export class WaterMesh extends BufferedMesh {
           new THREE.BufferAttribute(waterGeometry.indices, 1)
         );
         const physicsMesh = new THREE.Mesh(physicsGeo, fakeMaterial);
-        
-        const geometryBuffer = await this.physics.cookGeometryAsync(physicsMesh);
+
+        const geometryBuffer = await this.physics.cookGeometryAsync(
+          physicsMesh
+        );
 
         if (geometryBuffer && geometryBuffer.length !== 0) {
           this.matrixWorld.decompose(
@@ -265,16 +271,31 @@ export class WaterMesh extends BufferedMesh {
     if (player.avatar) {
       let collisionIds;
       const height = player.avatar.height;
-      const width = player.avatar.shoulderWidth
+      const width = player.avatar.shoulderWidth;
       if (player.position.y > waterSurfaceHeight) {
-        collisionIds = this.physics.overlapBox(width, height, width, player.position, player.quaternion).objectIds;
+        collisionIds = this.physics.overlapBox(
+          width,
+          height,
+          width,
+          player.position,
+          player.quaternion
+        ).objectIds;
+      } else {
+        localVector.set(
+          player.position.x,
+          waterSurfaceHeight,
+          player.position.z
+        );
+        collisionIds = this.physics.overlapBox(
+          width,
+          height,
+          width,
+          localVector,
+          player.quaternion
+        ).objectIds;
       }
-      else {
-        localVector.set(player.position.x, waterSurfaceHeight, player.position.z);
-        collisionIds = this.physics.overlapBox(width, height, width, localVector, player.quaternion).objectIds;
-      } 
       for (const collisionId of collisionIds) {
-        if (collisionId === chunkPhysicObject.physicsId) { 
+        if (collisionId === chunkPhysicObject.physicsId) {
           // if we get the collisionId which is the id of the current chunk, then return true (avatar contact the water)
           // Also disable the queries so that we could still go into the water
           this.physics.disableGeometryQueries(chunkPhysicObject);
@@ -285,73 +306,103 @@ export class WaterMesh extends BufferedMesh {
     this.physics.disableGeometryQueries(chunkPhysicObject);
     return false;
   }
+
   getSwimDamping(player) {
-    if (this.lastSwimmingHand !== player.avatarCharacterSfx.currentSwimmingHand) {
+    if (
+      this.lastSwimmingHand !== player.avatarCharacterSfx.currentSwimmingHand
+    ) {
       this.lastSwimmingHand = player.avatarCharacterSfx.currentSwimmingHand;
       if (player.avatarCharacterSfx.currentSwimmingHand !== null) {
-        return normalDamping;
+        return NORMAL_DAMPING;
       }
     }
-    if (this.swimDamping < maxDamping && this.lastSwimmingHand) {
-      return this.swimDamping *= dampingRate;
-    }
-    else {
-      return maxDamping;
+    if (this.swimDamping < MAX_DAMPING && this.lastSwimmingHand) {
+      return (this.swimDamping *= DAMPING_RATE);
+    } else {
+      return MAX_DAMPING;
     }
   }
+
   setOnSurfaceAction(swimAction, onSurface) {
     swimAction.onSurface = onSurface;
   }
+
   handleSwimAction(contactWater, player, waterSurfaceHeight) {
-    const swimAction = player.getAction('swim');
+    const swimAction = player.getAction(SWIM_ACTION);
     const hasSwim = !!swimAction;
+
+    const _setSwimAction = () => {
+      !hasSwim && player.setControlAction(INITIAL_SWIM_ACTION);
+    };
+
+    const _removeSwimAction = () => {
+      hasSwim && player.removeAction(SWIM_ACTION);
+    };
+
     if (contactWater) {
-      this.material.color.setHex( 0x0000ff ); // for testing
-      const addSwimAction = waterSurfaceHeight >= player.position.y - player.avatar.height * 0.25; // if waterheight is higher than 75% player's height, then add swim action 
-      if (addSwimAction) {
-        if (!hasSwim) {
-          player.setControlAction(initialSwimAction);
-        }
+      this.material.color.setHex(0x0000ff); // for testing
+
+      const _calculateSwimHeight = () => {
+        const outsideWaterRange =
+          player.avatar.height * (1 - SWIM_HEIGHT_THRESHOLD);
+        return player.position.y - outsideWaterRange;
+      };
+
+      const _calculateSwimSurfaceHeight = (swimHeight) => {
+        const onSurfaceRange = player.avatar.height * SWIM_ONSURFACE_RANGE;
+        return swimHeight + onSurfaceRange;
+      }
+
+      const swimHeight = _calculateSwimHeight();
+
+      if (waterSurfaceHeight >= swimHeight) {
         // check whether player is swimming on the water surface
-        const addOnSurface = waterSurfaceHeight < player.position.y - player.avatar.height * 0.2; // if waterheight is lower than 80% player's height, then add onSurface action 
+        _setSwimAction();
+        const swimSurfaceHeight = _calculateSwimSurfaceHeight(swimHeight);
+        const addOnSurface = waterSurfaceHeight < swimSurfaceHeight;
         hasSwim && this.setOnSurfaceAction(swimAction, addOnSurface);
+      } else {
+        _removeSwimAction();
       }
-      else{ // shallow water (waterheight is lower than 75% of player's height)
-        if (hasSwim) {
-          player.removeAction('swim');
-        }
-      }  
-    } 
-    else {
-      this.material.color.setHex( 0xff0000 ); // for testing
-      if (hasSwim) {
-        player.removeAction('swim');
-      }
+    } else {
+      this.material.color.setHex(0xff0000); // for testing
+      _removeSwimAction();
     }
 
     // handel swimming damping.
     if (hasSwim) {
-      if (swimAction.animationType === BREASTSTROKE) {
-        this.swimDamping = this.getSwimDamping(player);
+      switch (swimAction.animationType) {
+        case BREASTSTROKE:
+          this.swimDamping = this.getSwimDamping(player);
+          break;
+        default:
+          this.swimDamping = NORMAL_DAMPING;
+          break;
       }
-      else {
-        this.swimDamping = normalDamping;
-      }
+
       swimAction.swimDamping = this.swimDamping;
-    }   
+    }
   }
-  
+
   update() {
     const localPlayer = useLocalPlayer();
-    const lastUpdateCoordKey = getHashKey(this.lastUpdateCoord.x, this.lastUpdateCoord.y); 
-    const currentChunkPhysicObject = this.chunkPhysicObjcetMap.get(lastUpdateCoordKey); // use lodTracker.lastUpdateCoord as a key to check which chunk player currently at 
+    const lastUpdateCoordKey = getHashKey(
+      this.lastUpdateCoord.x,
+      this.lastUpdateCoord.y
+    );
+    const currentChunkPhysicObject =
+      this.chunkPhysicObjcetMap.get(lastUpdateCoordKey); // use lodTracker.lastUpdateCoord as a key to check which chunk player currently at
 
     // handel water physic and swimming action if we get the physicObject of the current chunk
-    if (currentChunkPhysicObject) { 
-      const contactWater = this.checkWaterContact(currentChunkPhysicObject, localPlayer, waterHeight); // check whether player contact the water
+    if (currentChunkPhysicObject) {
+      const contactWater = this.checkWaterContact(
+        currentChunkPhysicObject,
+        localPlayer,
+        WATER_HEIGHT
+      ); // check whether player contact the water
 
       // handle swimming action
-      this.handleSwimAction(contactWater, localPlayer, waterHeight);
+      this.handleSwimAction(contactWater, localPlayer, WATER_HEIGHT);
     }
   }
 }
