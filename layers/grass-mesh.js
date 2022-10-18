@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import {PolygonPackage, PolygonMesh} from '../meshes/polygon-mesh.js';
-import {urlSpecs} from '../assets.js';
+import {glbUrlSpecs} from '../assets.js';
 
 //
 
-export const grassUrls = urlSpecs.grasses;
+export const grassUrls = glbUrlSpecs.grasses;
 
 //
 

@@ -10,6 +10,7 @@ import {WaterMesh} from './layers/water-mesh.js';
 import {BarrierMesh} from './layers/barrier-mesh.js';
 import {LitterMetaMesh, litterUrls} from './layers/litter-mesh.js';
 import {GrassMesh, grassUrls} from './layers/grass-mesh.js';
+import {HudMesh, hudUrls} from './layers/hud-mesh.js';
 
 // locals
 
@@ -39,7 +40,8 @@ export default e => {
 
     // lod tracker
     const lodTracker = await instance.createLodChunkTracker({
-      lods: 7,
+      minLod: 1,
+      maxLod: 7,
       lod1Range: 2,
       // debug: true,
     });
@@ -47,8 +49,8 @@ export default e => {
     // lodTracker.debugMesh.position.y = 0.1;
     // lodTracker.debugMesh.updateMatrixWorld();
 
-    lodTracker.onPostUpdate(currentCoord => {
-      barrierMesh.updateChunk(currentCoord);
+    lodTracker.onPostUpdate(position => {
+      // barrierMesh.updateChunk(position);
     });
 
     // managers
@@ -62,6 +64,8 @@ export default e => {
       physics,
     });
     terrainMesh.frustumCulled = false;
+    terrainMesh.castShadow = true;
+    terrainMesh.receiveShadow = true; 
     app.add(terrainMesh);
     terrainMesh.updateMatrixWorld();
 
@@ -74,13 +78,13 @@ export default e => {
     app.add(waterMesh);
     waterMesh.updateMatrixWorld();
 
-    const barrierMesh = new BarrierMesh({
+    /* const barrierMesh = new BarrierMesh({
       instance,
       gpuTaskManager,
     });
     barrierMesh.frustumCulled = false;
     app.add(barrierMesh);
-    barrierMesh.updateMatrixWorld();
+    barrierMesh.updateMatrixWorld(); */
 
     const litterMesh = new LitterMetaMesh({
       instance,
@@ -98,6 +102,14 @@ export default e => {
     app.add(grassMesh);
     grassMesh.updateMatrixWorld();
 
+    const hudMesh = new HudMesh({
+      instance,
+      gpuTaskManager,
+      physics,
+    });
+    app.add(hudMesh);
+    hudMesh.updateMatrixWorld();
+
     // genration events handling
     lodTracker.onChunkAdd(async chunk => {
       const key = procGenManager.getNodeHash(chunk);
@@ -106,32 +118,38 @@ export default e => {
       generation.addEventListener('geometryadd', e => {
         const {result} = e.data;
         const {heightfield} = result;
-        const {vegetationInstances, grassInstances} = heightfield;
+        const {vegetationInstances, grassInstances, poiInstances} = heightfield;
 
         // console.log('got heightfield', heightfield);
 
         // heightfield
         terrainMesh.addChunk(chunk, heightfield);
         waterMesh.addChunk(chunk, heightfield);
-        barrierMesh.addChunk(chunk, heightfield);
+        // barrierMesh.addChunk(chunk, heightfield);
       
         // vegetation
         litterMesh.addChunk(chunk, vegetationInstances);
         
         // grass
         grassMesh.addChunk(chunk, grassInstances);
+
+        // hud
+        hudMesh.addChunk(chunk, poiInstances);
       });
       generation.addEventListener('geometryremove', e => {
         // heightfield
         terrainMesh.removeChunk(chunk);
         waterMesh.removeChunk(chunk);
-        barrierMesh.removeChunk(chunk);
+        // barrierMesh.removeChunk(chunk);
 
         // vegetation
         litterMesh.removeChunk(chunk);
 
         // grass
         grassMesh.removeChunk(chunk);
+
+        // hud
+        hudMesh.removeChunk(chunk);
       });
 
       try {
@@ -142,9 +160,11 @@ export default e => {
           barrier: true,
           vegetation: true,
           grass: true,
+          poi: true,
         };
         const numVegetationInstances = litterUrls.length;
         const numGrassInstances = grassUrls.length;
+        const numPoiInstances = hudUrls.length;
         const options = {
           signal,
         };
@@ -155,6 +175,7 @@ export default e => {
           generateFlags,
           numVegetationInstances,
           numGrassInstances,
+          numPoiInstances,
           options
         );
         generation.finish({
@@ -179,8 +200,10 @@ export default e => {
     // load
     const _waitForLoad = async () => {
       await Promise.all([
+        terrainMesh.waitForLoad(),
         litterMesh.waitForLoad(),
         grassMesh.waitForLoad(),
+        hudMesh.waitForLoad(),
       ]);
     };
     await _waitForLoad();
@@ -205,20 +228,25 @@ export default e => {
         const cameraPosition = localVector2;
         const cameraQuaternion = localQuaternion;
 
-        lodTracker.update(playerPosition);
         instance.setCamera(
           playerPosition,
           cameraPosition,
           cameraQuaternion,
           camera.projectionMatrix
         );
+        lodTracker.update(playerPosition);
       };
       _updateLodTracker();
 
-      const _updateLitteMesh = () => {
+      const _updateLitterMesh = () => {
         litterMesh.update(); // update spritesheet uniforms
       };
-      _updateLitteMesh();
+      _updateLitterMesh();
+
+      const _updateHudMesh = () => {
+        hudMesh.update(); // update icon uniforms
+      };
+      _updateHudMesh();
 
       const _updateWaterMesh = () => {
         waterMesh.update();

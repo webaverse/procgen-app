@@ -3,7 +3,7 @@ import metaversefile from 'metaversefile';
 const {useCamera, useProcGenManager, useGeometries, useAtlasing, useGeometryBatching, useGeometryChunking, useLoaders, usePhysics, useSpriting} = metaversefile;
 const procGenManager = useProcGenManager();
 const {createAppUrlSpriteSheet} = useSpriting();
-const {DoubleSidedPlaneGeometry} = useGeometries();
+// const {DoubleSidedPlaneGeometry} = useGeometries();
 const {ChunkedBatchedMesh, ChunkedGeometryAllocator} = useGeometryChunking();
 import {
   // bufferSize,
@@ -17,9 +17,7 @@ import {
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
-// const localQuaternion = new THREE.Quaternion();
 const localEuler = new THREE.Euler();
-// const localMatrix = new THREE.Matrix4();
 const localBox = new THREE.Box3();
 
 //
@@ -39,19 +37,6 @@ export class SpritesheetPackage {
     await Promise.all(urls.map(async (url, index) => {
       const numFrames = 8;
 
-      /* const spritesheet = await spriting.createAppUrlSpriteSheet(u, {
-        // size: 2048,
-        // numFrames: 8,
-      });
-      const {
-        result,
-        numFrames,
-        frameSize,
-        numFramesPerRow,
-        worldWidth,
-        worldHeight,
-      } = spritesheet; */
-
       const spritesheet = await createAppUrlSpriteSheet(url, {
         size: spritesheetSize,
         // size: 2048,
@@ -59,36 +44,14 @@ export class SpritesheetPackage {
       });
       const {
         result,
-        // numFrames,
-        // frameSize,
-        // numFramesPerRow,
         worldWidth,
         worldHeight,
         worldOffset,
       } = spritesheet;
 
-      /* {
-        const canvas2 = document.createElement('canvas');
-        canvas2.width = result.width;
-        canvas2.height = result.height;
-        canvas2.style.cssText = `\
-          position: fixed;
-          top: 0;
-          left: ${index * 512}px;
-          width: 512px;
-          height: 512px;
-        `;
-        const ctx2 = canvas2.getContext('2d');
-        ctx2.drawImage(result, 0, 0);
-        document.body.appendChild(canvas2);
-      } */
-
       const x = index % spritesheetsPerRow;
       const y = Math.floor(index / spritesheetsPerRow);
       ctx.drawImage(result, x * spritesheetSize, y * spritesheetSize);
-      // console.log('draw image', x * spritesheetSize, y * spritesheetSize, result.width, result.height);
-
-      // console.log('got spritesheet', spritesheet);
 
       // debugging
       /* const canvas = document.createElement('canvas');
@@ -110,24 +73,6 @@ export class SpritesheetPackage {
       offsets[index * 4 + 2] = worldOffset[2];
       const worldSize = Math.max(worldWidth, worldHeight);
       offsets[index * 4 + 3] = worldSize;
-
-      /* const texture = new THREE.Texture(result);
-      texture.needsUpdate = true;
-      const numAngles = numFrames;
-      const numSlots = numFramesPerRow;
-      const spritesheetMesh = new SpritesheetMesh({
-        texture,
-        worldSize,
-        worldOffset,
-        numAngles,
-        numSlots,
-      });
-      spritesheetMesh.position.y = 0.5;
-      spritesheetMesh.position.x = (-urls.length / 2 + index) * meshSize;
-      spritesheetMesh.position.z += meshSize * 2;
-      spritesheetMesh.scale.multiplyScalar(2);
-      app.add(spritesheetMesh);
-      spritesheetMesh.updateMatrixWorld(); */
     }));
 
     const pkg = new SpritesheetPackage(canvas, offsets);
@@ -150,18 +95,13 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
     instance,
     lodCutoff,
   }) {
-    const baseGeometry = new DoubleSidedPlaneGeometry(1, 1);
+    const baseGeometry = new THREE.PlaneGeometry(1, 1);
     const allocator = new ChunkedGeometryAllocator(baseGeometry, [
       {
         name: 'p',
         Type: Float32Array,
         itemSize: 3,
       },
-      /* {
-        name: 'q',
-        Type: Float32Array,
-        itemSize: 4,
-      }, */
       {
         name: 'offset',
         Type: Float32Array,
@@ -189,10 +129,6 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
           value: null,
           needsUpdate: null,
         },
-        /* uY: {
-          value: 0,
-          needsUpdate: false,
-        }, */
         cameraPos: {
           value: new THREE.Vector3(),
           needsUpdate: false,
@@ -218,10 +154,6 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
           value: attributeTextures.p,
           needsUpdate: true,
         },
-        /* qTexture: {
-          value: attributeTextures.q,
-          needsUpdate: true,
-        }, */
         offsetTexture: {
           value: attributeTextures.offset,
           needsUpdate: true,
@@ -243,7 +175,7 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
         uniform vec3 cameraPos;
         uniform float cameraY;
         varying vec2 vUv;
-        varying float vItemIndex;
+        flat varying float vItemIndex;
         varying float vY;
 
         vec3 rotate_vertex_position(vec3 position, vec4 q) { 
@@ -316,7 +248,7 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
         uniform float numFramesPerRow;
         uniform float spritesheetsPerRow;
         varying vec2 vUv;
-        varying float vItemIndex;
+        flat varying float vItemIndex;
         varying float vY;
 
         void main() {
@@ -346,16 +278,9 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
             discard;
           }
           gl_FragColor.a = 1.;
-          // gl_FragColor.r += 0.1;
-          // gl_FragColor.b += vY * 0.1;
         }
       `,
       transparent: true,
-      // depthWrite: false,
-      // polygonOffset: true,
-      // polygonOffsetFactor: -2,
-      // polygonOffsetUnits: 1,
-      // side: THREE.DoubleSide,
     });
     super(geometry, material, allocator);
     this.frustumCulled = false;
@@ -374,8 +299,6 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
       const _renderLitterSpriteGeometry = (drawCall, instances) => {
         const pTexture = drawCall.getTexture('p');
         const pOffset = drawCall.getTextureOffset('p');
-        // const qTexture = drawCall.getTexture('q');
-        // const qOffset = drawCall.getTextureOffset('q');
         const offsetTexture = drawCall.getTexture('offset');
         const offsetOffset = drawCall.getTextureOffset('offset');
         const itemIndexTexture = drawCall.getTexture('itemIndex');
@@ -397,42 +320,18 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
             pTexture.image.data[pOffset + indexOffset + 1] = py;
             pTexture.image.data[pOffset + indexOffset + 2] = pz;
 
-            /* const qx = qs[index * 4];
-            const qy = qs[index * 4 + 1];
-            const qz = qs[index * 4 + 2];
-            const qw = qs[index * 4 + 3];
-            qTexture.image.data[qOffset + indexOffset] = qx;
-            qTexture.image.data[qOffset + indexOffset + 1] = qy;
-            qTexture.image.data[qOffset + indexOffset + 2] = qz;
-            qTexture.image.data[qOffset + indexOffset + 3] = qw; */
-
-            // XXX get scales from the mapped geometry
-            /* const sx = ss[index * 3];
-            const sy = ss[index * 3 + 1];
-            const sz = ss[index * 3 + 2]; */
-            /* const sx = 1;
-            const sy = 1;
-            const sz = 1; */
             offsetTexture.image.data[offsetOffset + indexOffset] = this.offsets[instanceId * 4];
             offsetTexture.image.data[offsetOffset + indexOffset + 1] = this.offsets[instanceId * 4 + 1];
             offsetTexture.image.data[offsetOffset + indexOffset + 2] = this.offsets[instanceId * 4 + 2];
             offsetTexture.image.data[offsetOffset + indexOffset + 3] = this.offsets[instanceId * 4 + 3];
 
             itemIndexTexture.image.data[itemIndexOffset + indexOffset] = instanceId;
-
-            // physics
-            // const shapeAddress = this.#getShapeAddress(drawCall.geometryIndex);
-            // const physicsObject = this.#addPhysicsShape(shapeAddress, drawCall.geometryIndex, px, py, pz, qx, qy, qz, qw);
-            // this.physicsObjects.push(physicsObject);
-            // localPhysicsObjects.push(physicsObject);
-            // this.instanceObjects.set(physicsObject.physicsId, drawCall);
         
             index++;
           }
         }
 
         drawCall.updateTexture('p', pOffset, index * 4);
-        // drawCall.updateTexture('q', qOffset, index * 4);
         drawCall.updateTexture('offset', offsetOffset, index * 4);
         drawCall.updateTexture('itemIndex', itemIndexOffset, index * 4);
       };
@@ -486,15 +385,6 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
     this.material.uniforms.uTex.value = texture;
     this.material.uniforms.uTex.needsUpdate = true;
 
-    /* canvas.style.cssText = `\
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 512px;
-      height: 512px;
-    `;
-    document.body.appendChild(canvas); */
-
     this.offsets = pkg.offsets;
 
     this.visible = true;
@@ -508,7 +398,6 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
     this.material.uniforms.cameraPos.value.copy(camera.position);
     this.material.uniforms.cameraPos.needsUpdate = true;
 
-    // this.material.uniforms.cameraY.value = mod(-localEuler.y + Math.PI/2 + (Math.PI * 2) / numAngles / 2, Math.PI * 2) / (Math.PI * 2);
     this.material.uniforms.cameraY.value = localEuler.y;
     this.material.uniforms.cameraY.needsUpdate = true;
   }
