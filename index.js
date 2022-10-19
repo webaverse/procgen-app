@@ -71,6 +71,7 @@ export default e => {
     const waterMesh = new WaterMesh({
       instance,
       gpuTaskManager,
+      physics,
     });
     waterMesh.frustumCulled = false;
     app.add(waterMesh);
@@ -245,6 +246,12 @@ export default e => {
         hudMesh.update(); // update icon uniforms
       };
       _updateHudMesh();
+
+      const _updateWaterMesh = () => {
+        waterMesh.update();
+        waterMesh.lastUpdateCoord.set(lodTracker.lastUpdateCoord.x, lodTracker.lastUpdateCoord.y);
+      };
+      _updateWaterMesh();
 
       gpuTaskManager.update();
     };
