@@ -1,15 +1,24 @@
-import * as THREE from 'three';
 import metaversefile from 'metaversefile';
+import * as THREE from 'three';
 const {useApp, useFrame, useCamera, useLocalPlayer, usePhysics, useProcGenManager, useGPUTask, useGenerationTask} = metaversefile;
 const {GPUTaskManager} = useGPUTask();
 const {GenerationTaskManager} = useGenerationTask();
 
-import {TerrainMesh} from './layers/terrain-mesh.js';
-import {WaterMesh} from './layers/water-mesh.js';
+import { TerrainMesh } from './layers/terrain-mesh.js';
+import { WaterMesh } from './layers/water-mesh.js';
 // import {BarrierMesh} from './layers/barrier-mesh.js';
-import {LitterMetaMesh, litterUrls} from './layers/litter-mesh.js';
-import {GrassMesh, grassUrls} from './layers/grass-mesh.js';
-import {HudMesh, hudUrls} from './layers/hud-mesh.js';
+import { glbUrlSpecs } from './assets.js';
+import { GrassMesh, grassUrls } from './layers/grass-mesh.js';
+import { HudMesh, hudUrls } from './layers/hud-mesh.js';
+import { GenerationObjectMesh } from './layers/vegetation-mesh.js';
+
+const treeUrls = glbUrlSpecs.trees.slice(0, 1);
+
+const bushUrls = glbUrlSpecs.bushes.slice(0, 1);
+
+const rockUrls = glbUrlSpecs.rocks.slice(0, 1);
+
+const stoneUrls = glbUrlSpecs.stones.slice(0, 1);
 
 // locals
 
@@ -63,7 +72,7 @@ export default e => {
       physics,
     });
     terrainMesh.frustumCulled = false;
-    terrainMesh.castShadow = true;
+    // terrainMesh.castShadow = true;
     terrainMesh.receiveShadow = true; 
     app.add(terrainMesh);
     terrainMesh.updateMatrixWorld();
@@ -85,17 +94,39 @@ export default e => {
     app.add(barrierMesh);
     barrierMesh.updateMatrixWorld(); */
 
-    const litterMesh = new LitterMetaMesh({
+    const treeMesh = new GenerationObjectMesh({
       instance,
-      gpuTaskManager,
       physics,
     });
-    app.add(litterMesh);
-    litterMesh.updateMatrixWorld();
+    app.add(treeMesh);
+    treeMesh.updateMatrixWorld();
+
+    const bushMesh = new GenerationObjectMesh({
+      instance,
+      physics,
+    });
+    // bushMesh.polygonMesh.frustumCulled = false;
+    // bushMesh.polygonMesh.castShadow = true;
+    // bushMesh.polygonMesh.receiveShadow = true;
+    app.add(bushMesh);
+    bushMesh.updateMatrixWorld();
+
+    // const rockMesh = new GenerationObjectMesh({
+    //   instance,
+    //   physics,
+    // });
+    // app.add(rockMesh);
+    // rockMesh.updateMatrixWorld();
+
+    // const stoneMesh = new GenerationObjectMesh({
+    //   instance,
+    //   physics,
+    // });
+    // app.add(stoneMesh);
+    // stoneMesh.updateMatrixWorld();
 
     const grassMesh = new GrassMesh({
       instance,
-      gpuTaskManager,
       physics,
     });
     app.add(grassMesh);
@@ -103,8 +134,6 @@ export default e => {
 
     const hudMesh = new HudMesh({
       instance,
-      gpuTaskManager,
-      physics,
     });
     app.add(hudMesh);
     hudMesh.updateMatrixWorld();
@@ -117,7 +146,7 @@ export default e => {
       generation.addEventListener('geometryadd', e => {
         const {result} = e.data;
         const {heightfield} = result;
-        const {vegetationInstances, grassInstances, poiInstances} = heightfield;
+        const {treeInstances, bushInstances, rockInstances, stoneInstances, grassInstances, poiInstances} = heightfield;
 
         // console.log('got heightfield', heightfield);
 
@@ -126,9 +155,18 @@ export default e => {
         waterMesh.addChunk(chunk, heightfield);
         // barrierMesh.addChunk(chunk, heightfield);
       
-        // vegetation
-        litterMesh.addChunk(chunk, vegetationInstances);
+        // trees
+        treeMesh.addChunk(chunk, treeInstances);
         
+        // bushes
+        bushMesh.addChunk(chunk, bushInstances);
+
+        // // rocks
+        // rockMesh.addChunk(chunk, rockInstances);
+        
+        // // stones
+        // stoneMesh.addChunk(chunk, stoneInstances);
+
         // grass
         grassMesh.addChunk(chunk, grassInstances);
 
@@ -141,8 +179,17 @@ export default e => {
         waterMesh.removeChunk(chunk);
         // barrierMesh.removeChunk(chunk);
 
-        // vegetation
-        litterMesh.removeChunk(chunk);
+        // tree
+        treeMesh.removeChunk(chunk);
+
+        // bush
+        bushMesh.removeChunk(chunk);
+
+        // // rock
+        // rockMesh.removeChunk(chunk);
+
+        // // stone
+        // stoneMesh.removeChunk(chunk);
 
         // grass
         grassMesh.removeChunk(chunk);
@@ -158,10 +205,12 @@ export default e => {
           water: true,
           barrier: true,
           vegetation: true,
+          rock: true,
           grass: true,
           poi: true,
         };
-        const numVegetationInstances = litterUrls.length;
+        const numVegetationInstances = treeUrls.length;
+        const numRockInstances = rockUrls.length;
         const numGrassInstances = grassUrls.length;
         const numPoiInstances = hudUrls.length;
         const options = {
@@ -173,6 +222,7 @@ export default e => {
           chunk.lodArray,
           generateFlags,
           numVegetationInstances,
+          numRockInstances,
           numGrassInstances,
           numPoiInstances,
           options
@@ -200,9 +250,13 @@ export default e => {
     const _waitForLoad = async () => {
       await Promise.all([
         terrainMesh.waitForLoad(),
-        litterMesh.waitForLoad(),
+        treeMesh.waitForLoad(treeUrls),
+        bushMesh.waitForLoad(bushUrls),
+        // rockMesh.waitForLoad(rockUrls),
+        // stoneMesh.waitForLoad(stoneUrls),
         grassMesh.waitForLoad(),
         hudMesh.waitForLoad(),
+        waterMesh.waitForLoad(),
       ]);
     };
     await _waitForLoad();
@@ -237,10 +291,25 @@ export default e => {
       };
       _updateLodTracker();
 
-      const _updateLitterMesh = () => {
-        litterMesh.update(); // update spritesheet uniforms
+      const _updateTreeMesh = () => {
+        treeMesh.update(); // update spritesheet uniforms
       };
-      _updateLitterMesh();
+      _updateTreeMesh();
+
+      const _updateBushMesh = () => {
+        bushMesh.update(); // update spritesheet uniforms
+      };
+      _updateBushMesh();
+
+      // const _updateRockMesh = () => {
+        // rockMesh.update(); // update spritesheet uniforms
+      // };
+      // _updateRockMesh();
+
+      // const _updateStoneMesh = () => {
+      //   stoneMesh.update(); // update spritesheet uniforms
+      // };
+      // _updateStoneMesh();
 
       const _updateHudMesh = () => {
         hudMesh.update(); // update icon uniforms

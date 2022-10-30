@@ -225,70 +225,72 @@ export class IconMesh extends ChunkedBatchedMesh {
   }
 
   addChunk(chunk, chunkResult) {
-    const {ps, instances} = chunkResult;
-    if (chunk.lod < this.lodCutoff && instances.length > 0) {
-      const _renderIconGeometry = (drawCall, ps, instances) => {
-        // console.log('got ps', ps.slice());
-        const pTexture = drawCall.getTexture('p');
-        const pOffset = drawCall.getTextureOffset('p');
-        const itemIndexTexture = drawCall.getTexture('itemIndex');
-        const itemIndexOffset = drawCall.getTextureOffset('itemIndex');
+    if (chunkResult) {
+      const { ps, instances } = chunkResult;
+      if (chunk.lod < this.lodCutoff && instances.length > 0) {
+        const _renderIconGeometry = (drawCall, ps, instances) => {
+          // console.log('got ps', ps.slice());
+          const pTexture = drawCall.getTexture('p');
+          const pOffset = drawCall.getTextureOffset('p');
+          const itemIndexTexture = drawCall.getTexture('itemIndex');
+          const itemIndexOffset = drawCall.getTextureOffset('itemIndex');
 
-        /* if (ps.length / 3 !== instances.length) {
-          debugger;
-        } */
-        /* if (instances.length > maxInstancesPerDrawCall) {
-          debugger;
-        } */
+          /* if (ps.length / 3 !== instances.length) {
+            debugger;
+          } */
+          /* if (instances.length > maxInstancesPerDrawCall) {
+            debugger;
+          } */
 
-        for (let i = 0; i < instances.length; i++) {
-          const instanceId = instances[i];
-          
-          // geometry
-          const px = ps[i * 3];
-          const py = ps[i * 3 + 1];
-          const pz = ps[i * 3 + 2];
-          pTexture.image.data[pOffset + i * 4] = px;
-          pTexture.image.data[pOffset + i * 4 + 1] = py;
-          pTexture.image.data[pOffset + i * 4 + 2] = pz;
+          for (let i = 0; i < instances.length; i++) {
+            const instanceId = instances[i];
 
-          itemIndexTexture.image.data[itemIndexOffset + i * 4] = instanceId;
+            // geometry
+            const px = ps[i * 3];
+            const py = ps[i * 3 + 1];
+            const pz = ps[i * 3 + 2];
+            pTexture.image.data[pOffset + i * 4] = px;
+            pTexture.image.data[pOffset + i * 4 + 1] = py;
+            pTexture.image.data[pOffset + i * 4 + 2] = pz;
 
-          /* pTexture.image.data[pOffset + indexOffset] = px;
-          pTexture.image.data[pOffset + indexOffset + 1] = py;
-          pTexture.image.data[pOffset + indexOffset + 2] = pz;
+            itemIndexTexture.image.data[itemIndexOffset + i * 4] = instanceId;
 
-          offsetTexture.image.data[offsetOffset + indexOffset] = this.offsets[instanceId * 4];
-          offsetTexture.image.data[offsetOffset + indexOffset + 1] = this.offsets[instanceId * 4 + 1];
-          offsetTexture.image.data[offsetOffset + indexOffset + 2] = this.offsets[instanceId * 4 + 2];
-          offsetTexture.image.data[offsetOffset + indexOffset + 3] = this.offsets[instanceId * 4 + 3]; */
-        }
+            /* pTexture.image.data[pOffset + indexOffset] = px;
+            pTexture.image.data[pOffset + indexOffset + 1] = py;
+            pTexture.image.data[pOffset + indexOffset + 2] = pz;
+  
+            offsetTexture.image.data[offsetOffset + indexOffset] = this.offsets[instanceId * 4];
+            offsetTexture.image.data[offsetOffset + indexOffset + 1] = this.offsets[instanceId * 4 + 1];
+            offsetTexture.image.data[offsetOffset + indexOffset + 2] = this.offsets[instanceId * 4 + 2];
+            offsetTexture.image.data[offsetOffset + indexOffset + 3] = this.offsets[instanceId * 4 + 3]; */
+          }
 
-        drawCall.updateTexture('p', pOffset, ps.length / 3 * 4);
-        drawCall.updateTexture('itemIndex', itemIndexOffset, instances.length * 4);
-      };
+          drawCall.updateTexture('p', pOffset, ps.length / 3 * 4);
+          drawCall.updateTexture('itemIndex', itemIndexOffset, instances.length * 4);
+        };
 
-      const {chunkSize} = this.instance;
-      const boundingBox = localBox.set(
-        localVector.set(
-          chunk.min.x * chunkSize,
-          -WORLD_BASE_HEIGHT + MIN_WORLD_HEIGHT,
-          chunk.min.y * chunkSize
-        ),
-        localVector2.set(
-          (chunk.min.x + chunk.lod) * chunkSize,
-          -WORLD_BASE_HEIGHT + MAX_WORLD_HEIGHT,
-          (chunk.min.y + chunk.lod) * chunkSize
-        )
-      );
-      const drawChunk = this.allocator.allocChunk(
-        instances.length,
-        boundingBox
-      );
-      _renderIconGeometry(drawChunk, ps, instances);
+        const { chunkSize } = this.instance;
+        const boundingBox = localBox.set(
+          localVector.set(
+            chunk.min.x * chunkSize,
+            -WORLD_BASE_HEIGHT + MIN_WORLD_HEIGHT,
+            chunk.min.y * chunkSize
+          ),
+          localVector2.set(
+            (chunk.min.x + chunk.lod) * chunkSize,
+            -WORLD_BASE_HEIGHT + MAX_WORLD_HEIGHT,
+            (chunk.min.y + chunk.lod) * chunkSize
+          )
+        );
+        const drawChunk = this.allocator.allocChunk(
+          instances.length,
+          boundingBox
+        );
+        _renderIconGeometry(drawChunk, ps, instances);
 
-      const key = procGenManager.getNodeHash(chunk);
-      this.allocatedChunks.set(key, drawChunk);
+        const key = procGenManager.getNodeHash(chunk);
+        this.allocatedChunks.set(key, drawChunk);
+      }
     }
   }
   removeChunk(chunk) {

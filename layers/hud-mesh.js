@@ -15,7 +15,6 @@ const hudLodDistanceCutoff = 4;
 export class HudMesh extends THREE.Object3D {
   constructor({
     instance,
-    // gpuTaskManager,
   }) {
     super();
 
