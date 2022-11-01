@@ -39,7 +39,7 @@ export const glbUrlSpecs = {
     'Rock_ore_Deposit_low.glb',
     'TreeOre_low.glb',
   ].map(u => {
-    return `${procgenAssetsBaseUrl}litter/ores/${u}`;
+    return `${procgenAssetsBaseUrl}ores/${u}`;
   }),
 
   // grasses: [
