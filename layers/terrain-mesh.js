@@ -323,7 +323,7 @@ export class TerrainMesh extends BufferedMesh {
           this.physicsObjectsMap.set(key, physicsObject);
         }
       };
-      _handlePhysics();
+      // _handlePhysics();
     });
     this.gpuTasks.set(key, task);
   }

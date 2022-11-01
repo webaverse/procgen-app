@@ -111,19 +111,19 @@ export default e => {
     app.add(bushMesh);
     bushMesh.updateMatrixWorld();
 
-    // const rockMesh = new GenerationObjectMesh({
-    //   instance,
-    //   physics,
-    // });
-    // app.add(rockMesh);
-    // rockMesh.updateMatrixWorld();
+    const rockMesh = new GenerationObjectMesh({
+      instance,
+      physics,
+    });
+    app.add(rockMesh);
+    rockMesh.updateMatrixWorld();
 
-    // const stoneMesh = new GenerationObjectMesh({
-    //   instance,
-    //   physics,
-    // });
-    // app.add(stoneMesh);
-    // stoneMesh.updateMatrixWorld();
+    const stoneMesh = new GenerationObjectMesh({
+      instance,
+      physics,
+    });
+    app.add(stoneMesh);
+    stoneMesh.updateMatrixWorld();
 
     const grassMesh = new GrassMesh({
       instance,
@@ -161,11 +161,11 @@ export default e => {
         // bushes
         bushMesh.addChunk(chunk, bushInstances);
 
-        // // rocks
-        // rockMesh.addChunk(chunk, rockInstances);
+        // rocks
+        rockMesh.addChunk(chunk, rockInstances);
         
-        // // stones
-        // stoneMesh.addChunk(chunk, stoneInstances);
+        // stones
+        stoneMesh.addChunk(chunk, stoneInstances);
 
         // grass
         grassMesh.addChunk(chunk, grassInstances);
@@ -185,11 +185,11 @@ export default e => {
         // bush
         bushMesh.removeChunk(chunk);
 
-        // // rock
-        // rockMesh.removeChunk(chunk);
+        // rock
+        rockMesh.removeChunk(chunk);
 
-        // // stone
-        // stoneMesh.removeChunk(chunk);
+        // stone
+        stoneMesh.removeChunk(chunk);
 
         // grass
         grassMesh.removeChunk(chunk);
@@ -252,11 +252,10 @@ export default e => {
         terrainMesh.waitForLoad(),
         treeMesh.waitForLoad(treeUrls),
         bushMesh.waitForLoad(bushUrls),
-        // rockMesh.waitForLoad(rockUrls),
-        // stoneMesh.waitForLoad(stoneUrls),
+        rockMesh.waitForLoad(rockUrls),
+        stoneMesh.waitForLoad(stoneUrls),
         grassMesh.waitForLoad(),
         hudMesh.waitForLoad(),
-        waterMesh.waitForLoad(),
       ]);
     };
     await _waitForLoad();
@@ -301,15 +300,15 @@ export default e => {
       };
       _updateBushMesh();
 
-      // const _updateRockMesh = () => {
-        // rockMesh.update(); // update spritesheet uniforms
-      // };
-      // _updateRockMesh();
+      const _updateRockMesh = () => {
+        rockMesh.update(); // update spritesheet uniforms
+      };
+      _updateRockMesh();
 
-      // const _updateStoneMesh = () => {
-      //   stoneMesh.update(); // update spritesheet uniforms
-      // };
-      // _updateStoneMesh();
+      const _updateStoneMesh = () => {
+        stoneMesh.update(); // update spritesheet uniforms
+      };
+      _updateStoneMesh();
 
       const _updateHudMesh = () => {
         hudMesh.update(); // update icon uniforms

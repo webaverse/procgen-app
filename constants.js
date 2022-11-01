@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 export const bufferSize = 4 * 1024 * 1024;
 export const maxAnisotropy = 16;
 
@@ -27,9 +28,10 @@ class ModelInfo extends AssetInfo {
   }
 }
 class MaterialInfo extends AssetInfo {
-  constructor(name, scale, dirName = 'terrain/textures/') {
+  constructor(name, color, scale, dirName = 'terrain/textures/') {
     super(name, dirName);
     this.scale = scale;
+    this.color = new THREE.Color(color);
   }
 
   getDiffusePath() {
@@ -42,12 +44,40 @@ class MaterialInfo extends AssetInfo {
 }
 
 export const MATERIALS_INFO = [
-  new MaterialInfo(GRASS, 0.1),
-  new MaterialInfo(DIRT, 0.1),
-  new MaterialInfo(ROCK, 6),
-  new MaterialInfo(STONE, 6),
+  new MaterialInfo(GRASS, '#0de109', 0.1),
+  new MaterialInfo(DIRT, '#3b4d00', 0.1),
+  new MaterialInfo(ROCK, '#fff', 6),
+  new MaterialInfo(STONE, '#fff', 6),
 ];
 
 export const TREES_INFO = [
   new ModelInfo(TOON_TREE_1),
 ];
+
+export const GET_COLOR_PARAMETER_NAME = 'materialIndex';
+const _generateMaterialColorShaderCode = () => {
+  const _generateColorCodes = () => {
+    let string = ``;
+    for (let i = 0; i < MATERIALS_INFO.length; i++) {
+      const materialInfo = MATERIALS_INFO[i];
+
+      // u -> unsigned int
+
+      string += /* glsl */`
+        case ${i}u: 
+          return vec3(${materialInfo.color.r}, ${materialInfo.color.g}, ${materialInfo.color.b});
+       `;
+    }
+    return string;
+  };
+  const string = /* glsl */`
+    switch(${GET_COLOR_PARAMETER_NAME}) {
+      ${_generateColorCodes()}
+        default:
+          return vec3(1.0);
+    }
+  `
+  return string;
+};
+
+export const MATERIALS_COLORS_SHADER_CODE = _generateMaterialColorShaderCode();

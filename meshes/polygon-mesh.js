@@ -11,6 +11,9 @@ import {
   MIN_WORLD_HEIGHT,
   MAX_WORLD_HEIGHT,
   maxAnisotropy,
+  MATERIALS_INFO,
+  MATERIALS_COLORS_SHADER_CODE,
+  GET_COLOR_PARAMETER_NAME,
 } from '../constants.js';
 
 //
@@ -403,7 +406,8 @@ vec4 q = texture2D(qTexture, pUv).xyzw;
 }
 
 
-const GRASS_BASE_HEIGHT = 1.2;
+
+
 export class GrassPolygonMesh extends InstancedBatchedMesh {
   constructor({
     instance,
@@ -422,6 +426,21 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
         },
         {
           name: 'q',
+          Type: Float32Array,
+          itemSize: 4,
+        },
+        {
+          name: 'materials',
+          Type: Float32Array,
+          itemSize: 4,
+        },
+        {
+          name: 'materialsWeights',
+          Type: Float32Array,
+          itemSize: 4,
+        },
+        {
+          name: 'grassProps',
           Type: Float32Array,
           itemSize: 4,
         },
@@ -460,79 +479,73 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
           value: attributeTextures.q,
           needsUpdate: true,
         },
+        materialsTexture: {
+          value: attributeTextures.materials,
+          needsUpdate: true,
+        },
+        materialsWeightsTexture: {
+          value: attributeTextures.materialsWeights,
+          needsUpdate: true,
+        },
+        grassPropsTexture: {
+          value: attributeTextures.grassProps,
+          needsUpdate: true,
+        },
         uGrassBladeHeight : {
           value: null,
         }
       },
       vertexShader: /* glsl */`\
+        precision highp isampler2D;
+
+        uniform sampler2D pTexture;
+        uniform sampler2D qTexture;
+        uniform sampler2D materialsTexture;
+        uniform sampler2D materialsWeightsTexture;
+        uniform sampler2D grassPropsTexture;
+        uniform float uGrassBladeHeight;
+
   			varying vec2 vUv;
   			varying vec3 vNormal;
   			varying vec3 vPosition;
 
+        flat varying uvec4 vMaterials;
+        varying vec4 vMaterialsWeights;
+
         varying float vGrassHeight;
         varying float vGrassRandom;
-
-        uniform sampler2D pTexture;
-        uniform sampler2D qTexture;
-        uniform float uGrassBladeHeight;
-
-        vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
-              
-        float snoise(vec2 v){
-          const vec4 C = vec4(0.211324865405187, 0.366025403784439,
-                   -0.577350269189626, 0.024390243902439);
-          vec2 i  = floor(v + dot(v, C.yy) );
-          vec2 x0 = v -   i + dot(i, C.xx);
-          vec2 i1;
-          i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-          vec4 x12 = x0.xyxy + C.xxzz;
-          x12.xy -= i1;
-          i = mod(i, 289.0);
-          vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
-          + i.x + vec3(0.0, i1.x, 1.0 ));
-          vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy),
-            dot(x12.zw,x12.zw)), 0.0);
-          m = m*m ;
-          m = m*m ;
-          vec3 x = 2.0 * fract(p * C.www) - 1.0;
-          vec3 h = abs(x) - 0.5;
-          vec3 ox = floor(x + 0.5);
-          vec3 a0 = x - ox;
-          m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
-          vec3 g;
-          g.x  = a0.x  * x0.x  + h.x  * x0.y;
-          g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-          return 130.0 * dot(m, g);
-        }
+        varying float vGrassColorVariation;
 
         vec3 rotate_vertex_position(vec3 position, vec4 q) { 
           return position + 2.0 * cross(q.xyz, cross(q.xyz, position) + q.w * position);
         }
 
-        float hash2(vec2 p) {
-          float h = dot(p, vec2(127.1, 311.7));
-          return fract(sin(h) * 43758.5453123);
-        }
-
   			void main() {
           int instanceIndex = gl_DrawID * ${maxInstancesPerGeometryPerDrawCall} + gl_InstanceID;
+
           const float width = ${attributeTextures.p.image.width.toFixed(8)};
           const float height = ${attributeTextures.p.image.height.toFixed(8)};
+
           float x = mod(float(instanceIndex), width);
           float y = floor(float(instanceIndex) / width);
           vec2 pUv = (vec2(x, y) + 0.5) / vec2(width, height);
+
           vec3 p = texture2D(pTexture, pUv).xyz;
           vec4 q = texture2D(qTexture, pUv).xyzw;
 
+          vec4 materials = texture2D(materialsTexture, pUv).xyzw;
+          vec4 materialsWeights = texture2D(materialsWeightsTexture, pUv).xyzw;
+
+          vec4 grassProps = texture2D(grassPropsTexture, pUv).xyzw;
+          float grassHeightNoise = grassProps.x;
+          float randomGrassFactor = grassProps.y;
+          float colorVariationNoise = grassProps.z;
+
           // * Grass Height Range -> [0.0, 1.0]
           float grassHeight = position.y / uGrassBladeHeight;
-          // TODO : -> WASM
-          float heightMultiplier = float(${GRASS_BASE_HEIGHT}) + (snoise(p.xz * 0.05) * 2.0 - 1.0) * 0.2;
-          // 
+          float heightMultiplier = grassHeightNoise;
           vec3 scaledPosition = position;
           scaledPosition.y *= heightMultiplier * grassHeight;
-
-          float randomGrassFactor = hash2(p.xz);
 
           vec3 worldPosition = rotate_vertex_position(scaledPosition, q);
           worldPosition  += p;
@@ -544,6 +557,9 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
           vPosition = worldPosition;
           vGrassHeight = grassHeight;
           vGrassRandom = randomGrassFactor;
+          vGrassColorVariation = colorVariationNoise;
+          vMaterials = uvec4(materials);
+          vMaterialsWeights = materialsWeights;
 			  }
         `,
       fragmentShader: /* glsl */ `
@@ -551,48 +567,46 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
 			  varying vec3 vNormal;
 			  varying vec3 vPosition;
 
+        flat varying uvec4 vMaterials;
+        varying vec4 vMaterialsWeights;
+
         varying float vGrassHeight;
         varying float vGrassRandom;
+        varying float vGrassColorVariation;
 
         uniform sampler2D map;
 
-        vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
-              
-        float snoise(vec2 v){
-          const vec4 C = vec4(0.211324865405187, 0.366025403784439,
-                   -0.577350269189626, 0.024390243902439);
-          vec2 i  = floor(v + dot(v, C.yy) );
-          vec2 x0 = v -   i + dot(i, C.xx);
-          vec2 i1;
-          i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-          vec4 x12 = x0.xyxy + C.xxzz;
-          x12.xy -= i1;
-          i = mod(i, 289.0);
-          vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
-          + i.x + vec3(0.0, i1.x, 1.0 ));
-          vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy),
-            dot(x12.zw,x12.zw)), 0.0);
-          m = m*m ;
-          m = m*m ;
-          vec3 x = 2.0 * fract(p * C.www) - 1.0;
-          vec3 h = abs(x) - 0.5;
-          vec3 ox = floor(x + 0.5);
-          vec3 a0 = x - ox;
-          m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
-          vec3 g;
-          g.x  = a0.x  * x0.x  + h.x  * x0.y;
-          g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-          return 130.0 * dot(m, g);
+        vec3 getGrassColor(uint ${GET_COLOR_PARAMETER_NAME}) {
+          ${MATERIALS_COLORS_SHADER_CODE};
         }
+        vec3 blendSamples(vec3 samples[4], vec4 weights) {
+          float weightSum = weights.x + weights.y + weights.z + weights.w;
+          return (samples[0] * weights.x + samples[1] * weights.y + samples[2] * weights.z + samples[3] * weights.w) / weightSum;
+        }
+        vec3 blendGrassColors(uvec4 materials, vec4 weights) {
+          vec3 samples[4];
 
-        const vec3 GRASS_COLOR_1 = vec3(0.15, 0.5, 0.15);
-        const vec3 GRASS_COLOR_2 = vec3(0., 0.3, 0.1);
+          samples[0] = getGrassColor(materials.x);
+          samples[1] = getGrassColor(materials.y);
+          samples[2] = getGrassColor(materials.z);
+          samples[3] = getGrassColor(materials.w);
 
+          return blendSamples(samples, weights);
+        }
         void main() {
           float grassAlpha = texture2D(map, vUv).a * (vGrassHeight + vGrassRandom / 10.f) / 1.5;
-          float grassNoise = snoise(vPosition.xz / 30.0);
-          vec3 grassColor = mix(GRASS_COLOR_1, GRASS_COLOR_2, grassNoise);
-          grassColor = vec3(grassColor.r + vGrassHeight / 2.0 + vGrassRandom / 7.0, grassColor.g + vGrassHeight / 7.0 + vGrassRandom / 10.0, grassColor.b + vGrassHeight / 10.0 - vGrassRandom / 12.0);
+          vec3 grassColor = blendGrassColors(vMaterials, vMaterialsWeights);
+
+          grassColor.r += vGrassHeight / 2.f;
+          grassColor.g += vGrassHeight / 3.f;
+          grassColor.b += vGrassHeight / 4.f;
+
+          grassColor.r += vGrassRandom / 5.f;
+          grassColor.g += vGrassRandom / 6.f;
+          grassColor.b += vGrassRandom / 7.f;
+
+          grassColor *= vGrassColorVariation;
+
 			  	gl_FragColor = vec4(grassColor, grassAlpha);
 			  }
         `
@@ -623,38 +637,47 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
   addChunk(chunk, instances) {
     if (instances) {
       if (chunk.lod < this.lodCutoff && instances.length > 0) {
-        const _renderLitterPolygonGeometry = (drawCall, ps, qs) => {
+        const _writeToTexture = (array, texture, textureOffset, index, number) => {
+          const indexOffset = index * 4;
+          for (let j = 0; j < number; j++) {
+            const value = array[index * number + j];
+            texture.image.data[textureOffset + indexOffset + j] = value;
+          }
+        };
+        const _renderLitterPolygonGeometry = (drawCall, ps, qs, materials, materialsWeights, grassProps) => {
           const pTexture = drawCall.getTexture('p');
           const pOffset = drawCall.getTextureOffset('p');
           const qTexture = drawCall.getTexture('q');
           const qOffset = drawCall.getTextureOffset('q');
+          const materialsTexture = drawCall.getTexture('materials');
+          const materialsOffset = drawCall.getTextureOffset('materials');
+          const materialsWeightsTexture = drawCall.getTexture('materialsWeights');
+          const materialsWeightsOffset = drawCall.getTextureOffset('materialsWeights');
+          const grassPropsTexture = drawCall.getTexture('grassProps');
+          const grassPropsOffset = drawCall.getTextureOffset('grassProps');
 
           let index = 0;
           for (let j = 0; j < ps.length; j += 3) {
-            const indexOffset = index * 4;
 
             // geometry
-            const px = ps[index * 3];
-            const py = ps[index * 3 + 1];
-            const pz = ps[index * 3 + 2];
-            pTexture.image.data[pOffset + indexOffset] = px;
-            pTexture.image.data[pOffset + indexOffset + 1] = py;
-            pTexture.image.data[pOffset + indexOffset + 2] = pz;
+            _writeToTexture(ps, pTexture, pOffset, index, 3);
+            _writeToTexture(qs, qTexture, qOffset, index, 4);
 
-            const qx = qs[index * 4];
-            const qy = qs[index * 4 + 1];
-            const qz = qs[index * 4 + 2];
-            const qw = qs[index * 4 + 3];
-            qTexture.image.data[qOffset + indexOffset] = qx;
-            qTexture.image.data[qOffset + indexOffset + 1] = qy;
-            qTexture.image.data[qOffset + indexOffset + 2] = qz;
-            qTexture.image.data[qOffset + indexOffset + 3] = qw;
+            // materials
+            _writeToTexture(materials, materialsTexture, materialsOffset, index, 4);
+            _writeToTexture(materialsWeights, materialsWeightsTexture, materialsWeightsOffset, index, 4);
+
+            // grass props
+            _writeToTexture(grassProps, grassPropsTexture, grassPropsOffset, index, 4);
 
             index++;
           }
 
           drawCall.updateTexture('p', pOffset, index * 4);
           drawCall.updateTexture('q', qOffset, index * 4);
+          drawCall.updateTexture('materials', materialsOffset, index * 4);
+          drawCall.updateTexture('materialsWeights', materialsWeightsOffset, index * 4);
+          drawCall.updateTexture('grassProps', grassPropsOffset, index * 4);
         };
 
         const { chunkSize } = this.instance;
@@ -673,7 +696,7 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
         const lodIndex = Math.log2(chunk.lod);
         const drawChunks = Array(instances.length);
         for (let i = 0; i < instances.length; i++) {
-          const { instanceId, ps, qs } = instances[i];
+          const { instanceId, ps, qs, materials, materialsWeights, grassProps} = instances[i];
           const geometryIndex = instanceId;
           const numInstances = ps.length / 3;
 
@@ -683,7 +706,7 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
             numInstances,
             boundingBox
           );
-          _renderLitterPolygonGeometry(drawChunk, ps, qs);
+          _renderLitterPolygonGeometry(drawChunk, ps, qs, materials, materialsWeights, grassProps);
           drawChunks[i] = drawChunk;
         }
         const key = procGenManager.getNodeHash(chunk);
