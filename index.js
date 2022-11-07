@@ -203,11 +203,11 @@ export default e => {
         const generateFlags = {
           terrain: true,
           water: true,
-          barrier: true,
+          barrier: false,
           vegetation: true,
           rock: true,
           grass: true,
-          poi: true,
+          poi: false,
         };
         const numVegetationInstances = treeUrls.length;
         const numRockInstances = rockUrls.length;

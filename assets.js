@@ -1,64 +1,42 @@
-import { MATERIALS_INFO, TREES_INFO } from "./constants.js";
+import { BUSHES_INFO, GRASSES_INFO, MATERIALS_INFO, ORES_INFO, ROCKS_INFO, STONES_INFO, TREES_INFO } from "./constants.js";
 
 export const procgenAssetsBaseUrl = `https://webaverse.github.io/procgen-assets/`;
 
 // this file's base url
-const BASE_URL = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
-const SERVER_URL = 'http://localhost:8080/';
+// const BASE_URL = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
+// const SERVER_URL = 'http://localhost:8080/';
 
 export const glbUrlSpecs = {
-  trees: ['Toon_1.glb'].map(u => `${SERVER_URL}assets/trees/${u}`),
-  bushes : ['Toon_Bush_1.glb'].map(u => `${SERVER_URL}assets/trees/${u}`), 
+  // trees: ['Toon_1.glb'].map(u => `${SERVER_URL}assets/trees/${u}`),
+  // bushes : ['Bush_1_kiiba.glb'].map(u => `${SERVER_URL}assets/trees/${u}`), 
 
-  rocks: ['grey_rock1_v1_texta.glb'].map(u => `${SERVER_URL}assets/rocks/${u}`),
-  stones : ['grey_rock1_v1_texta.glb'].map(u => `${SERVER_URL}assets/rocks/${u}`), 
+  // rocks: ['big_rock_v2.glb'].map(u => `${SERVER_URL}assets/rocks/${u}`),
+  // stones : ['med_rock_v2.glb'].map(u => `${SERVER_URL}assets/rocks/${u}`), 
 
-// TREES_INFO.map(t => t.getModelPath())
-  // trees: [
-  //   'Toon_1.glb',
-  //   // 'Tree_1_1.glb',
-  //   // 'Tree_1_2.glb',
-  //   // 'Tree_2_1.glb',
-  //   // 'Tree_2_2.glb',
-  //   // 'Tree_3_1.glb',
-  //   // 'Tree_3_2.glb',
-  //   // 'Tree_4_1.glb',
-  //   // 'Tree_4_2.glb',
-  //   // 'Tree_4_3.glb',
-  //   // 'Tree_5_1.glb',
-  //   // 'Tree_5_2.glb',
-  //   // 'Tree_6_1.glb',
-  //   // 'Tree_6_2.glb',
-  // ].map(u => {
-  //   return `${procgenAssetsBaseUrl}vegetation/garden-trees/${u}`;
-  // }),
+  trees: TREES_INFO.map(t => t.getModelPath()).map(u => {
+    return `${procgenAssetsBaseUrl}${u}`;
+  }),
+  bushes: BUSHES_INFO.map(t => t.getModelPath()).map(u => {
+    return `${procgenAssetsBaseUrl}${u}`;
+  }),
+  rocks: ROCKS_INFO.map(t => t.getModelPath()).map(u => {
+    return `${procgenAssetsBaseUrl}${u}`;
+  }),
+  stones: STONES_INFO.map(t => t.getModelPath()).map(u => {
+    return `${procgenAssetsBaseUrl}${u}`;
+  }),
+  grasses: GRASSES_INFO.map(t => t.getModelPath()).map(u => {
+    return `${procgenAssetsBaseUrl}${u}`;
+  }),
 
-  ores : ['grey_rock1_v1_texta.glb'].map(u => `${SERVER_URL}assets/rocks/${u}`), 
-  // ores: [
-  //   'BlueOre_deposit_low.glb',
-  //   'Iron_Deposit_low.glb',
-  //   'Ore_Blue_low.glb',
-  //   'Ore_BrownRock_low.glb',
-  //   'Ore_Deposit_Red.glb',
-  //   'Ore_Red_low.glb',
-  //   'Ore_metal_low.glb',
-  //   'Ore_wood_low.glb',
-  //   'Rock_ore_Deposit_low.glb',
-  //   'TreeOre_low.glb',
-  // ].map(u => {
-  //   return `${procgenAssetsBaseUrl}litter/ores/${u}`;
-  // }),
-
-  grasses: [
-    'assets/trees/ToonGrass_v1.3_Guilty.glb',
-  ].map(u => {
-    return `${SERVER_URL}/${u}`;
+  ores: ORES_INFO.map(t => t.getModelPath()).map(u => {
+    return `${procgenAssetsBaseUrl}${u}`;
   }),
 
   // grasses: [
-  //   'testgrass_dualquad.glb',
+  //   'assets/trees/ToonGrass_v1.3_Guilty.glb',
   // ].map(u => {
-  //   return `${procgenAssetsBaseUrl}grass/${u}`;
+  //   return `${SERVER_URL}/${u}`;
   // }),
 
   huds: [

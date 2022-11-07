@@ -8,7 +8,7 @@ export const grassUrls = glbUrlSpecs.grasses;
 
 //
 
-const spriteLodCutoff = 8;
+const spriteLodCutoff = 4;
 const meshLodSpecs = {
   1: {
     targetRatio: 1,

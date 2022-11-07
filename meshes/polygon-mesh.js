@@ -1,20 +1,15 @@
-import * as THREE from 'three';
 import metaversefile from 'metaversefile';
+import * as THREE from 'three';
+import {
+  GET_COLOR_PARAMETER_NAME, GRASS_COLORS_SHADER_CODE, maxAnisotropy, MAX_WORLD_HEIGHT, MIN_WORLD_HEIGHT,
+  // bufferSize,
+  WORLD_BASE_HEIGHT
+} from '../constants.js';
 const {useCamera, useProcGenManager, useGeometries, useAtlasing, useGeometryBatching, useGeometryChunking, useLoaders, usePhysics, useSpriting} = metaversefile;
 const procGenManager = useProcGenManager();
 const {createTextureAtlas} = useAtlasing();
 const {InstancedBatchedMesh, InstancedGeometryAllocator} = useGeometryBatching();
 const {gltfLoader} = useLoaders();
-import {
-  // bufferSize,
-  WORLD_BASE_HEIGHT,
-  MIN_WORLD_HEIGHT,
-  MAX_WORLD_HEIGHT,
-  maxAnisotropy,
-  MATERIALS_INFO,
-  MATERIALS_COLORS_SHADER_CODE,
-  GET_COLOR_PARAMETER_NAME,
-} from '../constants.js';
 
 //
 
@@ -509,12 +504,11 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
   			varying vec3 vNormal;
   			varying vec3 vPosition;
 
-        flat varying uvec4 vMaterials;
+        flat varying ivec4 vMaterials;
         varying vec4 vMaterialsWeights;
 
         varying float vGrassHeight;
-        varying float vGrassRandom;
-        varying float vGrassColorVariation;
+        varying vec3 vGrassColorMultiplier;
 
         vec3 rotate_vertex_position(vec3 position, vec4 q) { 
           return position + 2.0 * cross(q.xyz, cross(q.xyz, position) + q.w * position);
@@ -537,15 +531,13 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
           vec4 materialsWeights = texture2D(materialsWeightsTexture, pUv).xyzw;
 
           vec4 grassProps = texture2D(grassPropsTexture, pUv).xyzw;
-          float grassHeightNoise = grassProps.x;
-          float randomGrassFactor = grassProps.y;
-          float colorVariationNoise = grassProps.z;
+          vec3 grassColorMultiplier = grassProps.xyz;
+          float grassHeightMultiplier = grassProps.w;
 
           // * Grass Height Range -> [0.0, 1.0]
-          float grassHeight = position.y / uGrassBladeHeight;
-          float heightMultiplier = grassHeightNoise;
+          float grassHeight = position.y / uGrassBladeHeight * grassHeightMultiplier;
           vec3 scaledPosition = position;
-          scaledPosition.y *= heightMultiplier * grassHeight;
+          scaledPosition.y *= grassHeight;
 
           vec3 worldPosition = rotate_vertex_position(scaledPosition, q);
           worldPosition  += p;
@@ -556,9 +548,8 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
           vNormal = normal;
           vPosition = worldPosition;
           vGrassHeight = grassHeight;
-          vGrassRandom = randomGrassFactor;
-          vGrassColorVariation = colorVariationNoise;
-          vMaterials = uvec4(materials);
+          vGrassColorMultiplier = grassColorMultiplier;
+          vMaterials = ivec4(materials);
           vMaterialsWeights = materialsWeights;
 			  }
         `,
@@ -567,23 +558,22 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
 			  varying vec3 vNormal;
 			  varying vec3 vPosition;
 
-        flat varying uvec4 vMaterials;
+        flat varying ivec4 vMaterials;
         varying vec4 vMaterialsWeights;
 
         varying float vGrassHeight;
-        varying float vGrassRandom;
-        varying float vGrassColorVariation;
+        varying vec3 vGrassColorMultiplier;
 
         uniform sampler2D map;
 
-        vec3 getGrassColor(uint ${GET_COLOR_PARAMETER_NAME}) {
-          ${MATERIALS_COLORS_SHADER_CODE};
+        vec3 getGrassColor(int ${GET_COLOR_PARAMETER_NAME}) {
+          ${GRASS_COLORS_SHADER_CODE};
         }
         vec3 blendSamples(vec3 samples[4], vec4 weights) {
           float weightSum = weights.x + weights.y + weights.z + weights.w;
           return (samples[0] * weights.x + samples[1] * weights.y + samples[2] * weights.z + samples[3] * weights.w) / weightSum;
         }
-        vec3 blendGrassColors(uvec4 materials, vec4 weights) {
+        vec3 blendGrassColors(ivec4 materials, vec4 weights) {
           vec3 samples[4];
 
           samples[0] = getGrassColor(materials.x);
@@ -594,18 +584,14 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
           return blendSamples(samples, weights);
         }
         void main() {
-          float grassAlpha = texture2D(map, vUv).a * (vGrassHeight + vGrassRandom / 10.f) / 1.5;
+          float grassAlpha = texture2D(map, vUv).a * vGrassHeight;
           vec3 grassColor = blendGrassColors(vMaterials, vMaterialsWeights);
 
-          grassColor.r += vGrassHeight / 2.f;
-          grassColor.g += vGrassHeight / 3.f;
-          grassColor.b += vGrassHeight / 4.f;
+          grassColor.r += vGrassHeight / 3.f;
+          grassColor.g += vGrassHeight / 4.f;
+          grassColor.b += vGrassHeight / 5.f;
 
-          grassColor.r += vGrassRandom / 5.f;
-          grassColor.g += vGrassRandom / 6.f;
-          grassColor.b += vGrassRandom / 7.f;
-
-          grassColor *= vGrassColorVariation;
+          grassColor *= vGrassColorMultiplier;
 
 			  	gl_FragColor = vec4(grassColor, grassAlpha);
 			  }

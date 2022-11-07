@@ -7,7 +7,7 @@ import { SpritesheetMesh, SpritesheetPackage } from '../meshes/spritesheet-mesh.
 
 //
 
-const spriteLodCutoff = 16;
+const spriteLodCutoff = 8;
 const meshLodSpecs = {
   1: {
     targetRatio: 1,
