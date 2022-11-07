@@ -31,7 +31,6 @@ export const glbUrlSpecs = {
 
   ores: ORES_INFO.map(t => t.getModelPath()).map(u => {
     return `${procgenAssetsBaseUrl}${u}`;
-  }),
 
   // grasses: [
   //   'assets/trees/ToonGrass_v1.3_Guilty.glb',
