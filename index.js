@@ -8,17 +8,18 @@ import { TerrainMesh } from './layers/terrain-mesh.js';
 import { WaterMesh } from './layers/water-mesh.js';
 // import {BarrierMesh} from './layers/barrier-mesh.js';
 import { glbUrlSpecs } from './assets.js';
-import { GrassMesh, grassUrls } from './layers/grass-mesh.js';
-import { HudMesh, hudUrls } from './layers/hud-mesh.js';
-import { GenerationObjectMesh } from './layers/vegetation-mesh.js';
+import { GrassMesh } from './layers/grass-mesh.js';
+import { HudMesh } from './layers/hud-mesh.js';
+import { InstancedObjectMesh } from './layers/instanced-object-mesh.js';
+import { TerrainObjectsMesh, TerrainObjectSpecs } from './meshes/terrain-objects-mesh.js';
 
+// urls
 const treeUrls = glbUrlSpecs.trees.slice(0, 1);
-
 const bushUrls = glbUrlSpecs.bushes.slice(0, 1);
-
 const rockUrls = glbUrlSpecs.rocks.slice(0, 1);
-
 const stoneUrls = glbUrlSpecs.stones.slice(0, 1);
+const grassUrls = glbUrlSpecs.grasses;
+const hudUrls = glbUrlSpecs.huds;
 
 // locals
 
@@ -94,50 +95,18 @@ export default e => {
     app.add(barrierMesh);
     barrierMesh.updateMatrixWorld(); */
 
-    const treeMesh = new GenerationObjectMesh({
-      instance,
-      physics,
-    });
-    app.add(treeMesh);
-    treeMesh.updateMatrixWorld();
+    const OBJECTS_SPECS_ARRAY = [
+      new TerrainObjectSpecs(InstancedObjectMesh, treeUrls),
+      new TerrainObjectSpecs(InstancedObjectMesh, bushUrls),
+      new TerrainObjectSpecs(InstancedObjectMesh, rockUrls),
+      new TerrainObjectSpecs(InstancedObjectMesh, stoneUrls),
+      new TerrainObjectSpecs(GrassMesh, grassUrls),
+      new TerrainObjectSpecs(HudMesh, hudUrls),
+    ];
 
-    const bushMesh = new GenerationObjectMesh({
-      instance,
-      physics,
-    });
-    // bushMesh.polygonMesh.frustumCulled = false;
-    // bushMesh.polygonMesh.castShadow = true;
-    // bushMesh.polygonMesh.receiveShadow = true;
-    app.add(bushMesh);
-    bushMesh.updateMatrixWorld();
-
-    const rockMesh = new GenerationObjectMesh({
-      instance,
-      physics,
-    });
-    app.add(rockMesh);
-    rockMesh.updateMatrixWorld();
-
-    const stoneMesh = new GenerationObjectMesh({
-      instance,
-      physics,
-    });
-    app.add(stoneMesh);
-    stoneMesh.updateMatrixWorld();
-
-    const grassMesh = new GrassMesh({
-      instance,
-      physics,
-    });
-    app.add(grassMesh);
-    grassMesh.updateMatrixWorld();
-
-    const hudMesh = new HudMesh({
-      instance,
-    });
-    app.add(hudMesh);
-    hudMesh.updateMatrixWorld();
-
+    const terrainObjects = new TerrainObjectsMesh(instance, physics, OBJECTS_SPECS_ARRAY);
+    app.add(terrainObjects);
+    terrainObjects.updateMatrixWorld();
     // genration events handling
     lodTracker.onChunkAdd(async chunk => {
       const key = procGenManager.getNodeHash(chunk);
@@ -155,23 +124,16 @@ export default e => {
         waterMesh.addChunk(chunk, heightfield);
         // barrierMesh.addChunk(chunk, heightfield);
       
-        // trees
-        treeMesh.addChunk(chunk, treeInstances);
-        
-        // bushes
-        bushMesh.addChunk(chunk, bushInstances);
+        const terrainObjectInstances = [
+          treeInstances,
+          bushInstances,
+          rockInstances,
+          stoneInstances,
+          grassInstances,
+          poiInstances,
+        ];
 
-        // rocks
-        rockMesh.addChunk(chunk, rockInstances);
-        
-        // stones
-        stoneMesh.addChunk(chunk, stoneInstances);
-
-        // grass
-        grassMesh.addChunk(chunk, grassInstances);
-
-        // hud
-        hudMesh.addChunk(chunk, poiInstances);
+        terrainObjects.addChunks(chunk, terrainObjectInstances);
       });
       generation.addEventListener('geometryremove', e => {
         // heightfield
@@ -179,23 +141,7 @@ export default e => {
         waterMesh.removeChunk(chunk);
         // barrierMesh.removeChunk(chunk);
 
-        // tree
-        treeMesh.removeChunk(chunk);
-
-        // bush
-        bushMesh.removeChunk(chunk);
-
-        // rock
-        rockMesh.removeChunk(chunk);
-
-        // stone
-        stoneMesh.removeChunk(chunk);
-
-        // grass
-        grassMesh.removeChunk(chunk);
-
-        // hud
-        hudMesh.removeChunk(chunk);
+        terrainObjects.removeChunks(chunk);
       });
 
       try {
@@ -250,12 +196,7 @@ export default e => {
     const _waitForLoad = async () => {
       await Promise.all([
         terrainMesh.waitForLoad(),
-        treeMesh.waitForLoad(treeUrls),
-        bushMesh.waitForLoad(bushUrls),
-        rockMesh.waitForLoad(rockUrls),
-        stoneMesh.waitForLoad(stoneUrls),
-        grassMesh.waitForLoad(),
-        hudMesh.waitForLoad(),
+        terrainObjects.waitForLoad()
       ]);
     };
     await _waitForLoad();
@@ -290,30 +231,10 @@ export default e => {
       };
       _updateLodTracker();
 
-      const _updateTreeMesh = () => {
-        treeMesh.update(); // update spritesheet uniforms
-      };
-      _updateTreeMesh();
-
-      const _updateBushMesh = () => {
-        bushMesh.update(); // update spritesheet uniforms
-      };
-      _updateBushMesh();
-
-      const _updateRockMesh = () => {
-        rockMesh.update(); // update spritesheet uniforms
-      };
-      _updateRockMesh();
-
-      const _updateStoneMesh = () => {
-        stoneMesh.update(); // update spritesheet uniforms
-      };
-      _updateStoneMesh();
-
-      const _updateHudMesh = () => {
-        hudMesh.update(); // update icon uniforms
-      };
-      _updateHudMesh();
+      const _updateTerrainObjects = () => {
+        terrainObjects.update();
+      }
+      _updateTerrainObjects();
 
       const _updateWaterMesh = () => {
         waterMesh.update();
