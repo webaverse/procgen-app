@@ -1,5 +1,6 @@
-import * as THREE from 'three';
 import metaversefile from 'metaversefile';
+import * as THREE from 'three';
+import { MATERIALS_INFO } from '../constants.js';
 import { NUM_TERRAIN_MATERIALS } from './terrain-mesh.js';
 
 const {useAtlasing} = metaversefile;
@@ -14,6 +15,8 @@ const _createTerrainMaterial = () => {
     uRoughnessMap: {},
     uMetalnessMap: {},
     uAoMap: {},
+
+    uTextureScales: {value: MATERIALS_INFO.map(m => m.scale)},
 
     // noise texture
     uNoiseTexture: {},
@@ -44,6 +47,7 @@ const _createTerrainMaterial = () => {
 
         varying mat3 vNormalMatrix;
         varying vec3 vPosition;
+        varying vec3 vCameraDepth;
         varying vec3 vObjectNormal;
       `;
 
@@ -56,6 +60,7 @@ const _createTerrainMaterial = () => {
        vPosition = transformed;
        vNormalMatrix = normalMatrix;
        vObjectNormal = normal;
+       vCameraDepth = -(modelViewMatrix * vec4(transformed, 1.)).xyz;
       `;
 
       // fragment shader
@@ -70,6 +75,7 @@ const _createTerrainMaterial = () => {
         varying vec4 vMaterialsWeights;
 
         varying vec3 vPosition;
+        varying vec3 vCameraDepth;
         varying mat3 vNormalMatrix;
         varying vec3 vObjectNormal;
   
@@ -80,6 +86,8 @@ const _createTerrainMaterial = () => {
         uniform sampler2D uAoMap;
 
         uniform sampler2D uNoiseTexture;
+
+        uniform float uTextureScales[${NUM_TERRAIN_MATERIALS}];
   
         const float TEXTURE_SCALE = 40.0;
         const float TEXTURE_PER_ROW = float(${texturePerRow});
@@ -121,7 +129,9 @@ const _createTerrainMaterial = () => {
         }
 
         // * based on this article : https://iquilezles.org/articles/texturerepetition
-        vec4 textureNoTile(sampler2D textureSample, int textureIndex, vec2 uv ) {
+        vec4 textureNoTile(sampler2D textureSample, int textureIndex, vec2 inputUv ) {
+          float UV_SCALE = uTextureScales[textureIndex];
+          vec2 uv = inputUv * (1.f / UV_SCALE);
           // sample variation pattern
           float k = vec3(texture2D(uNoiseTexture, 0.0025*uv)).x; // cheap (cache friendly) lookup
 
@@ -165,7 +175,9 @@ const _createTerrainMaterial = () => {
         }
 
         vec4 mapTextures(vec3 inputPosition, vec3 inputNormal, sampler2D inputTextures){
-          vec2 textureUv = inputPosition.xz * (1.f / TEXTURE_SCALE);
+          // float depth = clamp(abs(distance(cameraPosition.xz, vPosition.xz) / 100.f), 1.0, 20.0);
+          float textureScale = /* depth * */ TEXTURE_SCALE;
+          vec2 textureUv = inputPosition.xz * (1.f / textureScale);
           vec4 textureColor = blendMaterials(inputTextures, textureUv);
           return textureColor;
         }

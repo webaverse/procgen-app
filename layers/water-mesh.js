@@ -191,7 +191,7 @@ export class WaterMesh extends BufferedMesh {
         this.geometryBindings.set(key, geometryBinding);
       };
       const waterGeometry = chunkResult.waterGeometry;
-      _handleWaterMesh(waterGeometry);
+      waterGeometry && _handleWaterMesh(waterGeometry);
 
       const _handlePhysics = async () => {
         const physicsGeo = new THREE.BufferGeometry();
@@ -226,9 +226,7 @@ export class WaterMesh extends BufferedMesh {
           this.chunkPhysicObjcetMap.set(chunkKey, physicsObject); // use chunk.min as a key to map each physicsObject
         }
       };
-      if (waterGeometry.indices.length !== 0) {
-        _handlePhysics();
-      }
+      waterGeometry && waterGeometry.indices.length !== 0 && _handlePhysics();
     });
     this.gpuTasks.set(key, task);
   }

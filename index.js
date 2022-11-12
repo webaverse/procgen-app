@@ -1,15 +1,25 @@
-import * as THREE from 'three';
 import metaversefile from 'metaversefile';
+import * as THREE from 'three';
 const {useApp, useFrame, useCamera, useLocalPlayer, usePhysics, useProcGenManager, useGPUTask, useGenerationTask} = metaversefile;
 const {GPUTaskManager} = useGPUTask();
 const {GenerationTaskManager} = useGenerationTask();
 
-import {TerrainMesh} from './layers/terrain-mesh.js';
-import {WaterMesh} from './layers/water-mesh.js';
+import { TerrainMesh } from './layers/terrain-mesh.js';
+import { WaterMesh } from './layers/water-mesh.js';
 // import {BarrierMesh} from './layers/barrier-mesh.js';
-import {LitterMetaMesh, litterUrls} from './layers/litter-mesh.js';
-import {GrassMesh, grassUrls} from './layers/grass-mesh.js';
-import {HudMesh, hudUrls} from './layers/hud-mesh.js';
+import { glbUrlSpecs } from './assets.js';
+import { GrassMesh } from './layers/grass-mesh.js';
+import { HudMesh } from './layers/hud-mesh.js';
+import { InstancedObjectMesh } from './layers/instanced-object-mesh.js';
+import { TerrainObjectsMesh, TerrainObjectSpecs } from './meshes/terrain-objects-mesh.js';
+
+// urls
+const treeUrls = glbUrlSpecs.trees.slice(0, 1);
+const bushUrls = glbUrlSpecs.bushes.slice(0, 1);
+const rockUrls = glbUrlSpecs.rocks.slice(0, 1);
+const stoneUrls = glbUrlSpecs.stones.slice(0, 1);
+const grassUrls = glbUrlSpecs.grasses;
+const hudUrls = glbUrlSpecs.huds;
 
 // locals
 
@@ -63,7 +73,7 @@ export default e => {
       physics,
     });
     terrainMesh.frustumCulled = false;
-    terrainMesh.castShadow = true;
+    // terrainMesh.castShadow = true;
     terrainMesh.receiveShadow = true; 
     app.add(terrainMesh);
     terrainMesh.updateMatrixWorld();
@@ -85,30 +95,18 @@ export default e => {
     app.add(barrierMesh);
     barrierMesh.updateMatrixWorld(); */
 
-    const litterMesh = new LitterMetaMesh({
-      instance,
-      gpuTaskManager,
-      physics,
-    });
-    app.add(litterMesh);
-    litterMesh.updateMatrixWorld();
+    const OBJECTS_SPECS_ARRAY = [
+      new TerrainObjectSpecs(InstancedObjectMesh, treeUrls),
+      new TerrainObjectSpecs(InstancedObjectMesh, bushUrls),
+      new TerrainObjectSpecs(InstancedObjectMesh, rockUrls),
+      new TerrainObjectSpecs(InstancedObjectMesh, stoneUrls),
+      new TerrainObjectSpecs(GrassMesh, grassUrls),
+      new TerrainObjectSpecs(HudMesh, hudUrls),
+    ];
 
-    const grassMesh = new GrassMesh({
-      instance,
-      gpuTaskManager,
-      physics,
-    });
-    app.add(grassMesh);
-    grassMesh.updateMatrixWorld();
-
-    const hudMesh = new HudMesh({
-      instance,
-      gpuTaskManager,
-      physics,
-    });
-    app.add(hudMesh);
-    hudMesh.updateMatrixWorld();
-
+    const terrainObjects = new TerrainObjectsMesh(instance, physics, OBJECTS_SPECS_ARRAY);
+    app.add(terrainObjects);
+    terrainObjects.updateMatrixWorld();
     // genration events handling
     lodTracker.onChunkAdd(async chunk => {
       const key = procGenManager.getNodeHash(chunk);
@@ -117,7 +115,7 @@ export default e => {
       generation.addEventListener('geometryadd', e => {
         const {result} = e.data;
         const {heightfield} = result;
-        const {vegetationInstances, grassInstances, poiInstances} = heightfield;
+        const {treeInstances, bushInstances, rockInstances, stoneInstances, grassInstances, poiInstances} = heightfield;
 
         // console.log('got heightfield', heightfield);
 
@@ -126,14 +124,16 @@ export default e => {
         waterMesh.addChunk(chunk, heightfield);
         // barrierMesh.addChunk(chunk, heightfield);
       
-        // vegetation
-        litterMesh.addChunk(chunk, vegetationInstances);
-        
-        // grass
-        grassMesh.addChunk(chunk, grassInstances);
+        const terrainObjectInstances = [
+          treeInstances,
+          bushInstances,
+          rockInstances,
+          stoneInstances,
+          grassInstances,
+          poiInstances,
+        ];
 
-        // hud
-        hudMesh.addChunk(chunk, poiInstances);
+        terrainObjects.addChunks(chunk, terrainObjectInstances);
       });
       generation.addEventListener('geometryremove', e => {
         // heightfield
@@ -141,14 +141,7 @@ export default e => {
         waterMesh.removeChunk(chunk);
         // barrierMesh.removeChunk(chunk);
 
-        // vegetation
-        litterMesh.removeChunk(chunk);
-
-        // grass
-        grassMesh.removeChunk(chunk);
-
-        // hud
-        hudMesh.removeChunk(chunk);
+        terrainObjects.removeChunks(chunk);
       });
 
       try {
@@ -156,12 +149,14 @@ export default e => {
         const generateFlags = {
           terrain: true,
           water: true,
-          barrier: true,
+          barrier: false,
           vegetation: true,
+          rock: true,
           grass: true,
-          poi: true,
+          poi: false,
         };
-        const numVegetationInstances = litterUrls.length;
+        const numVegetationInstances = treeUrls.length;
+        const numRockInstances = rockUrls.length;
         const numGrassInstances = grassUrls.length;
         const numPoiInstances = hudUrls.length;
         const options = {
@@ -173,6 +168,7 @@ export default e => {
           chunk.lodArray,
           generateFlags,
           numVegetationInstances,
+          numRockInstances,
           numGrassInstances,
           numPoiInstances,
           options
@@ -200,9 +196,7 @@ export default e => {
     const _waitForLoad = async () => {
       await Promise.all([
         terrainMesh.waitForLoad(),
-        litterMesh.waitForLoad(),
-        grassMesh.waitForLoad(),
-        hudMesh.waitForLoad(),
+        terrainObjects.waitForLoad()
       ]);
     };
     await _waitForLoad();
@@ -237,15 +231,10 @@ export default e => {
       };
       _updateLodTracker();
 
-      const _updateLitterMesh = () => {
-        litterMesh.update(); // update spritesheet uniforms
-      };
-      _updateLitterMesh();
-
-      const _updateHudMesh = () => {
-        hudMesh.update(); // update icon uniforms
-      };
-      _updateHudMesh();
+      const _updateTerrainObjects = () => {
+        terrainObjects.update();
+      }
+      _updateTerrainObjects();
 
       const _updateWaterMesh = () => {
         waterMesh.update();

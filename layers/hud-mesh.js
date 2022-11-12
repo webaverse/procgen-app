@@ -2,12 +2,6 @@ import * as THREE from 'three';
 import {IconPackage, IconMesh} from '../meshes/icon-mesh.js';
 import {glbUrlSpecs} from '../assets.js';
 
-//
-
-export const hudUrls = glbUrlSpecs.huds;
-
-//
-
 const hudLodDistanceCutoff = 4;
 
 //
@@ -15,9 +9,11 @@ const hudLodDistanceCutoff = 4;
 export class HudMesh extends THREE.Object3D {
   constructor({
     instance,
-    // gpuTaskManager,
+    urls
   }) {
     super();
+
+    this.urls = urls;
 
     this.iconMesh = new IconMesh({
       instance,
@@ -35,7 +31,7 @@ export class HudMesh extends THREE.Object3D {
     this.iconMesh.update();
   }
   async waitForLoad() {
-    const iconPackage = await IconPackage.loadUrls(hudUrls);
+    const iconPackage = await IconPackage.loadUrls(this.urls);
     this.iconMesh.setPackage(iconPackage);
   }
 }

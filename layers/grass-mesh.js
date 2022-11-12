@@ -1,14 +1,9 @@
 import * as THREE from 'three';
-import {PolygonPackage, PolygonMesh} from '../meshes/polygon-mesh.js';
+import {PolygonPackage, PolygonMesh, GrassPolygonMesh} from '../meshes/polygon-mesh.js';
 import {glbUrlSpecs} from '../assets.js';
 
-//
 
-export const grassUrls = glbUrlSpecs.grasses;
-
-//
-
-const spriteLodCutoff = 8;
+const spriteLodCutoff = 4;
 const meshLodSpecs = {
   1: {
     targetRatio: 1,
@@ -40,12 +35,14 @@ const maxDrawCallsPerGeometry = 256;
 export class GrassMesh extends THREE.Object3D {
   constructor({
     instance,
-    // gpuTaskManager,
     physics,
+    urls
   }) {
     super();
 
-    this.polygonMesh = new PolygonMesh({
+    this.urls = urls;
+
+    this.polygonMesh = new GrassPolygonMesh({
       instance,
       lodCutoff: spriteLodCutoff,
       maxNumGeometries,
@@ -63,28 +60,10 @@ export class GrassMesh extends THREE.Object3D {
     this.polygonMesh.removeChunk(chunk);
   }
   async waitForLoad() {
-    const polygonPackage = await PolygonPackage.loadUrls(grassUrls, meshLodSpecs, this.physics);
+    const polygonPackage = await PolygonPackage.loadUrls(this.urls, meshLodSpecs, this.physics);
     this.polygonMesh.setPackage(polygonPackage);
-
-    /* // XXX debugging
-    {
-      const allLodMeshes = [];
-      const {lodMeshes} = meshPackage;
-      for (const lodMeshArray of lodMeshes) {
-        for (const lodMesh of lodMeshArray) {
-          // this.add(lodMesh);
-          allLodMeshes.push(lodMesh);
-        }
-      }
-      const meshSize = 3;
-      for (let i = 0; i < allLodMeshes.length; i++) {
-        const lodMesh = allLodMeshes[i];
-        lodMesh.position.x = (-allLodMeshes.length/2 + i) * meshSize;
-        lodMesh.position.y = 0.5;
-        lodMesh.position.z = 5;
-        this.add(lodMesh);
-        lodMesh.updateMatrixWorld();
-      }
-    } */
+  }
+  update() {
+    // nothing
   }
 }

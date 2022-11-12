@@ -293,7 +293,7 @@ export class TerrainMesh extends BufferedMesh {
       };
       const terrainGeometry = chunkResult.terrainGeometry;
 
-      _handleTerrainMesh(terrainGeometry);
+      terrainGeometry && _handleTerrainMesh(terrainGeometry);
 
       const _handlePhysics = async () => {
         const physicsGeo = new THREE.BufferGeometry();

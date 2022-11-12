@@ -91,38 +91,39 @@ const numFramesPerRow = Math.ceil(Math.sqrt(numFramesPow2));
 const maxDrawCalls = 256;
 const maxInstancesPerDrawCall = 1024;
 export class SpritesheetMesh extends ChunkedBatchedMesh {
-  constructor({
-    instance,
-    lodCutoff,
-  }) {
+  constructor({ instance, lodCutoff }) {
     const baseGeometry = new THREE.PlaneGeometry(1, 1);
-    const allocator = new ChunkedGeometryAllocator(baseGeometry, [
+    const allocator = new ChunkedGeometryAllocator(
+      baseGeometry,
+      [
+        {
+          name: 'p',
+          Type: Float32Array,
+          itemSize: 3,
+        },
+        {
+          name: 'offset',
+          Type: Float32Array,
+          itemSize: 4,
+        },
+        {
+          name: 'itemIndex',
+          Type: Float32Array,
+          itemSize: 1,
+        },
+      ],
       {
-        name: 'p',
-        Type: Float32Array,
-        itemSize: 3,
-      },
-      {
-        name: 'offset',
-        Type: Float32Array,
-        itemSize: 4,
-      },
-      {
-        name: 'itemIndex',
-        Type: Float32Array,
-        itemSize: 1,
-      },
-    ], {
-      maxDrawCalls,
-      maxInstancesPerDrawCall,
-      boundingType: 'box',
-    });
-    const {geometry, textures: attributeTextures} = allocator;
+        maxDrawCalls,
+        maxInstancesPerDrawCall,
+        boundingType: 'box',
+      }
+    );
+    const { geometry, textures: attributeTextures } = allocator;
     for (const k in attributeTextures) {
       const texture = attributeTextures[k];
       texture.anisotropy = maxAnisotropy;
     }
-    
+
     const material = new THREE.ShaderMaterial({
       uniforms: {
         uTex: {
@@ -293,80 +294,87 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
     this.allocatedChunks = new Map();
   }
   addChunk(chunk, chunkResult) {
-    const instances = chunkResult;
+    if (chunkResult) {
+      const instances = chunkResult;
 
-    if (chunk.lod >= this.lodCutoff && instances.length > 0) {
-      const _renderLitterSpriteGeometry = (drawCall, instances) => {
-        const pTexture = drawCall.getTexture('p');
-        const pOffset = drawCall.getTextureOffset('p');
-        const offsetTexture = drawCall.getTexture('offset');
-        const offsetOffset = drawCall.getTextureOffset('offset');
-        const itemIndexTexture = drawCall.getTexture('itemIndex');
-        const itemIndexOffset = drawCall.getTextureOffset('itemIndex');
+      if (chunk.lod >= this.lodCutoff && instances.length > 0) {
+        const _renderLitterSpriteGeometry = (drawCall, instances) => {
+          const pTexture = drawCall.getTexture('p');
+          const pOffset = drawCall.getTextureOffset('p');
+          const offsetTexture = drawCall.getTexture('offset');
+          const offsetOffset = drawCall.getTextureOffset('offset');
+          const itemIndexTexture = drawCall.getTexture('itemIndex');
+          const itemIndexOffset = drawCall.getTextureOffset('itemIndex');
 
-        let index = 0;
-        for (let i = 0; i < instances.length; i++) {
-          const instance = instances[i];
-          const {instanceId, ps, qs} = instance;
+          let index = 0;
+          for (let i = 0; i < instances.length; i++) {
+            const instance = instances[i];
+            const { instanceId, ps, qs } = instance;
 
-          for (let j = 0; j < ps.length; j += 3) {
-            const indexOffset = index * 4;
-            
-            // geometry
-            const px = ps[index * 3];
-            const py = ps[index * 3 + 1];
-            const pz = ps[index * 3 + 2];
-            pTexture.image.data[pOffset + indexOffset] = px;
-            pTexture.image.data[pOffset + indexOffset + 1] = py;
-            pTexture.image.data[pOffset + indexOffset + 2] = pz;
+            for (let j = 0; j < ps.length; j += 3) {
+              const indexOffset = index * 4;
 
-            offsetTexture.image.data[offsetOffset + indexOffset] = this.offsets[instanceId * 4];
-            offsetTexture.image.data[offsetOffset + indexOffset + 1] = this.offsets[instanceId * 4 + 1];
-            offsetTexture.image.data[offsetOffset + indexOffset + 2] = this.offsets[instanceId * 4 + 2];
-            offsetTexture.image.data[offsetOffset + indexOffset + 3] = this.offsets[instanceId * 4 + 3];
+              // geometry
+              const px = ps[index * 3];
+              const py = ps[index * 3 + 1];
+              const pz = ps[index * 3 + 2];
+              pTexture.image.data[pOffset + indexOffset] = px;
+              pTexture.image.data[pOffset + indexOffset + 1] = py;
+              pTexture.image.data[pOffset + indexOffset + 2] = pz;
 
-            itemIndexTexture.image.data[itemIndexOffset + indexOffset] = instanceId;
-        
-            index++;
+              offsetTexture.image.data[offsetOffset + indexOffset] =
+                this.offsets[instanceId * 4];
+              offsetTexture.image.data[offsetOffset + indexOffset + 1] =
+                this.offsets[instanceId * 4 + 1];
+              offsetTexture.image.data[offsetOffset + indexOffset + 2] =
+                this.offsets[instanceId * 4 + 2];
+              offsetTexture.image.data[offsetOffset + indexOffset + 3] =
+                this.offsets[instanceId * 4 + 3];
+
+              itemIndexTexture.image.data[itemIndexOffset + indexOffset] =
+                instanceId;
+
+              index++;
+            }
           }
-        }
 
-        drawCall.updateTexture('p', pOffset, index * 4);
-        drawCall.updateTexture('offset', offsetOffset, index * 4);
-        drawCall.updateTexture('itemIndex', itemIndexOffset, index * 4);
-      };
+          drawCall.updateTexture('p', pOffset, index * 4);
+          drawCall.updateTexture('offset', offsetOffset, index * 4);
+          drawCall.updateTexture('itemIndex', itemIndexOffset, index * 4);
+        };
 
-      const {chunkSize} = this.instance;
-      const boundingBox = localBox.set(
-        localVector.set(
-          chunk.min.x * chunkSize,
-          -WORLD_BASE_HEIGHT + MIN_WORLD_HEIGHT,
-          chunk.min.y * chunkSize
-        ),
-        localVector2.set(
-          (chunk.min.x + chunk.lod) * chunkSize,
-          -WORLD_BASE_HEIGHT + MAX_WORLD_HEIGHT,
-          (chunk.min.y + chunk.lod) * chunkSize
-        )
-      );
-      const totalInstances = (() => {
-        let sum = 0;
-        for (let i = 0; i < instances.length; i++) {
-          const instance = instances[i];
-          const {ps} = instance;
-          sum += ps.length;
-        }
-        sum /= 3;
-        return sum;
-      })();
-      const drawChunk = this.allocator.allocChunk(
-        totalInstances,
-        boundingBox
-      );
-      _renderLitterSpriteGeometry(drawChunk, instances);
+        const { chunkSize } = this.instance;
+        const boundingBox = localBox.set(
+          localVector.set(
+            chunk.min.x * chunkSize,
+            -WORLD_BASE_HEIGHT + MIN_WORLD_HEIGHT,
+            chunk.min.y * chunkSize
+          ),
+          localVector2.set(
+            (chunk.min.x + chunk.lod) * chunkSize,
+            -WORLD_BASE_HEIGHT + MAX_WORLD_HEIGHT,
+            (chunk.min.y + chunk.lod) * chunkSize
+          )
+        );
+        const totalInstances = (() => {
+          let sum = 0;
+          for (let i = 0; i < instances.length; i++) {
+            const instance = instances[i];
+            const { ps } = instance;
+            sum += ps.length;
+          }
+          sum /= 3;
+          return sum;
+        })();
+        const drawChunk = this.allocator.allocChunk(
+          totalInstances,
+          boundingBox
+        );
+        _renderLitterSpriteGeometry(drawChunk, instances);
 
-      const key = procGenManager.getNodeHash(chunk);
-      this.allocatedChunks.set(key, drawChunk);
+        const key = procGenManager.getNodeHash(chunk);
+        this.allocatedChunks.set(key, drawChunk);
+      }
     }
   }
   removeChunk(chunk) {
@@ -378,7 +386,7 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
     }
   }
   setPackage(pkg) {
-    const {canvas} = pkg;
+    const { canvas } = pkg;
     const texture = new THREE.Texture(canvas);
     texture.needsUpdate = true;
 
