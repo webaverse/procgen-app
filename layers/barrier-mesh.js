@@ -1,6 +1,11 @@
-import * as THREE from 'three';
-import metaversefile from 'metaversefile';
-import {bufferSize, WORLD_BASE_HEIGHT, MIN_WORLD_HEIGHT, MAX_WORLD_HEIGHT} from '../constants.js';
+import * as THREE from "three";
+import metaversefile from "metaversefile";
+import {
+  bufferSize,
+  WORLD_BASE_HEIGHT,
+  MIN_WORLD_HEIGHT,
+  MAX_WORLD_HEIGHT,
+} from "../constants.js";
 
 const {useProcGenManager, useGeometryBuffering} = metaversefile;
 const {BufferedMesh, GeometryAllocator} = useGeometryBuffering();
@@ -15,29 +20,26 @@ const localBox = new THREE.Box3();
 //
 
 export class BarrierMesh extends BufferedMesh {
-  constructor({
-    instance,
-    gpuTaskManager,
-  }) {
+  constructor({instance, gpuTaskManager}) {
     const allocator = new GeometryAllocator(
       [
         {
-          name: 'position',
+          name: "position",
           Type: Float32Array,
           itemSize: 3,
         },
         {
-          name: 'normal',
+          name: "normal",
           Type: Float32Array,
           itemSize: 3,
         },
         {
-          name: 'uv',
+          name: "uv",
           Type: Float32Array,
           itemSize: 2,
         },
         {
-          name: 'position2D',
+          name: "position2D",
           Type: Int32Array,
           itemSize: 2,
         },
@@ -46,7 +48,7 @@ export class BarrierMesh extends BufferedMesh {
         bufferSize,
         // boundingType: 'box',
         // hasOcclusionCulling: true
-      }
+      },
     );
 
     const {geometry} = allocator;
@@ -82,9 +84,15 @@ export class BarrierMesh extends BufferedMesh {
         // varying vec3 vPosition;
         varying vec2 vUv;
 
-        // const vec3 lineColor1 = vec3(${new THREE.Color(0x66bb6a).toArray().join(', ')});
-        const vec3 lineColor1 = vec3(${new THREE.Color(0x42a5f5).toArray().join(', ')});
-        const vec3 lineColor2 = vec3(${new THREE.Color(0x9575cd).toArray().join(', ')});
+        // const vec3 lineColor1 = vec3(${new THREE.Color(0x66bb6a)
+          .toArray()
+          .join(", ")});
+        const vec3 lineColor1 = vec3(${new THREE.Color(0x42a5f5)
+          .toArray()
+          .join(", ")});
+        const vec3 lineColor2 = vec3(${new THREE.Color(0x9575cd)
+          .toArray()
+          .join(", ")});
 
         /* float edgeFactor(vec3 bary, float width) {
           vec3 d = fwidth(bary);
@@ -140,6 +148,7 @@ export class BarrierMesh extends BufferedMesh {
     this.gpuTasks = new Map();
     this.geometryBindings = new Map();
   }
+
   addChunk(chunk, chunkResult) {
     if (chunkResult.barrierGeometry.positions.length > 0) {
       const key = procGenManager.getNodeHash(chunk);
@@ -148,7 +157,7 @@ export class BarrierMesh extends BufferedMesh {
           srcIndices,
           dstIndices,
           dstOffset,
-          positionOffset
+          positionOffset,
         ) => {
           const positionIndex = positionOffset / 3;
           for (let i = 0; i < srcIndices.length; i++) {
@@ -158,44 +167,45 @@ export class BarrierMesh extends BufferedMesh {
         const _renderBarrierMeshDataToGeometry = (
           barrierGeometry,
           geometry,
-          geometryBinding
+          geometryBinding,
         ) => {
-          let positionOffset = geometryBinding.getAttributeOffset('position');
-          let normalOffset = geometryBinding.getAttributeOffset('normal');
-          let uvOffset = geometryBinding.getAttributeOffset('uv');
-          let position2DOffset = geometryBinding.getAttributeOffset('position2D');
-          let indexOffset = geometryBinding.getIndexOffset();
+          const positionOffset = geometryBinding.getAttributeOffset("position");
+          const normalOffset = geometryBinding.getAttributeOffset("normal");
+          const uvOffset = geometryBinding.getAttributeOffset("uv");
+          const position2DOffset =
+            geometryBinding.getAttributeOffset("position2D");
+          const indexOffset = geometryBinding.getIndexOffset();
 
           _mapOffsettedIndices(
             barrierGeometry.indices,
             geometry.index.array,
             indexOffset,
-            positionOffset
+            positionOffset,
           );
 
           geometry.attributes.position.update(
             positionOffset,
             barrierGeometry.positions.length,
             barrierGeometry.positions,
-            0
+            0,
           );
           geometry.attributes.normal.update(
             normalOffset,
             barrierGeometry.normals.length,
             barrierGeometry.normals,
-            0
+            0,
           );
           geometry.attributes.uv.update(
             uvOffset,
             barrierGeometry.uvs.length,
             barrierGeometry.uvs,
-            0
+            0,
           );
           geometry.attributes.position2D.update(
             position2DOffset,
             barrierGeometry.positions2D.length,
             barrierGeometry.positions2D,
-            0
+            0,
           );
           geometry.index.update(indexOffset, barrierGeometry.indices.length);
         };
@@ -206,13 +216,13 @@ export class BarrierMesh extends BufferedMesh {
             localVector3D.set(
               chunk.min.x * chunkSize,
               -WORLD_BASE_HEIGHT + MIN_WORLD_HEIGHT,
-              chunk.min.y * chunkSize
+              chunk.min.y * chunkSize,
             ),
             localVector3D2.set(
               (chunk.min.x + chunk.lod) * chunkSize,
               -WORLD_BASE_HEIGHT + MAX_WORLD_HEIGHT,
-              (chunk.min.y + chunk.lod) * chunkSize
-            )
+              (chunk.min.y + chunk.lod) * chunkSize,
+            ),
           );
 
           const geometryBinding = this.allocator.alloc(
@@ -228,7 +238,7 @@ export class BarrierMesh extends BufferedMesh {
           _renderBarrierMeshDataToGeometry(
             barrierGeometry,
             this.allocator.geometry,
-            geometryBinding
+            geometryBinding,
           );
 
           this.geometryBindings.set(key, geometryBinding);
@@ -264,6 +274,7 @@ export class BarrierMesh extends BufferedMesh {
       this.gpuTasks.set(key, task);
     }
   }
+
   removeChunk(chunk) {
     const key = procGenManager.getNodeHash(chunk);
 
@@ -282,6 +293,7 @@ export class BarrierMesh extends BufferedMesh {
       }
     }
   }
+
   updateChunk(currentCoord) {
     this.material.uniforms.uPosition2D.value.fromArray(currentCoord);
     this.material.uniforms.uPosition2D.needsUpdate = true;

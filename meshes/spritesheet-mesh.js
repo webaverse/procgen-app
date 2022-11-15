@@ -1,17 +1,27 @@
-import * as THREE from 'three';
-import metaversefile from 'metaversefile';
-const {useCamera, useProcGenManager, useGeometries, useAtlasing, useGeometryBatching, useGeometryChunking, useLoaders, usePhysics, useSpriting} = metaversefile;
-const procGenManager = useProcGenManager();
-const {createAppUrlSpriteSheet} = useSpriting();
-// const {DoubleSidedPlaneGeometry} = useGeometries();
-const {ChunkedBatchedMesh, ChunkedGeometryAllocator} = useGeometryChunking();
+import * as THREE from "three";
+import metaversefile from "metaversefile";
 import {
   // bufferSize,
   WORLD_BASE_HEIGHT,
   MIN_WORLD_HEIGHT,
   MAX_WORLD_HEIGHT,
   maxAnisotropy,
-} from '../constants.js';
+} from "../constants.js";
+const {
+  useCamera,
+  useProcGenManager,
+  useGeometries,
+  useAtlasing,
+  useGeometryBatching,
+  useGeometryChunking,
+  useLoaders,
+  usePhysics,
+  useSpriting,
+} = metaversefile;
+const procGenManager = useProcGenManager();
+const {createAppUrlSpriteSheet} = useSpriting();
+// const {DoubleSidedPlaneGeometry} = useGeometries();
+const {ChunkedBatchedMesh, ChunkedGeometryAllocator} = useGeometryChunking();
 
 //
 
@@ -27,34 +37,31 @@ export class SpritesheetPackage {
     this.canvas = canvas;
     this.offsets = offsets;
   }
+
   static async loadUrls(urls) {
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = canvasSize;
     canvas.height = canvasSize;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
 
     const offsets = new Float32Array(urls.length * 4);
-    await Promise.all(urls.map(async (url, index) => {
-      const numFrames = 8;
+    await Promise.all(
+      urls.map(async (url, index) => {
+        const numFrames = 8;
 
-      const spritesheet = await createAppUrlSpriteSheet(url, {
-        size: spritesheetSize,
-        // size: 2048,
-        numFrames,
-      });
-      const {
-        result,
-        worldWidth,
-        worldHeight,
-        worldOffset,
-      } = spritesheet;
+        const spritesheet = await createAppUrlSpriteSheet(url, {
+          size: spritesheetSize,
+          // size: 2048,
+          numFrames,
+        });
+        const {result, worldWidth, worldHeight, worldOffset} = spritesheet;
 
-      const x = index % spritesheetsPerRow;
-      const y = Math.floor(index / spritesheetsPerRow);
-      ctx.drawImage(result, x * spritesheetSize, y * spritesheetSize);
+        const x = index % spritesheetsPerRow;
+        const y = Math.floor(index / spritesheetsPerRow);
+        ctx.drawImage(result, x * spritesheetSize, y * spritesheetSize);
 
-      // debugging
-      /* const canvas = document.createElement('canvas');
+        // debugging
+        /* const canvas = document.createElement('canvas');
       canvas.width = result.width;
       canvas.height = result.height;
       canvas.style.cssText = `\
@@ -68,12 +75,13 @@ export class SpritesheetPackage {
       ctx.drawImage(result, 0, 0);
       document.body.appendChild(canvas); */
 
-      offsets[index * 4] = worldOffset[0];
-      offsets[index * 4 + 1] = worldOffset[1];
-      offsets[index * 4 + 2] = worldOffset[2];
-      const worldSize = Math.max(worldWidth, worldHeight);
-      offsets[index * 4 + 3] = worldSize;
-    }));
+        offsets[index * 4] = worldOffset[0];
+        offsets[index * 4 + 1] = worldOffset[1];
+        offsets[index * 4 + 2] = worldOffset[2];
+        const worldSize = Math.max(worldWidth, worldHeight);
+        offsets[index * 4 + 3] = worldSize;
+      }),
+    );
 
     const pkg = new SpritesheetPackage(canvas, offsets);
     return pkg;
@@ -91,23 +99,23 @@ const numFramesPerRow = Math.ceil(Math.sqrt(numFramesPow2));
 const maxDrawCalls = 256;
 const maxInstancesPerDrawCall = 1024;
 export class SpritesheetMesh extends ChunkedBatchedMesh {
-  constructor({ instance, lodCutoff }) {
+  constructor({instance, lodCutoff}) {
     const baseGeometry = new THREE.PlaneGeometry(1, 1);
     const allocator = new ChunkedGeometryAllocator(
       baseGeometry,
       [
         {
-          name: 'p',
+          name: "p",
           Type: Float32Array,
           itemSize: 3,
         },
         {
-          name: 'offset',
+          name: "offset",
           Type: Float32Array,
           itemSize: 4,
         },
         {
-          name: 'itemIndex',
+          name: "itemIndex",
           Type: Float32Array,
           itemSize: 1,
         },
@@ -115,10 +123,10 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
       {
         maxDrawCalls,
         maxInstancesPerDrawCall,
-        boundingType: 'box',
-      }
+        boundingType: "box",
+      },
     );
-    const { geometry, textures: attributeTextures } = allocator;
+    const {geometry, textures: attributeTextures} = allocator;
     for (const k in attributeTextures) {
       const texture = attributeTextures[k];
       texture.anisotropy = maxAnisotropy;
@@ -293,23 +301,24 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
     this.offsets = new Float32Array(0);
     this.allocatedChunks = new Map();
   }
+
   addChunk(chunk, chunkResult) {
     if (chunkResult) {
       const instances = chunkResult;
 
       if (chunk.lod >= this.lodCutoff && instances.length > 0) {
         const _renderLitterSpriteGeometry = (drawCall, instances) => {
-          const pTexture = drawCall.getTexture('p');
-          const pOffset = drawCall.getTextureOffset('p');
-          const offsetTexture = drawCall.getTexture('offset');
-          const offsetOffset = drawCall.getTextureOffset('offset');
-          const itemIndexTexture = drawCall.getTexture('itemIndex');
-          const itemIndexOffset = drawCall.getTextureOffset('itemIndex');
+          const pTexture = drawCall.getTexture("p");
+          const pOffset = drawCall.getTextureOffset("p");
+          const offsetTexture = drawCall.getTexture("offset");
+          const offsetOffset = drawCall.getTextureOffset("offset");
+          const itemIndexTexture = drawCall.getTexture("itemIndex");
+          const itemIndexOffset = drawCall.getTextureOffset("itemIndex");
 
           let index = 0;
           for (let i = 0; i < instances.length; i++) {
             const instance = instances[i];
-            const { instanceId, ps, qs } = instance;
+            const {instanceId, ps, qs} = instance;
 
             for (let j = 0; j < ps.length; j += 3) {
               const indexOffset = index * 4;
@@ -338,29 +347,29 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
             }
           }
 
-          drawCall.updateTexture('p', pOffset, index * 4);
-          drawCall.updateTexture('offset', offsetOffset, index * 4);
-          drawCall.updateTexture('itemIndex', itemIndexOffset, index * 4);
+          drawCall.updateTexture("p", pOffset, index * 4);
+          drawCall.updateTexture("offset", offsetOffset, index * 4);
+          drawCall.updateTexture("itemIndex", itemIndexOffset, index * 4);
         };
 
-        const { chunkSize } = this.instance;
+        const {chunkSize} = this.instance;
         const boundingBox = localBox.set(
           localVector.set(
             chunk.min.x * chunkSize,
             -WORLD_BASE_HEIGHT + MIN_WORLD_HEIGHT,
-            chunk.min.y * chunkSize
+            chunk.min.y * chunkSize,
           ),
           localVector2.set(
             (chunk.min.x + chunk.lod) * chunkSize,
             -WORLD_BASE_HEIGHT + MAX_WORLD_HEIGHT,
-            (chunk.min.y + chunk.lod) * chunkSize
-          )
+            (chunk.min.y + chunk.lod) * chunkSize,
+          ),
         );
         const totalInstances = (() => {
           let sum = 0;
           for (let i = 0; i < instances.length; i++) {
             const instance = instances[i];
-            const { ps } = instance;
+            const {ps} = instance;
             sum += ps.length;
           }
           sum /= 3;
@@ -368,7 +377,7 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
         })();
         const drawChunk = this.allocator.allocChunk(
           totalInstances,
-          boundingBox
+          boundingBox,
         );
         _renderLitterSpriteGeometry(drawChunk, instances);
 
@@ -377,6 +386,7 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
       }
     }
   }
+
   removeChunk(chunk) {
     const key = procGenManager.getNodeHash(chunk);
     const drawChunk = this.allocatedChunks.get(key);
@@ -385,8 +395,9 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
       this.allocatedChunks.delete(key);
     }
   }
+
   setPackage(pkg) {
-    const { canvas } = pkg;
+    const {canvas} = pkg;
     const texture = new THREE.Texture(canvas);
     texture.needsUpdate = true;
 
@@ -397,9 +408,10 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
 
     this.visible = true;
   }
+
   update() {
     const camera = useCamera();
-    localEuler.setFromQuaternion(camera.quaternion, 'YXZ');
+    localEuler.setFromQuaternion(camera.quaternion, "YXZ");
     localEuler.x = 0;
     localEuler.z = 0;
 
@@ -433,22 +445,23 @@ export class LitterMetaMesh extends THREE.Object3D {
 
     this.physics = physics;
   }
+
   update() {
     this.spritesheetMesh.update();
   }
+
   addChunk(chunk, chunkResult) {
     this.polygonMesh.addChunk(chunk, chunkResult);
     this.spritesheetMesh.addChunk(chunk, chunkResult);
   }
+
   removeChunk(chunk) {
     this.polygonMesh.removeChunk(chunk);
     this.spritesheetMesh.removeChunk(chunk);
   }
+
   async loadUrls(urls) {
-    const [
-      polygonPackage,
-      spritesheetPackage,
-    ] = await Promise.all([
+    const [polygonPackage, spritesheetPackage] = await Promise.all([
       PolygonPackage.loadUrls(urls, this.physics),
       SpritesheetPackage.loadUrls(urls),
     ]);

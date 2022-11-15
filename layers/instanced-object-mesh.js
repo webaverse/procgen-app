@@ -1,9 +1,11 @@
-import * as THREE from 'three';
-import { PolygonMesh, PolygonPackage } from '../meshes/polygon-mesh.js';
-import { SpritesheetMesh, SpritesheetPackage } from '../meshes/spritesheet-mesh.js';
+import * as THREE from "three";
+import {PolygonMesh, PolygonPackage} from "../meshes/polygon-mesh.js";
+import {
+  SpritesheetMesh,
+  SpritesheetPackage,
+} from "../meshes/spritesheet-mesh.js";
 
 //
-
 
 //
 
@@ -33,11 +35,7 @@ const maxDrawCallsPerGeometry = 256;
 //
 
 export class InstancedObjectMesh extends THREE.Object3D {
-  constructor({
-    instance,
-    physics,
-    urls
-  }) {
+  constructor({instance, physics, urls}) {
     super();
 
     this.urls = urls;
@@ -59,22 +57,23 @@ export class InstancedObjectMesh extends THREE.Object3D {
 
     this.physics = physics;
   }
+
   update() {
     this.spritesheetMesh.update();
   }
+
   addChunk(chunk, chunkResult) {
     this.polygonMesh.addChunk(chunk, chunkResult);
     this.spritesheetMesh.addChunk(chunk, chunkResult);
   }
+
   removeChunk(chunk) {
     this.polygonMesh.removeChunk(chunk);
     this.spritesheetMesh.removeChunk(chunk);
   }
+
   async waitForLoad() {
-    const [
-      polygonPackage,
-      spritesheetPackage,
-    ] = await Promise.all([
+    const [polygonPackage, spritesheetPackage] = await Promise.all([
       PolygonPackage.loadUrls(this.urls, meshLodSpecs, this.physics),
       SpritesheetPackage.loadUrls(this.urls),
     ]);
@@ -82,4 +81,3 @@ export class InstancedObjectMesh extends THREE.Object3D {
     this.spritesheetMesh.setPackage(spritesheetPackage);
   }
 }
-

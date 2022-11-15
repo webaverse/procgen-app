@@ -1,16 +1,17 @@
-import * as THREE from 'three';
-import metaversefile from 'metaversefile';
-const {useCamera, useGeometries, useGeometryChunking, useProcGenManager} = metaversefile;
-const procGenManager = useProcGenManager();
-// const {DoubleSidedPlaneGeometry} = useGeometries();
-const {ChunkedBatchedMesh, ChunkedGeometryAllocator} = useGeometryChunking();
+import * as THREE from "three";
+import metaversefile from "metaversefile";
 import {
   // bufferSize,
   WORLD_BASE_HEIGHT,
   MIN_WORLD_HEIGHT,
   MAX_WORLD_HEIGHT,
   maxAnisotropy,
-} from '../constants.js';
+} from "../constants.js";
+const {useCamera, useGeometries, useGeometryChunking, useProcGenManager} =
+  metaversefile;
+const procGenManager = useProcGenManager();
+// const {DoubleSidedPlaneGeometry} = useGeometries();
+const {ChunkedBatchedMesh, ChunkedGeometryAllocator} = useGeometryChunking();
 
 //
 
@@ -21,17 +22,18 @@ const localBox = new THREE.Box3();
 
 //
 
-const _loadImage = src => new Promise((accept, reject) => {
-  const img = new Image();
-  img.onload = () => {
-    accept(img);
-  };
-  img.onerror = err => {
-    reject(err);
-  };
-  img.src = src;
-  img.crossOrigin = 'Anonymous';
-});
+const _loadImage = src =>
+  new Promise((accept, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      accept(img);
+    };
+    img.onerror = err => {
+      reject(err);
+    };
+    img.src = src;
+    img.crossOrigin = "Anonymous";
+  });
 
 //
 
@@ -42,16 +44,19 @@ export class IconPackage {
   constructor(canvas) {
     this.canvas = canvas;
   }
-  static async loadUrls(urls) {
-    const imgs = await Promise.all(urls.map(async url => {
-      const img = await _loadImage(url);
-      return img;
-    }));
 
-    const canvas = document.createElement('canvas');
+  static async loadUrls(urls) {
+    const imgs = await Promise.all(
+      urls.map(async url => {
+        const img = await _loadImage(url);
+        return img;
+      }),
+    );
+
+    const canvas = document.createElement("canvas");
     canvas.width = canvasSize;
     canvas.height = canvasSize;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     for (let i = 0; i < imgs.length; i++) {
       const x = (i % iconsPerRow) * iconSize;
       const y = Math.floor(i / iconsPerRow) * iconSize;
@@ -59,7 +64,7 @@ export class IconPackage {
       const img = imgs[i];
       ctx.drawImage(img, x, y, iconSize, iconSize);
     }
- 
+
     const pkg = new IconPackage(canvas);
     return pkg;
   }
@@ -70,28 +75,29 @@ export class IconPackage {
 const maxDrawCalls = 256;
 const maxInstancesPerDrawCall = 256;
 export class IconMesh extends ChunkedBatchedMesh {
-  constructor({
-    instance,
-    lodCutoff,
-  } = {}) {
+  constructor({instance, lodCutoff} = {}) {
     // allocator
     const baseGeometry = new THREE.PlaneGeometry(1, 1);
-    const allocator = new ChunkedGeometryAllocator(baseGeometry, [
+    const allocator = new ChunkedGeometryAllocator(
+      baseGeometry,
+      [
+        {
+          name: "p",
+          Type: Float32Array,
+          itemSize: 3,
+        },
+        {
+          name: "itemIndex",
+          Type: Float32Array,
+          itemSize: 1,
+        },
+      ],
       {
-        name: 'p',
-        Type: Float32Array,
-        itemSize: 3,
+        maxDrawCalls,
+        maxInstancesPerDrawCall,
+        boundingType: "box",
       },
-      {
-        name: 'itemIndex',
-        Type: Float32Array,
-        itemSize: 1,
-      },
-    ], {
-      maxDrawCalls,
-      maxInstancesPerDrawCall,
-      boundingType: 'box',
-    });
+    );
     const {textures: attributeTextures} = allocator;
     for (const k in attributeTextures) {
       const texture = attributeTextures[k];
@@ -220,20 +226,20 @@ export class IconMesh extends ChunkedBatchedMesh {
 
     this.instance = instance;
     this.lodCutoff = lodCutoff;
-    
+
     this.allocatedChunks = new Map();
   }
 
   addChunk(chunk, chunkResult) {
     if (chunkResult) {
-      const { ps, instances } = chunkResult;
+      const {ps, instances} = chunkResult;
       if (chunk.lod < this.lodCutoff && instances.length > 0) {
         const _renderIconGeometry = (drawCall, ps, instances) => {
           // console.log('got ps', ps.slice());
-          const pTexture = drawCall.getTexture('p');
-          const pOffset = drawCall.getTextureOffset('p');
-          const itemIndexTexture = drawCall.getTexture('itemIndex');
-          const itemIndexOffset = drawCall.getTextureOffset('itemIndex');
+          const pTexture = drawCall.getTexture("p");
+          const pOffset = drawCall.getTextureOffset("p");
+          const itemIndexTexture = drawCall.getTexture("itemIndex");
+          const itemIndexOffset = drawCall.getTextureOffset("itemIndex");
 
           /* if (ps.length / 3 !== instances.length) {
             debugger;
@@ -265,26 +271,30 @@ export class IconMesh extends ChunkedBatchedMesh {
             offsetTexture.image.data[offsetOffset + indexOffset + 3] = this.offsets[instanceId * 4 + 3]; */
           }
 
-          drawCall.updateTexture('p', pOffset, ps.length / 3 * 4);
-          drawCall.updateTexture('itemIndex', itemIndexOffset, instances.length * 4);
+          drawCall.updateTexture("p", pOffset, (ps.length / 3) * 4);
+          drawCall.updateTexture(
+            "itemIndex",
+            itemIndexOffset,
+            instances.length * 4,
+          );
         };
 
-        const { chunkSize } = this.instance;
+        const {chunkSize} = this.instance;
         const boundingBox = localBox.set(
           localVector.set(
             chunk.min.x * chunkSize,
             -WORLD_BASE_HEIGHT + MIN_WORLD_HEIGHT,
-            chunk.min.y * chunkSize
+            chunk.min.y * chunkSize,
           ),
           localVector2.set(
             (chunk.min.x + chunk.lod) * chunkSize,
             -WORLD_BASE_HEIGHT + MAX_WORLD_HEIGHT,
-            (chunk.min.y + chunk.lod) * chunkSize
-          )
+            (chunk.min.y + chunk.lod) * chunkSize,
+          ),
         );
         const drawChunk = this.allocator.allocChunk(
           instances.length,
-          boundingBox
+          boundingBox,
         );
         _renderIconGeometry(drawChunk, ps, instances);
 
@@ -293,6 +303,7 @@ export class IconMesh extends ChunkedBatchedMesh {
       }
     }
   }
+
   removeChunk(chunk) {
     const key = procGenManager.getNodeHash(chunk);
     const drawChunk = this.allocatedChunks.get(key);
@@ -301,6 +312,7 @@ export class IconMesh extends ChunkedBatchedMesh {
     }
     this.allocatedChunks.delete(key);
   }
+
   update() {
     const camera = useCamera();
 
@@ -313,7 +325,7 @@ export class IconMesh extends ChunkedBatchedMesh {
     this.material.uniforms.cameraQuat.value.w = camera.quaternion.w;
     this.material.uniforms.cameraQuat.needsUpdate = true;
   }
-  
+
   setPackage(pkg) {
     const {canvas} = pkg;
 

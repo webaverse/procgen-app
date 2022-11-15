@@ -1,7 +1,8 @@
-import metaversefile from 'metaversefile';
-import * as THREE from 'three';
-import { MATERIALS_INFO } from '../constants.js';
-import { NUM_TERRAIN_MATERIALS } from './terrain-mesh.js';
+import metaversefile from "metaversefile";
+import * as THREE from "three";
+
+import {MATERIALS_INFO} from "../assets.js";
+import {NUM_TERRAIN_MATERIALS} from "./terrain-mesh.js";
 
 const {useAtlasing} = metaversefile;
 
@@ -22,21 +23,23 @@ const _createTerrainMaterial = () => {
     uNoiseTexture: {},
   };
 
-  const texturePerRow = calculateCanvasAtlasTexturePerRow(NUM_TERRAIN_MATERIALS);
+  const texturePerRow = calculateCanvasAtlasTexturePerRow(
+    NUM_TERRAIN_MATERIALS,
+  );
 
   const material = new THREE.MeshStandardMaterial({
     roughness: 0.95,
     metalness: 0.1,
     // envMap: new THREE.Texture(),
     envMapIntensity: 1,
-    onBeforeCompile: (shader) => {
+    onBeforeCompile: shader => {
       for (const k in materialUniforms) {
         shader.uniforms[k] = materialUniforms[k];
       }
 
       // ? by installing glsl-literal extension in vscode you can get syntax highlighting for glsl
       // vertex shader
-      const uvParseVertex = /* glsl */`
+      const uvParseVertex = /* glsl */ `
         #include <uv_pars_vertex>
 
         attribute ivec4 materials;
@@ -51,7 +54,7 @@ const _createTerrainMaterial = () => {
         varying vec3 vObjectNormal;
       `;
 
-      const worldPosVertex = /* glsl */`
+      const worldPosVertex = /* glsl */ `
        #include <worldpos_vertex>
 
        vMaterials = materials;
@@ -64,7 +67,7 @@ const _createTerrainMaterial = () => {
       `;
 
       // fragment shader
-      const mapParseFragment = /* glsl */`
+      const mapParseFragment = /* glsl */ `
         #include <map_pars_fragment>
 
         precision highp sampler2D;
@@ -183,7 +186,7 @@ const _createTerrainMaterial = () => {
         }
       `;
 
-      const mapFragment = /* glsl */`
+      const mapFragment = /* glsl */ `
         #include <map_fragment>
  
         vec4 diffMapColor = mapTextures(vPosition, vObjectNormal, uDiffMap);
@@ -191,7 +194,7 @@ const _createTerrainMaterial = () => {
         diffuseColor *= diffMapColor;
       `;
 
-      const normalFragmentMaps = /* glsl */`
+      const normalFragmentMaps = /* glsl */ `
         #include <normal_fragment_maps>
 
         vec3 normalMapColor = mapTextures(vPosition, vObjectNormal, uNormalMap).xyz;
@@ -199,20 +202,20 @@ const _createTerrainMaterial = () => {
       `;
 
       // * The maps below are disabled for now
-      const roughnessMapFragment = /* glsl */`
+      const roughnessMapFragment = /* glsl */ `
         #include <roughnessmap_fragment>
 
         // vec4 texelRoughness = mapTextures(vPosition, vObjectNormal, uRoughnessMap);
         // roughnessFactor *= texelRoughness.g;
       `;
-      const metalnessMapFragment = /* glsl */`
+      const metalnessMapFragment = /* glsl */ `
         #include <metalnessmap_fragment>
 
         // vec4 texelMetalness = mapTextures(vPosition, vObjectNormal, uMetalnessMap);
         // metalnessFactor *= texelMetalness.g;
       `;
 
-      const aoMapFragment = /* glsl */`
+      const aoMapFragment = /* glsl */ `
         #include <aomap_fragment>
 
         // vec4 triplanarAoColor = mapTextures(vPosition, vObjectNormal, uAoMap);
@@ -228,42 +231,42 @@ const _createTerrainMaterial = () => {
 
       // extend shaders
       shader.vertexShader = shader.vertexShader.replace(
-        '#include <uv_pars_vertex>',
-        uvParseVertex
+        "#include <uv_pars_vertex>",
+        uvParseVertex,
       );
 
       shader.vertexShader = shader.vertexShader.replace(
-        '#include <worldpos_vertex>',
-        worldPosVertex
+        "#include <worldpos_vertex>",
+        worldPosVertex,
       );
 
       shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <map_pars_fragment>',
-        mapParseFragment
+        "#include <map_pars_fragment>",
+        mapParseFragment,
       );
 
       shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <roughnessmap_fragment>',
-        roughnessMapFragment
+        "#include <roughnessmap_fragment>",
+        roughnessMapFragment,
       );
 
       shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <metalnessmap_fragment>',
-        metalnessMapFragment
+        "#include <metalnessmap_fragment>",
+        metalnessMapFragment,
       );
       shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <map_fragment>',
-        mapFragment
-      );
-
-      shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <normal_fragment_maps>',
-        normalFragmentMaps
+        "#include <map_fragment>",
+        mapFragment,
       );
 
       shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <aomap_fragment>',
-        aoMapFragment
+        "#include <normal_fragment_maps>",
+        normalFragmentMaps,
+      );
+
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <aomap_fragment>",
+        aoMapFragment,
       );
 
       return shader;

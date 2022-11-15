@@ -1,9 +1,19 @@
-import metaversefile from 'metaversefile';
-import * as THREE from 'three';
-import {textureUrlSpecs} from '../assets.js';
-import {bufferSize, MAX_WORLD_HEIGHT, MIN_WORLD_HEIGHT, WORLD_BASE_HEIGHT} from '../constants.js';
-import TerrainPackage, { DIFFUSE_MAP, ENV_MAP, NOISE_MAP, NORMAL_MAP } from '../meshes/terrain-package.js';
-import _createTerrainMaterial from './terrain-material.js';
+import metaversefile from "metaversefile";
+import * as THREE from "three";
+import {textureUrlSpecs} from "../assets.js";
+import {
+  bufferSize,
+  MAX_WORLD_HEIGHT,
+  MIN_WORLD_HEIGHT,
+  WORLD_BASE_HEIGHT,
+} from "../constants.js";
+import TerrainPackage, {
+  DIFFUSE_MAP,
+  ENV_MAP,
+  NOISE_MAP,
+  NORMAL_MAP,
+} from "../meshes/terrain-package.js";
+import _createTerrainMaterial from "./terrain-material.js";
 
 const DIFFUSE_MAP_PATHS = textureUrlSpecs.terrainDiffuseMaps;
 const NORMAL_MAP_PATHS = textureUrlSpecs.terrainNormalMaps;
@@ -34,12 +44,12 @@ export class TerrainMesh extends BufferedMesh {
     const allocator = new GeometryAllocator(
       [
         {
-          name: 'position',
+          name: "position",
           Type: Float32Array,
           itemSize: 3,
         },
         {
-          name: 'normal',
+          name: "normal",
           Type: Float32Array,
           itemSize: 3,
         },
@@ -49,17 +59,17 @@ export class TerrainMesh extends BufferedMesh {
           itemSize: 4,
         }, */
         {
-          name: 'biomesUvs1',
+          name: "biomesUvs1",
           Type: Float32Array,
           itemSize: 4,
         },
         {
-          name: 'materials',
+          name: "materials",
           Type: Int32Array,
           itemSize: 4,
         },
         {
-          name: 'materialsWeights',
+          name: "materialsWeights",
           Type: Float32Array,
           itemSize: 4,
         },
@@ -91,9 +101,9 @@ export class TerrainMesh extends BufferedMesh {
       ],
       {
         bufferSize,
-        boundingType: 'box',
+        boundingType: "box",
         // hasOcclusionCulling: true
-      }
+      },
     );
 
     const {geometry} = allocator;
@@ -115,6 +125,7 @@ export class TerrainMesh extends BufferedMesh {
     this.gpuTasks = new Map();
     this.geometryBindings = new Map();
   }
+
   addChunk(chunk, chunkResult) {
     const key = procGenManager.getNodeHash(chunk);
     const task = this.gpuTaskManager.transact(() => {
@@ -122,7 +133,7 @@ export class TerrainMesh extends BufferedMesh {
         srcIndices,
         dstIndices,
         dstOffset,
-        positionOffset
+        positionOffset,
       ) => {
         const positionIndex = positionOffset / 3;
         for (let i = 0; i < srcIndices.length; i++) {
@@ -132,39 +143,40 @@ export class TerrainMesh extends BufferedMesh {
       const _renderTerrainMeshDataToGeometry = (
         terrainGeometry,
         geometry,
-        geometryBinding
+        geometryBinding,
       ) => {
-        let positionOffset = geometryBinding.getAttributeOffset('position');
-        let normalOffset = geometryBinding.getAttributeOffset('normal');
+        const positionOffset = geometryBinding.getAttributeOffset("position");
+        const normalOffset = geometryBinding.getAttributeOffset("normal");
         // let biomesOffset = geometryBinding.getAttributeOffset('biomes');
         // let biomesWeightsOffset = geometryBinding.getAttributeOffset('biomesWeights');
-        let biomesUvs1Offset = geometryBinding.getAttributeOffset('biomesUvs1');
-        let materialsOffset = geometryBinding.getAttributeOffset('materials');
-        let materialsWeightsOffset = geometryBinding.getAttributeOffset('materialsWeights');
+        const biomesUvs1Offset = geometryBinding.getAttributeOffset("biomesUvs1");
+        const materialsOffset = geometryBinding.getAttributeOffset("materials");
+        const materialsWeightsOffset =
+          geometryBinding.getAttributeOffset("materialsWeights");
         // let biomesUvs2Offset = geometryBinding.getAttributeOffset('biomesUvs2');
         // let seedsOffset = geometryBinding.getAttributeOffset('seed');
         // let skylightsOffset = geometryBinding.getAttributeOffset('skylights');
         // let aosOffset = geometryBinding.getAttributeOffset('aos');
-        let indexOffset = geometryBinding.getIndexOffset();
+        const indexOffset = geometryBinding.getIndexOffset();
 
         _mapOffsettedIndices(
           terrainGeometry.indices,
           geometry.index.array,
           indexOffset,
-          positionOffset
+          positionOffset,
         );
 
         geometry.attributes.position.update(
           positionOffset,
           terrainGeometry.positions.length,
           terrainGeometry.positions,
-          0
+          0,
         );
         geometry.attributes.normal.update(
           normalOffset,
           terrainGeometry.normals.length,
           terrainGeometry.normals,
-          0
+          0,
         );
         /* geometry.attributes.biomes.update(
           biomesOffset,
@@ -183,19 +195,19 @@ export class TerrainMesh extends BufferedMesh {
           biomesUvs1Offset,
           terrainGeometry.biomesUvs1.length,
           terrainGeometry.biomesUvs1,
-          0
+          0,
         );
         geometry.attributes.materials.update(
           materialsOffset,
           terrainGeometry.materials.length,
           terrainGeometry.materials,
-          0
+          0,
         );
         geometry.attributes.materialsWeights.update(
           materialsWeightsOffset,
           terrainGeometry.materialsWeights.length,
           terrainGeometry.materialsWeights,
-          0
+          0,
         );
         /* geometry.attributes.biomesUvs2.update(
           biomesUvs2Offset,
@@ -223,31 +235,31 @@ export class TerrainMesh extends BufferedMesh {
         ); */
         geometry.index.update(indexOffset, terrainGeometry.indices.length);
       };
-      const _handleTerrainMesh = (terrainGeometry) => {
+      const _handleTerrainMesh = terrainGeometry => {
         const {chunkSize} = this.instance;
 
         const boundingBox = localBox.set(
           localVector3D.set(
             chunk.min.x * chunkSize,
             -WORLD_BASE_HEIGHT + MIN_WORLD_HEIGHT,
-            chunk.min.y * chunkSize
+            chunk.min.y * chunkSize,
           ),
           localVector3D2.set(
             (chunk.min.x + chunk.lod) * chunkSize,
             -WORLD_BASE_HEIGHT + MAX_WORLD_HEIGHT,
-            (chunk.min.y + chunk.lod) * chunkSize
-          )
+            (chunk.min.y + chunk.lod) * chunkSize,
+          ),
         );
 
         const geometryBinding = this.allocator.alloc(
           terrainGeometry.positions.length,
           terrainGeometry.indices.length,
-          boundingBox
+          boundingBox,
         );
         _renderTerrainMeshDataToGeometry(
           terrainGeometry,
           this.allocator.geometry,
-          geometryBinding
+          geometryBinding,
         );
 
         this.geometryBindings.set(key, geometryBinding);
@@ -298,27 +310,29 @@ export class TerrainMesh extends BufferedMesh {
       const _handlePhysics = async () => {
         const physicsGeo = new THREE.BufferGeometry();
         physicsGeo.setAttribute(
-          'position',
-          new THREE.BufferAttribute(terrainGeometry.positions, 3)
+          "position",
+          new THREE.BufferAttribute(terrainGeometry.positions, 3),
         );
         physicsGeo.setIndex(
-          new THREE.BufferAttribute(terrainGeometry.indices, 1)
+          new THREE.BufferAttribute(terrainGeometry.indices, 1),
         );
         const physicsMesh = new THREE.Mesh(physicsGeo, fakeMaterial);
 
-        const geometryBuffer = await this.physics.cookGeometryAsync(physicsMesh);
+        const geometryBuffer = await this.physics.cookGeometryAsync(
+          physicsMesh,
+        );
 
         if (geometryBuffer) {
           this.matrixWorld.decompose(
             localVector3D,
             localQuaternion,
-            localVector3D2
+            localVector3D2,
           );
           const physicsObject = this.physics.addCookedGeometry(
             geometryBuffer,
             localVector3D,
             localQuaternion,
-            localVector3D2
+            localVector3D2,
           );
           this.physicsObjectsMap.set(key, physicsObject);
         }
@@ -327,6 +341,7 @@ export class TerrainMesh extends BufferedMesh {
     });
     this.gpuTasks.set(key, task);
   }
+
   removeChunk(chunk) {
     const key = procGenManager.getNodeHash(chunk);
     {

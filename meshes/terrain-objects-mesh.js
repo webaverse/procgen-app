@@ -1,44 +1,52 @@
-import * as THREE from 'three';
+import * as THREE from "three";
 
 export class TerrainObjectSpecs {
-    constructor(constructor, urls) {
-        this.construct = constructor;
-        this.urls = urls;
-    }
+  constructor(constructor, urls) {
+    this.construct = constructor;
+    this.urls = urls;
+  }
 }
 export class TerrainObjectsMesh extends THREE.Object3D {
-    constructor(instance, physics, meshSpecsArray) {
-        super(); // nothing
+  constructor(instance, physics, terrainObjectsMeshes) {
+    super(); // nothing
+    this.meshes = {};
 
-        for (let i = 0; i < meshSpecsArray.length; i++) {
-            const meshSpecs = meshSpecsArray[i];
+    for (const [key, meshSpecs] of Object.entries(terrainObjectsMeshes)) {
+      const mesh = new meshSpecs.construct({
+        instance,
+        physics,
+        urls: meshSpecs.urls,
+      });
+      this.add(mesh);
+      mesh.updateMatrixWorld();
+      this.meshes[key] = mesh;
+    }
+  }
 
-            const mesh = new meshSpecs.construct({instance, physics, urls: meshSpecs.urls});
-            this.add(mesh);
-            mesh.updateMatrixWorld();
-        }
+  async waitForLoad() {
+    await Promise.all(
+      this.children.map((child, i) => {
+        child.waitForLoad();
+      }),
+    );
+  }
+
+  addChunks(chunk, chunkResults) {
+    for (const [key, mesh] of Object.entries(this.meshes)) {
+      const chunkResult = chunkResults[key];
+      mesh.addChunk(chunk, chunkResult);
     }
-    async waitForLoad() {
-        await Promise.all(this.children.map((child, i) => {
-            child.waitForLoad();
-        }));
+  }
+
+  removeChunks(chunk) {
+    for (const [key, mesh] of Object.entries(this.meshes)) {
+      mesh.removeChunk(chunk);
     }
-    addChunks(chunk, chunkResults) {
-        for (let i = 0; i < this.children.length; i++) {
-            const child = this.children[i];
-            child.addChunk(chunk, chunkResults[i]);
-        }
+  }
+
+  update() {
+    for (const [key, mesh] of Object.entries(this.meshes)) {
+      mesh.update();
     }
-    removeChunks(chunk) {
-        for (let i = 0; i < this.children.length; i++) {
-            const child = this.children[i];
-            child.removeChunk(chunk);
-        }
-    }
-    update() {
-        for (let i = 0; i < this.children.length; i++) {
-            const child = this.children[i];
-            child.update();
-        }
-    }
+  }
 }

@@ -1,17 +1,31 @@
-import metaversefile from 'metaversefile';
-import * as THREE from 'three';
-const {useApp, useFrame, useCamera, useLocalPlayer, usePhysics, useProcGenManager, useGPUTask, useGenerationTask} = metaversefile;
+import metaversefile from "metaversefile";
+import * as THREE from "three";
+
+import {TerrainMesh} from "./layers/terrain-mesh.js";
+import {WaterMesh} from "./layers/water-mesh.js";
+// import {BarrierMesh} from './layers/barrier-mesh.js';
+import {glbUrlSpecs} from "./assets.js";
+import {GrassMesh} from "./layers/grass-mesh.js";
+import {HudMesh} from "./layers/hud-mesh.js";
+import {InstancedObjectMesh} from "./layers/instanced-object-mesh.js";
+import {
+  TerrainObjectsMesh,
+  TerrainObjectSpecs,
+} from "./meshes/terrain-objects-mesh.js";
+
+const {
+  useApp,
+  useFrame,
+  useCamera,
+  useLocalPlayer,
+  usePhysics,
+  useProcGenManager,
+  useGPUTask,
+  useGenerationTask,
+} = metaversefile;
+
 const {GPUTaskManager} = useGPUTask();
 const {GenerationTaskManager} = useGenerationTask();
-
-import { TerrainMesh } from './layers/terrain-mesh.js';
-import { WaterMesh } from './layers/water-mesh.js';
-// import {BarrierMesh} from './layers/barrier-mesh.js';
-import { glbUrlSpecs } from './assets.js';
-import { GrassMesh } from './layers/grass-mesh.js';
-import { HudMesh } from './layers/hud-mesh.js';
-import { InstancedObjectMesh } from './layers/instanced-object-mesh.js';
-import { TerrainObjectsMesh, TerrainObjectSpecs } from './meshes/terrain-objects-mesh.js';
 
 // urls
 const treeUrls = glbUrlSpecs.trees.slice(0, 1);
@@ -44,50 +58,51 @@ export default e => {
 
   // initialization
 
-  e.waitUntil((async () => {
-    const instance = procGenManager.getInstance('lol');
+  e.waitUntil(
+    (async () => {
+      const instance = procGenManager.getInstance("lol");
 
-    // lod tracker
-    const lodTracker = await instance.createLodChunkTracker({
-      minLod: 1,
-      maxLod: 7,
-      lod1Range: 2,
-      // debug: true,
-    });
-    // app.add(lodTracker.debugMesh);
-    // lodTracker.debugMesh.position.y = 0.1;
-    // lodTracker.debugMesh.updateMatrixWorld();
+      // lod tracker
+      const lodTracker = await instance.createLodChunkTracker({
+        minLod: 1,
+        maxLod: 7,
+        lod1Range: 2,
+        // debug: true,
+      });
+      // app.add(lodTracker.debugMesh);
+      // lodTracker.debugMesh.position.y = 0.1;
+      // lodTracker.debugMesh.updateMatrixWorld();
 
-    lodTracker.onPostUpdate(position => {
-      // barrierMesh.updateChunk(position);
-    });
+      lodTracker.onPostUpdate(position => {
+        // barrierMesh.updateChunk(position);
+      });
 
-    // managers
-    const gpuTaskManager = new GPUTaskManager();
-    const generationTaskManager = new GenerationTaskManager();
+      // managers
+      const gpuTaskManager = new GPUTaskManager();
+      const generationTaskManager = new GenerationTaskManager();
 
-    // meshes
-    const terrainMesh = new TerrainMesh({
-      instance,
-      gpuTaskManager,
-      physics,
-    });
-    terrainMesh.frustumCulled = false;
-    // terrainMesh.castShadow = true;
-    terrainMesh.receiveShadow = true; 
-    app.add(terrainMesh);
-    terrainMesh.updateMatrixWorld();
+      // meshes
+      const terrainMesh = new TerrainMesh({
+        instance,
+        gpuTaskManager,
+        physics,
+      });
+      terrainMesh.frustumCulled = false;
+      // terrainMesh.castShadow = true;
+      terrainMesh.receiveShadow = true;
+      app.add(terrainMesh);
+      terrainMesh.updateMatrixWorld();
 
-    const waterMesh = new WaterMesh({
-      instance,
-      gpuTaskManager,
-      physics,
-    });
-    waterMesh.frustumCulled = false;
-    app.add(waterMesh);
-    waterMesh.updateMatrixWorld();
+      const waterMesh = new WaterMesh({
+        instance,
+        gpuTaskManager,
+        physics,
+      });
+      waterMesh.frustumCulled = false;
+      app.add(waterMesh);
+      waterMesh.updateMatrixWorld();
 
-    /* const barrierMesh = new BarrierMesh({
+      /* const barrierMesh = new BarrierMesh({
       instance,
       gpuTaskManager,
     });
@@ -95,156 +110,171 @@ export default e => {
     app.add(barrierMesh);
     barrierMesh.updateMatrixWorld(); */
 
-    const OBJECTS_SPECS_ARRAY = [
-      new TerrainObjectSpecs(InstancedObjectMesh, treeUrls),
-      new TerrainObjectSpecs(InstancedObjectMesh, bushUrls),
-      new TerrainObjectSpecs(InstancedObjectMesh, rockUrls),
-      new TerrainObjectSpecs(InstancedObjectMesh, stoneUrls),
-      new TerrainObjectSpecs(GrassMesh, grassUrls),
-      new TerrainObjectSpecs(HudMesh, hudUrls),
-    ];
+      const TERRAIN_OBJECTS_MESHES = {
+        treeMesh: new TerrainObjectSpecs(InstancedObjectMesh, treeUrls),
+        bushMesh: new TerrainObjectSpecs(InstancedObjectMesh, bushUrls),
+        rockMesh: new TerrainObjectSpecs(InstancedObjectMesh, rockUrls),
+        stoneMesh: new TerrainObjectSpecs(InstancedObjectMesh, stoneUrls),
+        grassMesh: new TerrainObjectSpecs(GrassMesh, grassUrls),
+        hudMesh: new TerrainObjectSpecs(HudMesh, hudUrls),
+      };
 
-    const terrainObjects = new TerrainObjectsMesh(instance, physics, OBJECTS_SPECS_ARRAY);
-    app.add(terrainObjects);
-    terrainObjects.updateMatrixWorld();
-    // genration events handling
-    lodTracker.onChunkAdd(async chunk => {
-      const key = procGenManager.getNodeHash(chunk);
-      
-      const generation = generationTaskManager.createGeneration(key);
-      generation.addEventListener('geometryadd', e => {
-        const {result} = e.data;
-        const {heightfield} = result;
-        const {treeInstances, bushInstances, rockInstances, stoneInstances, grassInstances, poiInstances} = heightfield;
+      const terrainObjects = new TerrainObjectsMesh(
+        instance,
+        physics,
+        TERRAIN_OBJECTS_MESHES,
+      );
+      app.add(terrainObjects);
+      terrainObjects.updateMatrixWorld();
+      // genration events handling
+      lodTracker.onChunkAdd(async chunk => {
+        const key = procGenManager.getNodeHash(chunk);
 
-        // console.log('got heightfield', heightfield);
+        const generation = generationTaskManager.createGeneration(key);
+        generation.addEventListener("geometryadd", e => {
+          const {result} = e.data;
+          const {heightfield} = result;
+          const {
+            treeInstances,
+            bushInstances,
+            rockInstances,
+            stoneInstances,
+            grassInstances,
+            poiInstances,
+          } = heightfield;
 
-        // heightfield
-        terrainMesh.addChunk(chunk, heightfield);
-        waterMesh.addChunk(chunk, heightfield);
-        // barrierMesh.addChunk(chunk, heightfield);
-      
-        const terrainObjectInstances = [
-          treeInstances,
-          bushInstances,
-          rockInstances,
-          stoneInstances,
-          grassInstances,
-          poiInstances,
-        ];
+          // console.log('got heightfield', heightfield);
 
-        terrainObjects.addChunks(chunk, terrainObjectInstances);
-      });
-      generation.addEventListener('geometryremove', e => {
-        // heightfield
-        terrainMesh.removeChunk(chunk);
-        waterMesh.removeChunk(chunk);
-        // barrierMesh.removeChunk(chunk);
+          // heightfield
+          terrainMesh.addChunk(chunk, heightfield);
+          waterMesh.addChunk(chunk, heightfield);
+          // barrierMesh.addChunk(chunk, heightfield);
 
-        terrainObjects.removeChunks(chunk);
-      });
-
-      try {
-        const signal = generation.getSignal();
-        const generateFlags = {
-          terrain: true,
-          water: true,
-          barrier: false,
-          vegetation: true,
-          rock: true,
-          grass: true,
-          poi: false,
-        };
-        const numVegetationInstances = treeUrls.length;
-        const numRockInstances = rockUrls.length;
-        const numGrassInstances = grassUrls.length;
-        const numPoiInstances = hudUrls.length;
-        const options = {
-          signal,
-        };
-        const heightfield = await instance.generateChunk(
-          chunk.min,
-          chunk.lod,
-          chunk.lodArray,
-          generateFlags,
-          numVegetationInstances,
-          numRockInstances,
-          numGrassInstances,
-          numPoiInstances,
-          options
-        );
-        generation.finish({
-          heightfield,
+          const terrainObjectInstances = {
+            treeMesh: treeInstances,
+            bushMesh: bushInstances,
+            rockMesh: rockInstances,
+            stoneMesh: stoneInstances,
+            grassMesh: grassInstances,
+            hudMesh: poiInstances,
+          };
+          terrainObjects.addChunks(chunk, terrainObjectInstances);
         });
-      } catch (err) {
-        if (err.isAbortError) {
-          // console.log('got chunk add abort', chunk);
-        } else {
-          throw err;
-        }
-      } /* finally {
+        generation.addEventListener("geometryremove", e => {
+          // heightfield
+          terrainMesh.removeChunk(chunk);
+          waterMesh.removeChunk(chunk);
+          // barrierMesh.removeChunk(chunk);
+
+          terrainObjects.removeChunks(chunk);
+        });
+
+        try {
+          const signal = generation.getSignal();
+          const generateFlags = {
+            terrain: true,
+            water: true,
+            barrier: false,
+            vegetation: true,
+            rock: true,
+            grass: true,
+            poi: false,
+          };
+          const numVegetationInstances = treeUrls.length;
+          const numRockInstances = rockUrls.length;
+          const numGrassInstances = grassUrls.length;
+          const numPoiInstances = hudUrls.length;
+          const options = {
+            signal,
+          };
+          const heightfield = await instance.generateChunk(
+            chunk.min,
+            chunk.lod,
+            chunk.lodArray,
+            generateFlags,
+            numVegetationInstances,
+            numRockInstances,
+            numGrassInstances,
+            numPoiInstances,
+            options,
+          );
+          generation.finish({
+            heightfield,
+          });
+        } catch (err) {
+          if (err.isAbortError) {
+            // console.log('got chunk add abort', chunk);
+          } else {
+            throw err;
+          }
+        } /* finally {
         generations.delete(key);
       } */
-    });
-    lodTracker.onChunkRemove(chunk => {
-      const key = procGenManager.getNodeHash(chunk);
-      // console.log('chunk', key, chunk, 'REMOVE');
-      generationTaskManager.deleteGeneration(key);
-    });
+      });
+      lodTracker.onChunkRemove(chunk => {
+        const key = procGenManager.getNodeHash(chunk);
+        // console.log('chunk', key, chunk, 'REMOVE');
+        generationTaskManager.deleteGeneration(key);
+      });
 
-    // load
-    const _waitForLoad = async () => {
-      await Promise.all([
-        terrainMesh.waitForLoad(),
-        terrainObjects.waitForLoad()
-      ]);
-    };
-    await _waitForLoad();
-
-    // frame handling
-    frameCb = () => {
-      const _updateLodTracker = () => {
-        const localPlayer = useLocalPlayer();
-
-        const appMatrixWorldInverse = localMatrix2.copy(app.matrixWorld)
-          .invert();
-        localMatrix
-          .copy(localPlayer.matrixWorld)
-          .premultiply(appMatrixWorldInverse)
-          .decompose(localVector, localQuaternion, localVector2);
-        const playerPosition = localVector;
-
-        localMatrix
-          .copy(camera.matrixWorld)
-          .premultiply(appMatrixWorldInverse)
-          .decompose(localVector2, localQuaternion, localVector3);
-        const cameraPosition = localVector2;
-        const cameraQuaternion = localQuaternion;
-
-        instance.setCamera(
-          playerPosition,
-          cameraPosition,
-          cameraQuaternion,
-          camera.projectionMatrix
-        );
-        lodTracker.update(playerPosition);
+      // load
+      const _waitForLoad = async () => {
+        await Promise.all([
+          terrainMesh.waitForLoad(),
+          terrainObjects.waitForLoad(),
+        ]);
       };
-      _updateLodTracker();
+      await _waitForLoad();
 
-      const _updateTerrainObjects = () => {
-        terrainObjects.update();
-      }
-      _updateTerrainObjects();
+      // frame handling
+      frameCb = () => {
+        const _updateLodTracker = () => {
+          const localPlayer = useLocalPlayer();
 
-      const _updateWaterMesh = () => {
-        waterMesh.update();
-        waterMesh.lastUpdateCoord.set(lodTracker.lastUpdateCoord.x, lodTracker.lastUpdateCoord.y);
+          const appMatrixWorldInverse = localMatrix2
+            .copy(app.matrixWorld)
+            .invert();
+          localMatrix
+            .copy(localPlayer.matrixWorld)
+            .premultiply(appMatrixWorldInverse)
+            .decompose(localVector, localQuaternion, localVector2);
+          const playerPosition = localVector;
+
+          localMatrix
+            .copy(camera.matrixWorld)
+            .premultiply(appMatrixWorldInverse)
+            .decompose(localVector2, localQuaternion, localVector3);
+          const cameraPosition = localVector2;
+          const cameraQuaternion = localQuaternion;
+
+          instance.setCamera(
+            playerPosition,
+            cameraPosition,
+            cameraQuaternion,
+            camera.projectionMatrix,
+          );
+          lodTracker.update(playerPosition);
+        };
+        _updateLodTracker();
+
+        const _updateTerrainObjects = () => {
+          terrainObjects.update();
+        };
+        _updateTerrainObjects();
+
+        const _updateWaterMesh = () => {
+          waterMesh.update();
+          waterMesh.lastUpdateCoord.set(
+            lodTracker.lastUpdateCoord.x,
+            lodTracker.lastUpdateCoord.y,
+          );
+        };
+        _updateWaterMesh();
+
+        gpuTaskManager.update();
       };
-      _updateWaterMesh();
-
-      gpuTaskManager.update();
-    };
-  })());
+    })(),
+  );
 
   useFrame(() => {
     frameCb && frameCb();

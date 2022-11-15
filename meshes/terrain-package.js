@@ -1,5 +1,5 @@
-import * as THREE from 'three';
-import metaversefile from 'metaversefile';
+import * as THREE from "three";
+import metaversefile from "metaversefile";
 const {useLoaders, useAtlasing} = metaversefile;
 
 const loaders = useLoaders();
@@ -11,57 +11,58 @@ const textureLoader = new THREE.TextureLoader();
 
 const SUB_TEXTURE_SIZE = 1024;
 
-export const DIFFUSE_MAP = 'diffuse-map';
-export const NORMAL_MAP = 'normal-map';
-export const NOISE_MAP = 'simplex-noise';
-export const ENV_MAP = 'environment-lighting';
+export const DIFFUSE_MAP = "diffuse-map";
+export const NORMAL_MAP = "normal-map";
+export const NOISE_MAP = "simplex-noise";
+export const ENV_MAP = "environment-lighting";
 
-const _textureError = (err) => {
-  console.error('Terrain Package : Loading texture failed : ', err);
+const _textureError = err => {
+  console.error("Terrain Package : Loading texture failed : ", err);
 };
-const _exrError = (err) => {
-  console.error('Terrain Package : Loading exr failed : ', err);
+const _exrError = err => {
+  console.error("Terrain Package : Loading exr failed : ", err);
 };
 
-const _loadTexture = (u) =>
+const _loadTexture = u =>
   new Promise((accept, reject) => {
     // TODO : use ktx2 loader instead
     textureLoader.load(
       u,
-      (t) => {
+      t => {
         accept(t);
       },
       function onProgress() {},
-      _textureError
+      _textureError,
     );
   });
 
-const _loadExr = (u) =>
+const _loadExr = u =>
   new Promise((accept, reject) => {
     exrLoader.load(
       u,
-      (t) => {
+      t => {
         accept(t);
       },
       function onProgress() {},
-      _exrError
+      _exrError,
     );
   });
 
-const _bakeTerrainTextures = (options) => {
-  const {diffuseMapArray, normalMapArray, noiseTexture, evnMapTexture} = options;
+const _bakeTerrainTextures = options => {
+  const {diffuseMapArray, normalMapArray, noiseTexture, evnMapTexture} =
+    options;
 
   const textures = {};
 
   const diffuseAtlas = new CanvasTextureAtlas(
     diffuseMapArray,
     SUB_TEXTURE_SIZE,
-    THREE.sRGBEncoding
+    THREE.sRGBEncoding,
   );
   const normalAtlas = new CanvasTextureAtlas(
     normalMapArray,
     SUB_TEXTURE_SIZE,
-    THREE.LinearEncoding
+    THREE.LinearEncoding,
   );
 
   noiseTexture.wrapS = noiseTexture.wrapT = THREE.RepeatWrapping;

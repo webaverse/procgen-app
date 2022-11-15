@@ -1,7 +1,10 @@
-import * as THREE from 'three';
-import {PolygonPackage, PolygonMesh, GrassPolygonMesh} from '../meshes/polygon-mesh.js';
-import {glbUrlSpecs} from '../assets.js';
-
+import * as THREE from "three";
+import {
+  PolygonPackage,
+  PolygonMesh,
+  GrassPolygonMesh,
+} from "../meshes/polygon-mesh.js";
+import {glbUrlSpecs} from "../assets.js";
 
 const spriteLodCutoff = 4;
 const meshLodSpecs = {
@@ -33,11 +36,7 @@ const maxDrawCallsPerGeometry = 256;
 //
 
 export class GrassMesh extends THREE.Object3D {
-  constructor({
-    instance,
-    physics,
-    urls
-  }) {
+  constructor({instance, physics, urls}) {
     super();
 
     this.urls = urls;
@@ -53,16 +52,24 @@ export class GrassMesh extends THREE.Object3D {
 
     this.physics = physics;
   }
+
   addChunk(chunk, chunkResult) {
     this.polygonMesh.addChunk(chunk, chunkResult);
   }
+
   removeChunk(chunk) {
     this.polygonMesh.removeChunk(chunk);
   }
+
   async waitForLoad() {
-    const polygonPackage = await PolygonPackage.loadUrls(this.urls, meshLodSpecs, this.physics);
+    const polygonPackage = await PolygonPackage.loadUrls(
+      this.urls,
+      meshLodSpecs,
+      this.physics,
+    );
     this.polygonMesh.setPackage(polygonPackage);
   }
+
   update() {
     // nothing
   }
