@@ -35,7 +35,7 @@ const maxDrawCallsPerGeometry = 256;
 //
 
 export class InstancedObjectMesh extends THREE.Object3D {
-  constructor({instance, physics, urls}) {
+  constructor({instance, physics, urls, shadow}) {
     super();
 
     this.urls = urls;
@@ -46,6 +46,7 @@ export class InstancedObjectMesh extends THREE.Object3D {
       maxNumGeometries,
       maxInstancesPerGeometryPerDrawCall,
       maxDrawCallsPerGeometry,
+      shadow
     });
     this.add(this.polygonMesh);
 

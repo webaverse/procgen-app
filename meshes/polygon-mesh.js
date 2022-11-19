@@ -270,13 +270,43 @@ export class PolygonMesh extends InstancedBatchedMesh {
       );
     };
 
+    const customDistanceMaterial = new THREE.MeshDistanceMaterial({
+      depthPacking: THREE.RGBADepthPacking,
+      alphaTest: 0.5,
+    });
+    customDistanceMaterial.onBeforeCompile = shader => {
+      shader.uniforms.pTexture = {
+        value: attributeTextures.p,
+        needsUpdate: true,
+      };
+      shader.uniforms.qTexture = {
+        value: attributeTextures.q,
+        needsUpdate: true,
+      };
+      shader.vertexShader = shader.vertexShader.replace(
+        `#include <uv_pars_vertex>`,
+        /* glsl */ `#define DEPTH_PACKING 3201` + "\n" + customUvParsVertex,
+      );
+      shader.vertexShader = shader.vertexShader.replace(
+        `#include <begin_vertex>`,
+        customBeginVertex,
+      );
+      shader.fragmentShader = shader.fragmentShader.replace(
+        `#include <uv_pars_fragment>`,
+        /* glsl */ `#define DEPTH_PACKING 3201` + "\n" + customUvParsFragment,
+      );
+    };
+
+
     // mesh
     super(geometry, material, allocator);
     this.frustumCulled = false;
     this.visible = false;
 
     if(shadow) {
+      // ? See more details here : https://discourse.threejs.org/t/shadow-for-instances/7947/10
       this.customDepthMaterial = customDepthMaterial;
+      this.customDistanceMaterial = customDistanceMaterial;
     }
 
     this.castShadow = true;
