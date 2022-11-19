@@ -37,6 +37,27 @@ const localBox = new THREE.Box3();
 
 //
 
+const _addDepthPackingShaderCode = shader => {
+  return /* glsl */ `#define DEPTH_PACKING 3201` + "\n" + shader;
+};
+
+const _setupPolygonMeshShaderCode = (
+  shader,
+  {customUvParsVertex, customBeginVertex, customUvParsFragment},
+) => {
+  shader.vertexShader = shader.vertexShader.replace(
+    `#include <uv_pars_vertex>`,
+    customUvParsVertex,
+  );
+  shader.vertexShader = shader.vertexShader.replace(
+    `#include <begin_vertex>`,
+    customBeginVertex,
+  );
+  shader.fragmentShader = shader.fragmentShader.replace(
+    `#include <uv_pars_fragment>`,
+    customUvParsFragment,
+  );
+};
 export class PolygonPackage {
   constructor(lodMeshes, textureNames) {
     this.lodMeshes = lodMeshes;
@@ -137,7 +158,7 @@ export class PolygonMesh extends InstancedBatchedMesh {
     maxNumGeometries,
     maxInstancesPerGeometryPerDrawCall,
     maxDrawCallsPerGeometry,
-    shadow
+    shadow,
   } = {}) {
     // allocator
     const allocator = new InstancedGeometryAllocator(
@@ -171,7 +192,18 @@ export class PolygonMesh extends InstancedBatchedMesh {
     let geometry;
 
     // custom shaders
-    const customUvParsVertex = /* glsl */`
+    const _setupUniforms = shader => {
+      shader.uniforms.pTexture = {
+        value: attributeTextures.p,
+        needsUpdate: true,
+      };
+      shader.uniforms.qTexture = {
+        value: attributeTextures.q,
+        needsUpdate: true,
+      };
+    };
+
+    const customUvParsVertex = /* glsl */ `
       #undef USE_INSTANCING
 
       #include <uv_pars_vertex>
@@ -184,7 +216,7 @@ export class PolygonMesh extends InstancedBatchedMesh {
       }
     `;
 
-    const customUvParsFragment = /* glsl */`
+    const customUvParsFragment = /* glsl */ `
       #undef USE_INSTANCING
 
       #if ( defined( USE_UV ) && ! defined( UVS_VERTEX_ONLY ) )
@@ -192,7 +224,7 @@ export class PolygonMesh extends InstancedBatchedMesh {
       #endif
     `;
 
-    const customBeginVertex = /* glsl */`
+    const customBeginVertex = /* glsl */ `
       #include <begin_vertex>
 
       int instanceIndex = gl_DrawID * ${maxInstancesPerGeometryPerDrawCall} + gl_InstanceID;
@@ -219,26 +251,12 @@ export class PolygonMesh extends InstancedBatchedMesh {
       transparent: true,
       alphaTest: 0.1,
       onBeforeCompile: shader => {
-        shader.uniforms.pTexture = {
-          value: attributeTextures.p,
-          needsUpdate: true,
-        };
-        shader.uniforms.qTexture = {
-          value: attributeTextures.q,
-          needsUpdate: true,
-        };
-        shader.vertexShader = shader.vertexShader.replace(
-          `#include <uv_pars_vertex>`,
+        _setupUniforms(shader);
+        _setupPolygonMeshShaderCode(shader, {
           customUvParsVertex,
-        );
-        shader.vertexShader = shader.vertexShader.replace(
-          `#include <begin_vertex>`,
           customBeginVertex,
-        );
-        shader.fragmentShader = shader.fragmentShader.replace(
-          `#include <uv_pars_fragment>`,
           customUvParsFragment,
-        );
+        });
         return shader;
       },
     });
@@ -248,26 +266,12 @@ export class PolygonMesh extends InstancedBatchedMesh {
       alphaTest: 0.5,
     });
     customDepthMaterial.onBeforeCompile = shader => {
-      shader.uniforms.pTexture = {
-        value: attributeTextures.p,
-        needsUpdate: true,
-      };
-      shader.uniforms.qTexture = {
-        value: attributeTextures.q,
-        needsUpdate: true,
-      };
-      shader.vertexShader = shader.vertexShader.replace(
-        `#include <uv_pars_vertex>`,
-        /* glsl */ `#define DEPTH_PACKING 3201` + "\n" + customUvParsVertex,
-      );
-      shader.vertexShader = shader.vertexShader.replace(
-        `#include <begin_vertex>`,
-        customBeginVertex,
-      );
-      shader.fragmentShader = shader.fragmentShader.replace(
-        `#include <uv_pars_fragment>`,
-        /* glsl */ `#define DEPTH_PACKING 3201` + "\n" + customUvParsFragment,
-      );
+      _setupUniforms(shader);
+      _setupPolygonMeshShaderCode(shader, {
+        customUvParsVertex: _addDepthPackingShaderCode(customUvParsVertex),
+        customBeginVertex: customBeginVertex,
+        customUvParsFragment: _addDepthPackingShaderCode(customUvParsFragment),
+      });
     };
 
     const customDistanceMaterial = new THREE.MeshDistanceMaterial({
@@ -275,42 +279,26 @@ export class PolygonMesh extends InstancedBatchedMesh {
       alphaTest: 0.5,
     });
     customDistanceMaterial.onBeforeCompile = shader => {
-      shader.uniforms.pTexture = {
-        value: attributeTextures.p,
-        needsUpdate: true,
-      };
-      shader.uniforms.qTexture = {
-        value: attributeTextures.q,
-        needsUpdate: true,
-      };
-      shader.vertexShader = shader.vertexShader.replace(
-        `#include <uv_pars_vertex>`,
-        /* glsl */ `#define DEPTH_PACKING 3201` + "\n" + customUvParsVertex,
-      );
-      shader.vertexShader = shader.vertexShader.replace(
-        `#include <begin_vertex>`,
-        customBeginVertex,
-      );
-      shader.fragmentShader = shader.fragmentShader.replace(
-        `#include <uv_pars_fragment>`,
-        /* glsl */ `#define DEPTH_PACKING 3201` + "\n" + customUvParsFragment,
-      );
+      _setupUniforms(shader);
+      _setupPolygonMeshShaderCode(shader, {
+        customUvParsVertex: _addDepthPackingShaderCode(customUvParsVertex),
+        customBeginVertex: customBeginVertex,
+        customUvParsFragment: _addDepthPackingShaderCode(customUvParsFragment),
+      });
     };
-
 
     // mesh
     super(geometry, material, allocator);
     this.frustumCulled = false;
     this.visible = false;
 
-    if(shadow) {
+    if (shadow) {
       // ? See more details here : https://discourse.threejs.org/t/shadow-for-instances/7947/10
       this.customDepthMaterial = customDepthMaterial;
       this.customDistanceMaterial = customDistanceMaterial;
+      this.castShadow = true;
+      this.receiveShadow = true;
     }
-
-    this.castShadow = true;
-    this.receiveShadow = true;
 
     // this.procGenInstance = procGenInstance;
     // this.meshes = lodMeshes;
@@ -544,6 +532,141 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
     // const geometry = new THREE.BufferGeometry();
     let geometry;
 
+    // custom shaders
+    const _setupUniforms = shader => {
+      shader.uniforms.pTexture = {
+        value: attributeTextures.p,
+        needsUpdate: true,
+      };
+      shader.uniforms.qTexture = {
+        value: attributeTextures.q,
+        needsUpdate: true,
+      };
+      shader.uniforms.materialsTexture = {
+        value: attributeTextures.materials,
+        needsUpdate: true,
+      };
+      shader.uniforms.materialsWeightsTexture = {
+        value: attributeTextures.materialsWeights,
+        needsUpdate: true,
+      };
+      shader.uniforms.grassPropsTexture = {
+        value: attributeTextures.grassProps,
+        needsUpdate: true,
+      };
+      shader.uniforms.uGrassBladeHeight = {
+        value: null,
+      };
+    };
+
+    const customGrassVertex = /* glsl */ `
+      precision highp isampler2D;
+
+      uniform sampler2D pTexture;
+      uniform sampler2D qTexture;
+      uniform sampler2D materialsTexture;
+      uniform sampler2D materialsWeightsTexture;
+      uniform sampler2D grassPropsTexture;
+      uniform float uGrassBladeHeight;
+
+      varying vec2 vUv;
+      varying vec3 vNormal;
+      varying vec3 vPosition;
+
+      flat varying ivec4 vMaterials;
+      varying vec4 vMaterialsWeights;
+
+      varying float vGrassHeight;
+      varying vec3 vGrassColorMultiplier;
+
+      vec3 rotate_vertex_position(vec3 position, vec4 q) { 
+        return position + 2.0 * cross(q.xyz, cross(q.xyz, position) + q.w * position);
+      }
+
+      void main() {
+        int instanceIndex = gl_DrawID * ${maxInstancesPerGeometryPerDrawCall} + gl_InstanceID;
+
+        const float width = ${attributeTextures.p.image.width.toFixed(8)};
+        const float height = ${attributeTextures.p.image.height.toFixed(8)};
+
+        float x = mod(float(instanceIndex), width);
+        float y = floor(float(instanceIndex) / width);
+        vec2 pUv = (vec2(x, y) + 0.5) / vec2(width, height);
+
+        vec3 p = texture2D(pTexture, pUv).xyz;
+        vec4 q = texture2D(qTexture, pUv).xyzw;
+
+        vec4 materials = texture2D(materialsTexture, pUv).xyzw;
+        vec4 materialsWeights = texture2D(materialsWeightsTexture, pUv).xyzw;
+
+        vec4 grassProps = texture2D(grassPropsTexture, pUv).xyzw;
+        vec3 grassColorMultiplier = grassProps.xyz;
+        float grassHeightMultiplier = grassProps.w;
+
+        // * Grass Height Range -> [0.0, 1.0]
+        float grassHeight = position.y / uGrassBladeHeight * grassHeightMultiplier;
+        vec3 scaledPosition = position;
+        scaledPosition.y *= grassHeight;
+
+        vec3 worldPosition = rotate_vertex_position(scaledPosition, q);
+        worldPosition  += p;
+
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPosition , 1.0);
+
+        vUv = uv;
+        vNormal = normal;
+        vPosition = worldPosition;
+        vGrassHeight = grassHeight;
+        vGrassColorMultiplier = grassColorMultiplier;
+        vMaterials = ivec4(materials);
+        vMaterialsWeights = materialsWeights;
+      }
+        `;
+
+    const customGrassFragment = /* glsl */ `
+      varying vec2 vUv;
+      varying vec3 vNormal;
+      varying vec3 vPosition;
+
+      flat varying ivec4 vMaterials;
+      varying vec4 vMaterialsWeights;
+
+      varying float vGrassHeight;
+      varying vec3 vGrassColorMultiplier;
+
+      uniform sampler2D map;
+
+      vec3 getGrassColor(int ${GET_COLOR_PARAMETER_NAME}) {
+        ${GRASS_COLORS_SHADER_CODE};
+      }
+      vec3 blendSamples(vec3 samples[4], vec4 weights) {
+        float weightSum = weights.x + weights.y + weights.z + weights.w;
+        return (samples[0] * weights.x + samples[1] * weights.y + samples[2] * weights.z + samples[3] * weights.w) / weightSum;
+      }
+      vec3 blendGrassColors(ivec4 materials, vec4 weights) {
+        vec3 samples[4];
+
+        samples[0] = getGrassColor(materials.x);
+        samples[1] = getGrassColor(materials.y);
+        samples[2] = getGrassColor(materials.z);
+        samples[3] = getGrassColor(materials.w);
+
+        return blendSamples(samples, weights);
+      }
+      void main() {
+        float grassAlpha = texture2D(map, vUv).a * vGrassHeight;
+        vec3 grassColor = blendGrassColors(vMaterials, vMaterialsWeights);
+
+        grassColor.r += vGrassHeight / 3.f;
+        grassColor.g += vGrassHeight / 4.f;
+        grassColor.b += vGrassHeight / 5.f;
+
+        grassColor *= vGrassColorMultiplier;
+
+        gl_FragColor = vec4(grassColor, grassAlpha);
+      }
+        `;
+
     // material
     const material = new THREE.ShaderMaterial({
       // map: atlasTextures.map,
@@ -552,138 +675,11 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
       transparent: true,
       depthWrite: false,
       alphaTest: 0.01,
-      uniforms: {
-        pTexture: {
-          value: attributeTextures.p,
-          needsUpdate: true,
-        },
-        qTexture: {
-          value: attributeTextures.q,
-          needsUpdate: true,
-        },
-        materialsTexture: {
-          value: attributeTextures.materials,
-          needsUpdate: true,
-        },
-        materialsWeightsTexture: {
-          value: attributeTextures.materialsWeights,
-          needsUpdate: true,
-        },
-        grassPropsTexture: {
-          value: attributeTextures.grassProps,
-          needsUpdate: true,
-        },
-        uGrassBladeHeight: {
-          value: null,
-        },
-      },
-      vertexShader: /* glsl */ `\
-        precision highp isampler2D;
-
-        uniform sampler2D pTexture;
-        uniform sampler2D qTexture;
-        uniform sampler2D materialsTexture;
-        uniform sampler2D materialsWeightsTexture;
-        uniform sampler2D grassPropsTexture;
-        uniform float uGrassBladeHeight;
-
-  			varying vec2 vUv;
-  			varying vec3 vNormal;
-  			varying vec3 vPosition;
-
-        flat varying ivec4 vMaterials;
-        varying vec4 vMaterialsWeights;
-
-        varying float vGrassHeight;
-        varying vec3 vGrassColorMultiplier;
-
-        vec3 rotate_vertex_position(vec3 position, vec4 q) { 
-          return position + 2.0 * cross(q.xyz, cross(q.xyz, position) + q.w * position);
-        }
-
-  			void main() {
-          int instanceIndex = gl_DrawID * ${maxInstancesPerGeometryPerDrawCall} + gl_InstanceID;
-
-          const float width = ${attributeTextures.p.image.width.toFixed(8)};
-          const float height = ${attributeTextures.p.image.height.toFixed(8)};
-
-          float x = mod(float(instanceIndex), width);
-          float y = floor(float(instanceIndex) / width);
-          vec2 pUv = (vec2(x, y) + 0.5) / vec2(width, height);
-
-          vec3 p = texture2D(pTexture, pUv).xyz;
-          vec4 q = texture2D(qTexture, pUv).xyzw;
-
-          vec4 materials = texture2D(materialsTexture, pUv).xyzw;
-          vec4 materialsWeights = texture2D(materialsWeightsTexture, pUv).xyzw;
-
-          vec4 grassProps = texture2D(grassPropsTexture, pUv).xyzw;
-          vec3 grassColorMultiplier = grassProps.xyz;
-          float grassHeightMultiplier = grassProps.w;
-
-          // * Grass Height Range -> [0.0, 1.0]
-          float grassHeight = position.y / uGrassBladeHeight * grassHeightMultiplier;
-          vec3 scaledPosition = position;
-          scaledPosition.y *= grassHeight;
-
-          vec3 worldPosition = rotate_vertex_position(scaledPosition, q);
-          worldPosition  += p;
-
-  				gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPosition , 1.0);
-
-          vUv = uv;
-          vNormal = normal;
-          vPosition = worldPosition;
-          vGrassHeight = grassHeight;
-          vGrassColorMultiplier = grassColorMultiplier;
-          vMaterials = ivec4(materials);
-          vMaterialsWeights = materialsWeights;
-			  }
-        `,
-      fragmentShader: /* glsl */ `
-			  varying vec2 vUv;
-			  varying vec3 vNormal;
-			  varying vec3 vPosition;
-
-        flat varying ivec4 vMaterials;
-        varying vec4 vMaterialsWeights;
-
-        varying float vGrassHeight;
-        varying vec3 vGrassColorMultiplier;
-
-        uniform sampler2D map;
-
-        vec3 getGrassColor(int ${GET_COLOR_PARAMETER_NAME}) {
-          ${GRASS_COLORS_SHADER_CODE};
-        }
-        vec3 blendSamples(vec3 samples[4], vec4 weights) {
-          float weightSum = weights.x + weights.y + weights.z + weights.w;
-          return (samples[0] * weights.x + samples[1] * weights.y + samples[2] * weights.z + samples[3] * weights.w) / weightSum;
-        }
-        vec3 blendGrassColors(ivec4 materials, vec4 weights) {
-          vec3 samples[4];
-
-          samples[0] = getGrassColor(materials.x);
-          samples[1] = getGrassColor(materials.y);
-          samples[2] = getGrassColor(materials.z);
-          samples[3] = getGrassColor(materials.w);
-
-          return blendSamples(samples, weights);
-        }
-        void main() {
-          float grassAlpha = texture2D(map, vUv).a * vGrassHeight;
-          vec3 grassColor = blendGrassColors(vMaterials, vMaterialsWeights);
-
-          grassColor.r += vGrassHeight / 3.f;
-          grassColor.g += vGrassHeight / 4.f;
-          grassColor.b += vGrassHeight / 5.f;
-
-          grassColor *= vGrassColorMultiplier;
-
-			  	gl_FragColor = vec4(grassColor, grassAlpha);
-			  }
-        `,
+      vertexShader: customGrassVertex,
+      fragmentShader: customGrassFragment,
     });
+
+    _setupUniforms(material);
 
     // mesh
     super(geometry, material, allocator);
