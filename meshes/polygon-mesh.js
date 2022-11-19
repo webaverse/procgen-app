@@ -137,6 +137,7 @@ export class PolygonMesh extends InstancedBatchedMesh {
     maxNumGeometries,
     maxInstancesPerGeometryPerDrawCall,
     maxDrawCallsPerGeometry,
+    shadow
   } = {}) {
     // allocator
     const allocator = new InstancedGeometryAllocator(
@@ -169,6 +170,47 @@ export class PolygonMesh extends InstancedBatchedMesh {
     // const geometry = new THREE.BufferGeometry();
     let geometry;
 
+    // custom shaders
+    const customUvParsVertex = /* glsl */`
+      #undef USE_INSTANCING
+
+      #include <uv_pars_vertex>
+
+      uniform sampler2D pTexture;
+      uniform sampler2D qTexture;
+
+      vec3 rotate_vertex_position(vec3 position, vec4 q) { 
+        return position + 2.0 * cross(q.xyz, cross(q.xyz, position) + q.w * position);
+      }
+    `;
+
+    const customUvParsFragment = /* glsl */`
+      #undef USE_INSTANCING
+
+      #if ( defined( USE_UV ) && ! defined( UVS_VERTEX_ONLY ) )
+        varying vec2 vUv;
+      #endif
+    `;
+
+    const customBeginVertex = /* glsl */`
+      #include <begin_vertex>
+
+      int instanceIndex = gl_DrawID * ${maxInstancesPerGeometryPerDrawCall} + gl_InstanceID;
+      const float width = ${attributeTextures.p.image.width.toFixed(8)};
+      const float height = ${attributeTextures.p.image.height.toFixed(8)};
+      float x = mod(float(instanceIndex), width);
+      float y = floor(float(instanceIndex) / width);
+      vec2 pUv = (vec2(x, y) + 0.5) / vec2(width, height);
+      vec3 p = texture2D(pTexture, pUv).xyz;
+      vec4 q = texture2D(qTexture, pUv).xyzw;
+
+      // instance offset
+      {
+        transformed = rotate_vertex_position(transformed, q);
+        transformed += p;
+      }
+    `;
+
     // material
     const material = new THREE.MeshStandardMaterial({
       // map: atlasTextures.map,
@@ -185,68 +227,60 @@ export class PolygonMesh extends InstancedBatchedMesh {
           value: attributeTextures.q,
           needsUpdate: true,
         };
-
-        // vertex shader
-
         shader.vertexShader = shader.vertexShader.replace(
           `#include <uv_pars_vertex>`,
-          `\
-#undef USE_INSTANCING
-
-#include <uv_pars_vertex>
-
-uniform sampler2D pTexture;
-uniform sampler2D qTexture;
-
-vec3 rotate_vertex_position(vec3 position, vec4 q) { 
-  return position + 2.0 * cross(q.xyz, cross(q.xyz, position) + q.w * position);
-}
-        `,
+          customUvParsVertex,
         );
         shader.vertexShader = shader.vertexShader.replace(
           `#include <begin_vertex>`,
-          `\
-#include <begin_vertex>
-
-int instanceIndex = gl_DrawID * ${maxInstancesPerGeometryPerDrawCall} + gl_InstanceID;
-const float width = ${attributeTextures.p.image.width.toFixed(8)};
-const float height = ${attributeTextures.p.image.height.toFixed(8)};
-float x = mod(float(instanceIndex), width);
-float y = floor(float(instanceIndex) / width);
-vec2 pUv = (vec2(x, y) + 0.5) / vec2(width, height);
-vec3 p = texture2D(pTexture, pUv).xyz;
-vec4 q = texture2D(qTexture, pUv).xyzw;
-
-// instance offset
-{
-  transformed = rotate_vertex_position(transformed, q);
-  transformed += p;
-}
-        `,
+          customBeginVertex,
         );
         shader.fragmentShader = shader.fragmentShader.replace(
           `#include <uv_pars_fragment>`,
-          `\
-#undef USE_INSTANCING
-
-#if ( defined( USE_UV ) && ! defined( UVS_VERTEX_ONLY ) )
-	varying vec2 vUv;
-#endif
-        `,
+          customUvParsFragment,
         );
-
-        // fragment shader
-
         return shader;
       },
     });
+
+    const customDepthMaterial = new THREE.MeshDepthMaterial({
+      depthPacking: THREE.RGBADepthPacking,
+      alphaTest: 0.5,
+    });
+    customDepthMaterial.onBeforeCompile = shader => {
+      shader.uniforms.pTexture = {
+        value: attributeTextures.p,
+        needsUpdate: true,
+      };
+      shader.uniforms.qTexture = {
+        value: attributeTextures.q,
+        needsUpdate: true,
+      };
+      shader.vertexShader = shader.vertexShader.replace(
+        `#include <uv_pars_vertex>`,
+        /* glsl */ `#define DEPTH_PACKING 3201` + "\n" + customUvParsVertex,
+      );
+      shader.vertexShader = shader.vertexShader.replace(
+        `#include <begin_vertex>`,
+        customBeginVertex,
+      );
+      shader.fragmentShader = shader.fragmentShader.replace(
+        `#include <uv_pars_fragment>`,
+        /* glsl */ `#define DEPTH_PACKING 3201` + "\n" + customUvParsFragment,
+      );
+    };
 
     // mesh
     super(geometry, material, allocator);
     this.frustumCulled = false;
     this.visible = false;
 
-    // this.receiveShadow = true;
+    if(shadow) {
+      this.customDepthMaterial = customDepthMaterial;
+    }
+
+    this.castShadow = true;
+    this.receiveShadow = true;
 
     // this.procGenInstance = procGenInstance;
     // this.meshes = lodMeshes;

@@ -1,9 +1,10 @@
 import * as THREE from "three";
 
 export class TerrainObjectSpecs {
-  constructor(constructor, urls) {
+  constructor(constructor, urls, shadow) {
     this.construct = constructor;
     this.urls = urls;
+    this.shadow = shadow;
   }
 }
 export class TerrainObjectsMesh extends THREE.Object3D {
@@ -16,6 +17,7 @@ export class TerrainObjectsMesh extends THREE.Object3D {
         instance,
         physics,
         urls: meshSpecs.urls,
+        shadow: meshSpecs.shadow
       });
       this.add(mesh);
       mesh.updateMatrixWorld();

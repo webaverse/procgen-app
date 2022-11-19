@@ -88,7 +88,7 @@ export default e => {
         physics,
       });
       terrainMesh.frustumCulled = false;
-      // terrainMesh.castShadow = true;
+      // ! terrainMesh.castShadow = true;
       terrainMesh.receiveShadow = true;
       app.add(terrainMesh);
       terrainMesh.updateMatrixWorld();
@@ -111,12 +111,12 @@ export default e => {
     barrierMesh.updateMatrixWorld(); */
 
       const TERRAIN_OBJECTS_MESHES = {
-        treeMesh: new TerrainObjectSpecs(InstancedObjectMesh, treeUrls),
-        bushMesh: new TerrainObjectSpecs(InstancedObjectMesh, bushUrls),
-        rockMesh: new TerrainObjectSpecs(InstancedObjectMesh, rockUrls),
-        stoneMesh: new TerrainObjectSpecs(InstancedObjectMesh, stoneUrls),
-        grassMesh: new TerrainObjectSpecs(GrassMesh, grassUrls),
-        hudMesh: new TerrainObjectSpecs(HudMesh, hudUrls),
+        treeMesh: new TerrainObjectSpecs(InstancedObjectMesh, treeUrls, true),
+        bushMesh: new TerrainObjectSpecs(InstancedObjectMesh, bushUrls, true),
+        rockMesh: new TerrainObjectSpecs(InstancedObjectMesh, rockUrls, true),
+        stoneMesh: new TerrainObjectSpecs(InstancedObjectMesh, stoneUrls, false),
+        grassMesh: new TerrainObjectSpecs(GrassMesh, grassUrls, false),
+        hudMesh: new TerrainObjectSpecs(HudMesh, hudUrls, false),
       };
 
       const terrainObjects = new TerrainObjectsMesh(
