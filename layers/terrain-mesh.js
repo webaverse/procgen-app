@@ -1,18 +1,22 @@
 import metaversefile from "metaversefile";
 import * as THREE from "three";
+
 import {textureUrlSpecs} from "../assets.js";
+
 import {
   bufferSize,
   MAX_WORLD_HEIGHT,
   MIN_WORLD_HEIGHT,
   WORLD_BASE_HEIGHT,
 } from "../constants.js";
+
 import TerrainPackage, {
   DIFFUSE_MAP,
   ENV_MAP,
   NOISE_MAP,
   NORMAL_MAP,
 } from "../meshes/terrain-package.js";
+
 import _createTerrainMaterial from "./terrain-material.js";
 
 const DIFFUSE_MAP_PATHS = textureUrlSpecs.terrainDiffuseMaps;
@@ -26,7 +30,7 @@ const {useProcGenManager, useGeometryBuffering} = metaversefile;
 const {BufferedMesh, GeometryAllocator} = useGeometryBuffering();
 const procGenManager = useProcGenManager();
 
-//
+// 
 
 const fakeMaterial = new THREE.MeshBasicMaterial({
   color: 0xffffff,

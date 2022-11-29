@@ -36,6 +36,13 @@ const localVector2 = new THREE.Vector3();
 const localBox = new THREE.Box3();
 
 //
+const _writeToTexture = (array, texture, textureOffset, index, number) => {
+  const indexOffset = index * 4;
+  for (let j = 0; j < number; j++) {
+    const value = array[index * number + j];
+    texture.image.data[textureOffset + indexOffset + j] = value;
+  }
+};
 
 const _addDepthPackingShaderCode = shader => {
   return /* glsl */ `#define DEPTH_PACKING 3201` + "\n" + shader;
@@ -187,8 +194,6 @@ export class PolygonMesh extends InstancedBatchedMesh {
       texture.anisotropy = maxAnisotropy;
     }
 
-    // geometry
-    // const geometry = new THREE.BufferGeometry();
     let geometry;
 
     // custom shaders
@@ -300,15 +305,6 @@ export class PolygonMesh extends InstancedBatchedMesh {
       this.receiveShadow = true;
     }
 
-    // this.procGenInstance = procGenInstance;
-    // this.meshes = lodMeshes;
-    // this.shapeAddresses = shapeAddresses;
-    // this.physicsGeometries = physicsGeometries;
-    // this.physics = physics;
-    // this.physicsObjects = [];
-
-    // this.instanceObjects = new Map();
-
     this.instance = instance;
     this.lodCutoff = lodCutoff;
 
@@ -319,59 +315,23 @@ export class PolygonMesh extends InstancedBatchedMesh {
     if (chunkResult) {
       const instances = chunkResult;
       if (chunk.lod < this.lodCutoff && instances.length > 0) {
-        const _renderLitterPolygonGeometry = (drawCall, ps, qs) => {
+        const _renderPolygonGeometry = (drawCall, ps, qs) => {
           const pTexture = drawCall.getTexture("p");
           const pOffset = drawCall.getTextureOffset("p");
           const qTexture = drawCall.getTexture("q");
           const qOffset = drawCall.getTextureOffset("q");
-          // const sTexture = drawCall.getTexture('s');
-          // const sOffset = drawCall.getTextureOffset('s');
 
           let index = 0;
           for (let j = 0; j < ps.length; j += 3) {
-            const indexOffset = index * 4;
-
             // geometry
-            const px = ps[index * 3];
-            const py = ps[index * 3 + 1];
-            const pz = ps[index * 3 + 2];
-            pTexture.image.data[pOffset + indexOffset] = px;
-            pTexture.image.data[pOffset + indexOffset + 1] = py;
-            pTexture.image.data[pOffset + indexOffset + 2] = pz;
-
-            const qx = qs[index * 4];
-            const qy = qs[index * 4 + 1];
-            const qz = qs[index * 4 + 2];
-            const qw = qs[index * 4 + 3];
-            qTexture.image.data[qOffset + indexOffset] = qx;
-            qTexture.image.data[qOffset + indexOffset + 1] = qy;
-            qTexture.image.data[qOffset + indexOffset + 2] = qz;
-            qTexture.image.data[qOffset + indexOffset + 3] = qw;
-
-            // XXX get scales from the mapped geometry
-            /* const sx = ss[index * 3];
-          const sy = ss[index * 3 + 1];
-          const sz = ss[index * 3 + 2]; */
-            // const sx = 1;
-            // const sy = 1;
-            // const sz = 1;
-            // sTexture.image.data[sOffset + indexOffset] = sx;
-            // sTexture.image.data[sOffset + indexOffset + 1] = sy;
-            // sTexture.image.data[sOffset + indexOffset + 2] = sz;
-
-            // physics
-            // const shapeAddress = this.#getShapeAddress(drawCall.geometryIndex);
-            // const physicsObject = this.#addPhysicsShape(shapeAddress, drawCall.geometryIndex, px, py, pz, qx, qy, qz, qw);
-            // this.physicsObjects.push(physicsObject);
-            // localPhysicsObjects.push(physicsObject);
-            // this.instanceObjects.set(physicsObject.physicsId, drawCall);
+            _writeToTexture(ps, pTexture, pOffset, index, 3);
+            _writeToTexture(qs, qTexture, qOffset, index, 4);
 
             index++;
           }
 
           drawCall.updateTexture("p", pOffset, index * 4);
           drawCall.updateTexture("q", qOffset, index * 4);
-          // drawCall.updateTexture('s', sOffset, index * 4);
         };
 
         const {chunkSize} = this.instance;
@@ -400,7 +360,7 @@ export class PolygonMesh extends InstancedBatchedMesh {
             numInstances,
             boundingBox,
           );
-          _renderLitterPolygonGeometry(drawChunk, ps, qs);
+          _renderPolygonGeometry(drawChunk, ps, qs);
           drawChunks[i] = drawChunk;
         }
         const key = procGenManager.getNodeHash(chunk);
@@ -420,34 +380,6 @@ export class PolygonMesh extends InstancedBatchedMesh {
     this.allocatedChunks.delete(key);
   }
 
-  /* #getShapeAddress(geometryIndex) {
-    return this.shapeAddresses[geometryIndex];
-  }
-  #getShapeGeometry(geometryIndex){
-    return this.physicsGeometries[geometryIndex];
-  }
-  #addPhysicsShape(shapeAddress, geometryIndex, px, py, pz, qx, qy, qz, qw) {    
-    localVector.set(px, py, pz);
-    localQuaternion.set(qx, qy, qz, qw);
-    localVector2.set(1, 1, 1);
-    localMatrix.compose(localVector, localQuaternion, localVector2)
-      .premultiply(this.matrixWorld)
-      .decompose(localVector, localQuaternion, localVector2);
-
-    const position = localVector;
-    const quaternion = localQuaternion;
-    const scale = localVector2;
-    const dynamic = false;
-    const external = true;
-
-    const physicsGeometry = this.#getShapeGeometry(geometryIndex);
-    const physicsObject = this.physics.addConvexShape(shapeAddress, position, quaternion, scale, dynamic, external,physicsGeometry);
-  
-    this.physicsObjects.push(physicsObject);
-
-    return physicsObject;
-  } */
-
   grabInstance(physicsId) {
     const phys = metaversefile.getPhysicsObjectByPhysicsId(physicsId);
     this.physics.removeGeometry(phys);
@@ -455,9 +387,6 @@ export class PolygonMesh extends InstancedBatchedMesh {
     drawcall.decrementInstanceCount();
   }
 
-  /* getPhysicsObjects() {
-    return this.physicsObjects;
-  } */
   setPackage(pkg) {
     // console.log('set package', pkg);
     const {lodMeshes, textureNames} = pkg;
@@ -528,8 +457,6 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
       texture.anisotropy = maxAnisotropy;
     }
 
-    // geometry
-    // const geometry = new THREE.BufferGeometry();
     let geometry;
 
     // custom shaders
@@ -686,15 +613,6 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
     this.frustumCulled = false;
     this.visible = false;
 
-    // this.procGenInstance = procGenInstance;
-    // this.meshes = lodMeshes;
-    // this.shapeAddresses = shapeAddresses;
-    // this.physicsGeometries = physicsGeometries;
-    // this.physics = physics;
-    // this.physicsObjects = [];
-
-    // this.instanceObjects = new Map();
-
     this.instance = instance;
     this.lodCutoff = lodCutoff;
 
@@ -706,20 +624,7 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
   addChunk(chunk, instances) {
     if (instances) {
       if (chunk.lod < this.lodCutoff && instances.length > 0) {
-        const _writeToTexture = (
-          array,
-          texture,
-          textureOffset,
-          index,
-          number,
-        ) => {
-          const indexOffset = index * 4;
-          for (let j = 0; j < number; j++) {
-            const value = array[index * number + j];
-            texture.image.data[textureOffset + indexOffset + j] = value;
-          }
-        };
-        const _renderLitterPolygonGeometry = (
+        const _renderGrassPolygonGeometry = (
           drawCall,
           ps,
           qs,
@@ -812,7 +717,7 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
             numInstances,
             boundingBox,
           );
-          _renderLitterPolygonGeometry(
+          _renderGrassPolygonGeometry(
             drawChunk,
             ps,
             qs,

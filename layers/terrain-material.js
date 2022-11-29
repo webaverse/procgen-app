@@ -5,7 +5,6 @@ import {MATERIALS_INFO} from "../assets.js";
 import {NUM_TERRAIN_MATERIALS} from "./terrain-mesh.js";
 
 const {useAtlasing} = metaversefile;
-
 const {calculateCanvasAtlasTexturePerRow} = useAtlasing();
 
 const _createTerrainMaterial = () => {

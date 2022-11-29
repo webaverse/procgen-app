@@ -23,6 +23,8 @@ const {createAppUrlSpriteSheet} = useSpriting();
 // const {DoubleSidedPlaneGeometry} = useGeometries();
 const {ChunkedBatchedMesh, ChunkedGeometryAllocator} = useGeometryChunking();
 
+const camera = useCamera();
+
 //
 
 const localVector = new THREE.Vector3();
@@ -410,7 +412,6 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
   }
 
   update() {
-    const camera = useCamera();
     localEuler.setFromQuaternion(camera.quaternion, "YXZ");
     localEuler.x = 0;
     localEuler.z = 0;
