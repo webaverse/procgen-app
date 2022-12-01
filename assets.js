@@ -1,15 +1,17 @@
 import * as THREE from 'three';
 import {GET_COLOR_PARAMETER_NAME, GRASS_COLOR_ABOVE_DIRT, GRASS_COLOR_ABOVE_GRASS, GRASS_COLOR_NAME} from "./constants.js";
 
-const USE_LOCAL_ASSETS = false;
+const USE_LOCAL_ASSETS = true;
 export const procgenAssetsBaseUrl = USE_LOCAL_ASSETS ? 'https://local.webaverse.com/scenes/heightfield/procgen-assets/' : 'https://webaverse.github.io/procgen-assets/';
 
 //
 
 // Directories Names
 const TERRAIN_TEXTURES_DIRECTORY_NAME = 'terrain/textures/';
-const TREE_MODELS_DIRECTORY_NAME = 'vegetation/garden-trees/';
+const TREE_MODELS_DIRECTORY_NAME = 'vegetation/jungle-trees/';
+const BUSH_MODELS_DIRECTORY_NAME = 'vegetation/bushes/';
 const ROCK_MODELS_DIRECTORY_NAME = 'rocks/';
+const ORE_MODELS_DIRECTORY_NAME = 'ores/';
 const GRASS_MODELS_DIRECTORY_NAME = 'grass/';
 
 // File Extensions
@@ -17,17 +19,17 @@ const MODEL_FILES_EXTENSION = 'glb';
 const TEXTURE_FILES_EXTENSION = 'png';
 
 // Model Files 
-const TREE_NAME = 'Tree_1';
-const BUSH_NAME = 'Bush_1_kiiba';
+const TREE_NAME = 'jungle_tree_1_variant_texta';
+const BUSH_NAME = 'bush_1_dream';
 const BIG_ROCK_NAME = 'big_rock_v2';
 const MED_ROCK_NAME = 'med_rock_v2';
-const GRASS_NAME = 'ToonGrass_v1.3_Guilty';
-const ORE_NAME = 'big_rock_v2';
+const GRASS_NAME = 'grass_1_dream';
+const ORE_NAME = 'green_biome_ore';
 
 // Texture Files
-const GRASS_MATERIAL_NAME = 'stylized_grass';
-const DIRT_MATERIAL_NAME = 'dirt';
-const ROCK_MATERIAL_NAME = 'stylized_rock';
+const GRASS_MATERIAL_NAME = 'grass';
+const DIRT_MATERIAL_NAME = 'dirt_ground';
+const ROCK_MATERIAL_NAME = 'rock';
 const STONE_MATERIAL_NAME = 'stylized_stone';
 
 // 
@@ -76,7 +78,7 @@ export const TREES_INFO = [
   new ModelInfo(TREE_NAME, TREE_MODELS_DIRECTORY_NAME),
 ];
 export const BUSHES_INFO = [
-  new ModelInfo(BUSH_NAME, TREE_MODELS_DIRECTORY_NAME),
+  new ModelInfo(BUSH_NAME, BUSH_MODELS_DIRECTORY_NAME),
 ];
 export const ROCKS_INFO = [
   new ModelInfo(BIG_ROCK_NAME, ROCK_MODELS_DIRECTORY_NAME),
@@ -88,7 +90,7 @@ export const GRASSES_INFO = [
   new ModelInfo(GRASS_NAME, GRASS_MODELS_DIRECTORY_NAME),
 ];
 export const ORES_INFO = [
-  new ModelInfo(ORE_NAME, ROCK_MODELS_DIRECTORY_NAME),
+  new ModelInfo(ORE_NAME, ORE_MODELS_DIRECTORY_NAME),
 ];
 
 export const glbUrlSpecs = {
