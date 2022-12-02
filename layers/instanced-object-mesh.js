@@ -46,7 +46,7 @@ export class InstancedObjectMesh extends THREE.Object3D {
       maxNumGeometries,
       maxInstancesPerGeometryPerDrawCall,
       maxDrawCallsPerGeometry,
-      shadow
+      shadow,
     });
     this.add(this.polygonMesh);
 
@@ -80,5 +80,59 @@ export class InstancedObjectMesh extends THREE.Object3D {
     ]);
     this.polygonMesh.setPackage(polygonPackage);
     this.spritesheetMesh.setPackage(spritesheetPackage);
+  }
+}
+
+export class InstancedObjectGroup extends THREE.Object3D {
+  constructor({instance, urls, physics, shadow}) {
+    super();
+
+    this.urls = urls;
+    this.meshes = [];
+
+    for (let i = 0; i < urls.length; i++) {
+      const meshUrl = urls[i];
+      const mesh = new InstancedObjectMesh({
+        urls: [meshUrl],
+        shadow,
+        instance,
+        physics,
+      });
+      this.meshes.push(mesh);
+      this.add(mesh);
+    }
+
+  }
+
+  update() {
+    for (let i = 0; i < this.meshes.length; i++) {
+      const mesh = this.meshes[i];
+      mesh.update();
+    }
+  }
+
+  addChunk(chunk, chunkResults) {
+    if (chunkResults) {
+      for (let i = 0; i < this.meshes.length; i++) {
+        const mesh = this.meshes[i];
+        const chunkResult = chunkResults[i].instances;
+        mesh.addChunk(chunk, chunkResult);
+      }
+    }
+  }
+
+  removeChunk(chunk) {
+    for (let i = 0; i < this.meshes.length; i++) {
+      const mesh = this.meshes[i];
+      mesh.removeChunk(chunk);
+    }
+  }
+
+  async waitForLoad() {
+    await Promise.all(
+      this.meshes.map((mesh, i) => {
+        mesh.waitForLoad();
+      }),
+    );
   }
 }

@@ -30,9 +30,9 @@ const MODEL_FILES_EXTENSION = "glb";
 const TEXTURE_FILES_EXTENSION = "png";
 
 // Model Files
-const TREE_NAME_1 = "Tree_1";
-const TREE_NAME_2 = "jungle_tree_1_variant";
-const TREE_NAME_3 = "jungle_tree_3_variant";
+const SHORT_TREE_NAME = "jungle_tree_2_variant";
+const MEDIUM_TREE_NAME = "jungle_tree_1_variant";
+const TALL_TREE_NAME = "jungle_tree_3_variant";
 const BUSH_NAME = "Bush_1_kiiba";
 const BIG_ROCK_NAME = "big_rock_v2";
 const MED_ROCK_NAME = "med_rock_v2";
@@ -112,9 +112,9 @@ export const MATERIALS_INFO = [
 ];
 
 export const TREES_INFO = [
-  new ModelInfo(TREE_NAME_1, TREE_MODELS_DIRECTORY_NAME),
-  new ModelInfo(TREE_NAME_2, TREE_MODELS_DIRECTORY_NAME),
-  new ModelInfo(TREE_NAME_3, TREE_MODELS_DIRECTORY_NAME),
+  new ModelInfo(SHORT_TREE_NAME, TREE_MODELS_DIRECTORY_NAME),
+  new ModelInfo(MEDIUM_TREE_NAME, TREE_MODELS_DIRECTORY_NAME),
+  new ModelInfo(TALL_TREE_NAME, TREE_MODELS_DIRECTORY_NAME),
 ];
 export const BUSHES_INFO = [
   new ModelInfo(BUSH_NAME, TREE_MODELS_DIRECTORY_NAME),

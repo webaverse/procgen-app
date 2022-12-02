@@ -8,7 +8,7 @@ import {glbUrlSpecs, _setAssetsRootPath} from "./assets.js";
 import {BIOMES, _createDataRecursively} from "./biomes.js";
 import {GrassMesh} from "./layers/grass-mesh.js";
 import {HudMesh} from "./layers/hud-mesh.js";
-import {InstancedObjectMesh} from "./layers/instanced-object-mesh.js";
+import {InstancedObjectGroup, InstancedObjectMesh} from "./layers/instanced-object-mesh.js";
 
 import {
   TerrainObjectsMesh,
@@ -30,9 +30,7 @@ const {GPUTaskManager} = useGPUTask();
 const {GenerationTaskManager} = useGenerationTask();
 
 // urls
-const treeUrls1 = glbUrlSpecs.trees.slice(0, 1);
-const treeUrls2 = glbUrlSpecs.trees.slice(1, 2);
-const treeUrls3 = glbUrlSpecs.trees.slice(2, 3);
+const treeUrls = glbUrlSpecs.trees;
 const bushUrls = glbUrlSpecs.bushes.slice(0, 1);
 const rockUrls = glbUrlSpecs.rocks.slice(0, 1);
 const stoneUrls = glbUrlSpecs.stones.slice(0, 1);
@@ -65,8 +63,6 @@ export default e => {
 
   const biomes = appHasBiomes ? app.getComponent(BIOMES_STRING) : BIOMES;
   const BIOMES_DATA = _createDataRecursively(BIOMES_STRING, biomes);
-
-  console.log(BIOMES_DATA);
 
   // locals
 
@@ -127,9 +123,7 @@ export default e => {
     barrierMesh.updateMatrixWorld(); */
 
       const TERRAIN_OBJECTS_MESHES = {
-        treeMesh1: new TerrainObjectSpecs(InstancedObjectMesh, treeUrls1, true),
-        treeMesh2: new TerrainObjectSpecs(InstancedObjectMesh, treeUrls2, true),
-        treeMesh3: new TerrainObjectSpecs(InstancedObjectMesh, treeUrls3, true),
+        treeMesh: new TerrainObjectSpecs(InstancedObjectGroup, treeUrls, true),
         bushMesh: new TerrainObjectSpecs(InstancedObjectMesh, bushUrls, true),
         rockMesh: new TerrainObjectSpecs(InstancedObjectMesh, rockUrls, true),
         stoneMesh: new TerrainObjectSpecs(
@@ -172,12 +166,8 @@ export default e => {
           waterMesh.addChunk(chunk, heightfield);
           // barrierMesh.addChunk(chunk, heightfield);
 
-          // console.log(treeInstances);
-
           const terrainObjectInstances = {
-            treeMesh1: treeInstances[0],
-            treeMesh2: treeInstances[1],
-            treeMesh3: treeInstances[2],
+            treeMesh: treeInstances,
             bushMesh: bushInstances,
             rockMesh: rockInstances,
             stoneMesh: stoneInstances,
@@ -206,7 +196,7 @@ export default e => {
             grass: true,
             poi: false,
           };
-          const numVegetationInstances = treeUrls1.length;
+          const numVegetationInstances = treeUrls.length;
           const numRockInstances = rockUrls.length;
           const numGrassInstances = grassUrls.length;
           const numPoiInstances = hudUrls.length;
