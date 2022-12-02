@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {GET_COLOR_PARAMETER_NAME, GRASS_COLOR_ABOVE_DIRT, GRASS_COLOR_ABOVE_GRASS, GRASS_COLOR_NAME} from "./constants.js";
 
-const USE_LOCAL_ASSETS = true;
+const USE_LOCAL_ASSETS = false;
 export const procgenAssetsBaseUrl = USE_LOCAL_ASSETS ? 'https://local.webaverse.com/scenes/heightfield/procgen-assets/' : 'https://webaverse.github.io/procgen-assets/';
 
 //
