@@ -101,7 +101,6 @@ export class InstancedObjectGroup extends THREE.Object3D {
       this.meshes.push(mesh);
       this.add(mesh);
     }
-
   }
 
   update() {

@@ -1,13 +1,13 @@
 import metaversefile from "metaversefile";
 import * as THREE from "three";
-import {GRASS_COLORS_SHADER_CODE} from "../assets.js";
+import { GRASS_COLORS_SHADER_CODE } from "../assets.js";
 import {
   GET_COLOR_PARAMETER_NAME,
   maxAnisotropy,
   MAX_WORLD_HEIGHT,
   MIN_WORLD_HEIGHT,
   // bufferSize,
-  WORLD_BASE_HEIGHT,
+  WORLD_BASE_HEIGHT
 } from "../constants.js";
 const {
   useCamera,
@@ -70,10 +70,10 @@ const _setupPolygonMeshShaderCode = (
     customUvParsFragment,
   );
 
-  shader.fragmentShader = shader.fragmentShader.replace(
-    `#include <color_fragment>`,
-    customColorFragment,
-  );
+  // shader.fragmentShader = shader.fragmentShader.replace(
+  //   `#include <alphamap_fragment>`,
+  //   customColorFragment,
+  // );
 };
 
 export class PolygonPackage {
@@ -260,7 +260,7 @@ export class PolygonMesh extends InstancedBatchedMesh {
     `;
 
     const customColorFragment = /* glsl */ `
-      #include <color_fragment>
+      #include <alphamap_fragment>
     `;
 
     // material
@@ -607,7 +607,7 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
     `;
 
     const customColorFragment = /* glsl */ `
-      #include <color_fragment>
+      #include <alphamap_fragment>
 
       float grassAlpha = texture2D(map, vUv).a * vGrassHeight;
       vec3 grassColor = blendGrassColors(vMaterials, vMaterialsWeights);
@@ -622,23 +622,30 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
     `;
 
     // material
+    // const material = new THREE.MeshStandardMaterial({
+    //   // map: atlasTextures.map,
+    //   // normalMap: atlasTextures.normalMap,
+    //   side: THREE.DoubleSide,
+    //   transparent: true,
+    //   depthWrite: false,
+    //   alphaTest: 0.01,
+    //   onBeforeCompile: shader => {
+    //     _setupUniforms(shader);
+    //     _setupPolygonMeshShaderCode(shader, {
+    //       customUvParsVertex,
+    //       customBeginVertex,
+    //       customUvParsFragment,
+    //       customColorFragment
+    //     });
+    //     return shader;
+    //   },
+    // });
+
     const material = new THREE.MeshStandardMaterial({
-      // map: atlasTextures.map,
-      // normalMap: atlasTextures.normalMap,
       side: THREE.DoubleSide,
       transparent: true,
       depthWrite: false,
       alphaTest: 0.01,
-      onBeforeCompile: shader => {
-        _setupUniforms(shader);
-        _setupPolygonMeshShaderCode(shader, {
-          customUvParsVertex,
-          customBeginVertex,
-          customUvParsFragment,
-          customColorFragment
-        });
-        return shader;
-      },
     });
 
     // mesh
@@ -801,13 +808,13 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
     );
     this.geometry = this.allocator.geometry;
 
-    for (const textureName of textureNames) {
-      const uniform = (this.material.uniforms[textureName] = {});
-      uniform.value = lodMeshes[0][0].material[textureName];
-    }
+    // for (const textureName of textureNames) {
+    //   const uniform = (this.material[textureName] = {});
+    //   uniform.value = lodMeshes[0][0].material[textureName];
+    // }
 
-    this.material.uniforms.uGrassBladeHeight.value = LOD0MeshHeight;
+    // this.material.uGrassBladeHeight = {value: LOD0MeshHeight};
 
-    this.visible = true;
+    // this.visible = true;
   }
 }
