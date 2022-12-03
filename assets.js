@@ -20,30 +20,32 @@ export const _setAssetsRootPath = isLocal => {
 
 
 // Directories Names
-const TERRAIN_TEXTURES_DIRECTORY_NAME = "terrain/textures/";
-const TREE_MODELS_DIRECTORY_NAME = "vegetation/garden-trees/";
-const ROCK_MODELS_DIRECTORY_NAME = "rocks/";
-const GRASS_MODELS_DIRECTORY_NAME = "grass/";
+const TERRAIN_TEXTURES_DIRECTORY_NAME = 'terrain/textures/';
+const TREE_MODELS_DIRECTORY_NAME = 'vegetation/jungle-trees/';
+const BUSH_MODELS_DIRECTORY_NAME = 'vegetation/bushes/';
+const ROCK_MODELS_DIRECTORY_NAME = 'rocks/';
+const ORE_MODELS_DIRECTORY_NAME = 'ores/';
+const GRASS_MODELS_DIRECTORY_NAME = 'grass/';
 
 // File Extensions
 const MODEL_FILES_EXTENSION = "glb";
 const TEXTURE_FILES_EXTENSION = "png";
 
 // Model Files
-const SHORT_TREE_NAME = "jungle_tree_2_variant";
-const MEDIUM_TREE_NAME = "jungle_tree_1_variant";
-const TALL_TREE_NAME = "jungle_tree_3_variant";
-const BUSH_NAME = "Bush_1_kiiba";
-const BIG_ROCK_NAME = "big_rock_v2";
-const MED_ROCK_NAME = "med_rock_v2";
-const GRASS_NAME = "ToonGrass_v1.3_Guilty";
-const ORE_NAME = "big_rock_v2";
+const SHORT_TREE_NAME = "jungle_tree_1_variant_texta";
+const MEDIUM_TREE_NAME = "jungle_tree_1_variant_texta";
+const TALL_TREE_NAME = "jungle_tree_1_variant_texta";
+const BUSH_NAME = 'bush_1_dream';
+const BIG_ROCK_NAME = 'big_rock_v2';
+const MED_ROCK_NAME = 'med_rock_v2';
+const GRASS_NAME = 'grass_1_dream';
+const ORE_NAME = 'green_biome_ore';
 
 // Texture Files
-const GRASS_MATERIAL_NAME = "stylized_grass";
-const DIRT_MATERIAL_NAME = "dirt";
-const ROCK_MATERIAL_NAME = "stylized_rock";
-const STONE_MATERIAL_NAME = "stylized_stone";
+const GRASS_MATERIAL_NAME = 'grass';
+const DIRT_MATERIAL_NAME = 'dirt_ground';
+const ROCK_MATERIAL_NAME = 'rock';
+const STONE_MATERIAL_NAME = 'stylized_stone';
 
 //
 
@@ -117,7 +119,7 @@ export const TREES_INFO = [
   new ModelInfo(TALL_TREE_NAME, TREE_MODELS_DIRECTORY_NAME),
 ];
 export const BUSHES_INFO = [
-  new ModelInfo(BUSH_NAME, TREE_MODELS_DIRECTORY_NAME),
+  new ModelInfo(BUSH_NAME, BUSH_MODELS_DIRECTORY_NAME),
 ];
 export const ROCKS_INFO = [
   new ModelInfo(BIG_ROCK_NAME, ROCK_MODELS_DIRECTORY_NAME),
@@ -128,7 +130,9 @@ export const STONES_INFO = [
 export const GRASSES_INFO = [
   new ModelInfo(GRASS_NAME, GRASS_MODELS_DIRECTORY_NAME),
 ];
-export const ORES_INFO = [new ModelInfo(ORE_NAME, ROCK_MODELS_DIRECTORY_NAME)];
+export const ORES_INFO = [
+  new ModelInfo(ORE_NAME, ORE_MODELS_DIRECTORY_NAME),
+];
 
 export const glbUrlSpecs = {
   trees: TREES_INFO.map(t => t.getModelPath()).map(u => {
@@ -229,5 +233,4 @@ const _generateMaterialColorShaderCode = colorName => {
   return string;
 };
 
-export const GRASS_COLORS_SHADER_CODE =
-  _generateMaterialColorShaderCode(GRASS_COLOR_NAME);
+export const GRASS_COLORS_SHADER_CODE = _generateMaterialColorShaderCode(GRASS_COLOR_NAME);
