@@ -42,9 +42,9 @@ const GRASS_NAME = 'grass_1_dream';
 const ORE_NAME = 'green_biome_ore';
 
 // Texture Files
-const GRASS_MATERIAL_NAME = 'grass';
+const GRASS_MATERIAL_NAME = 'stylized_grass';
 const DIRT_MATERIAL_NAME = 'dirt_ground';
-const ROCK_MATERIAL_NAME = 'rock';
+const ROCK_MATERIAL_NAME = 'stylized_stone';
 const STONE_MATERIAL_NAME = 'stylized_stone';
 
 //
