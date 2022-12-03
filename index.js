@@ -131,7 +131,7 @@ export default e => {
           stoneUrls,
           false,
         ),
-        grassMesh: new TerrainObjectSpecs(GrassMesh, grassUrls, false),
+        grassMesh: new TerrainObjectSpecs(GrassMesh, grassUrls, true),
         hudMesh: new TerrainObjectSpecs(HudMesh, hudUrls, false),
       };
 

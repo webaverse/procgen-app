@@ -26,7 +26,7 @@ const _createTerrainMaterial = () => {
     NUM_TERRAIN_MATERIALS,
   );
 
-  const material = new THREE.MeshStandardMaterial({
+  const material = new THREE.MeshPhysicalMaterial({
     roughness: 0.95,
     metalness: 0.1,
     // envMap: new THREE.Texture(),

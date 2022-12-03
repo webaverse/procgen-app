@@ -6,3 +6,11 @@ export class ENUM {
     }
   }
 }
+
+export const _patchOnBeforeCompileFunction = (material, func) => {
+  const previousOnBeforeCompile = material.onBeforeCompile;
+  material.onBeforeCompile = shader => {
+    previousOnBeforeCompile(shader);
+    func(shader);
+  };
+};
