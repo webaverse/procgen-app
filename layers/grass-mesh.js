@@ -36,7 +36,7 @@ const maxDrawCallsPerGeometry = 256;
 //
 
 export class GrassMesh extends THREE.Object3D {
-  constructor({instance, physics, urls}) {
+  constructor({instance, physics, urls, shadow}) {
     super();
 
     this.urls = urls;
@@ -47,6 +47,7 @@ export class GrassMesh extends THREE.Object3D {
       maxNumGeometries,
       maxInstancesPerGeometryPerDrawCall,
       maxDrawCallsPerGeometry,
+      shadow,
     });
     this.add(this.polygonMesh);
 

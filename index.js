@@ -4,10 +4,12 @@ import * as THREE from "three";
 import {TerrainMesh} from "./layers/terrain-mesh.js";
 import {WaterMesh} from "./layers/water-mesh.js";
 // import {BarrierMesh} from './layers/barrier-mesh.js';
-import {glbUrlSpecs} from "./assets.js";
+import {glbUrlSpecs, _setAssetsRootPath} from "./assets.js";
+import {BIOMES, _createDataRecursively} from "./biomes.js";
 import {GrassMesh} from "./layers/grass-mesh.js";
 import {HudMesh} from "./layers/hud-mesh.js";
-import {InstancedObjectMesh} from "./layers/instanced-object-mesh.js";
+import {InstancedObjectGroup, InstancedObjectMesh} from "./layers/instanced-object-mesh.js";
+
 import {
   TerrainObjectsMesh,
   TerrainObjectSpecs,
@@ -28,7 +30,7 @@ const {GPUTaskManager} = useGPUTask();
 const {GenerationTaskManager} = useGenerationTask();
 
 // urls
-const treeUrls = glbUrlSpecs.trees.slice(0, 1);
+const treeUrls = glbUrlSpecs.trees;
 const bushUrls = glbUrlSpecs.bushes.slice(0, 1);
 const rockUrls = glbUrlSpecs.rocks.slice(0, 1);
 const stoneUrls = glbUrlSpecs.stones.slice(0, 1);
@@ -51,6 +53,16 @@ export default e => {
   const camera = useCamera();
   const procGenManager = useProcGenManager();
   const physics = usePhysics();
+
+  // ! for development
+  const BIOMES_STRING = "biomes";
+  const appHasBiomes = app.hasComponent(BIOMES_STRING);
+  console.log(appHasBiomes);
+  const pickAssetsLocally = appHasBiomes;
+  _setAssetsRootPath(pickAssetsLocally);
+
+  const biomes = appHasBiomes ? app.getComponent(BIOMES_STRING) : BIOMES;
+  const BIOMES_DATA = _createDataRecursively(BIOMES_STRING, biomes);
 
   // locals
 
@@ -111,11 +123,15 @@ export default e => {
     barrierMesh.updateMatrixWorld(); */
 
       const TERRAIN_OBJECTS_MESHES = {
-        treeMesh: new TerrainObjectSpecs(InstancedObjectMesh, treeUrls, true),
+        treeMesh: new TerrainObjectSpecs(InstancedObjectGroup, treeUrls, true),
         bushMesh: new TerrainObjectSpecs(InstancedObjectMesh, bushUrls, true),
         rockMesh: new TerrainObjectSpecs(InstancedObjectMesh, rockUrls, true),
-        stoneMesh: new TerrainObjectSpecs(InstancedObjectMesh, stoneUrls, false),
-        grassMesh: new TerrainObjectSpecs(GrassMesh, grassUrls, false),
+        stoneMesh: new TerrainObjectSpecs(
+          InstancedObjectMesh,
+          stoneUrls,
+          false,
+        ),
+        grassMesh: new TerrainObjectSpecs(GrassMesh, grassUrls, true),
         hudMesh: new TerrainObjectSpecs(HudMesh, hudUrls, false),
       };
 
@@ -176,7 +192,7 @@ export default e => {
             water: true,
             barrier: false,
             vegetation: true,
-            rock: true,
+            rock: false,
             grass: true,
             poi: false,
           };

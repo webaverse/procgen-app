@@ -9,6 +9,7 @@ import {
   // bufferSize,
   WORLD_BASE_HEIGHT,
 } from "../constants.js";
+import {_patchOnBeforeCompileFunction} from "../utils/utils.js";
 const {
   useCamera,
   useProcGenManager,
@@ -36,6 +37,13 @@ const localVector2 = new THREE.Vector3();
 const localBox = new THREE.Box3();
 
 //
+const _writeToTexture = (array, texture, textureOffset, index, number) => {
+  const indexOffset = index * 4;
+  for (let j = 0; j < number; j++) {
+    const value = array[index * number + j];
+    texture.image.data[textureOffset + indexOffset + j] = value;
+  }
+};
 
 const _addDepthPackingShaderCode = shader => {
   return /* glsl */ `#define DEPTH_PACKING 3201` + "\n" + shader;
@@ -43,7 +51,12 @@ const _addDepthPackingShaderCode = shader => {
 
 const _setupPolygonMeshShaderCode = (
   shader,
-  {customUvParsVertex, customBeginVertex, customUvParsFragment},
+  {
+    customUvParsVertex,
+    customBeginVertex,
+    customUvParsFragment,
+    customColorFragment,
+  },
 ) => {
   shader.vertexShader = shader.vertexShader.replace(
     `#include <uv_pars_vertex>`,
@@ -57,7 +70,12 @@ const _setupPolygonMeshShaderCode = (
     `#include <uv_pars_fragment>`,
     customUvParsFragment,
   );
+  shader.fragmentShader = shader.fragmentShader.replace(
+    `#include <alphamap_fragment>`,
+    customColorFragment,
+  );
 };
+
 export class PolygonPackage {
   constructor(lodMeshes, textureNames) {
     this.lodMeshes = lodMeshes;
@@ -187,8 +205,6 @@ export class PolygonMesh extends InstancedBatchedMesh {
       texture.anisotropy = maxAnisotropy;
     }
 
-    // geometry
-    // const geometry = new THREE.BufferGeometry();
     let geometry;
 
     // custom shaders
@@ -216,14 +232,6 @@ export class PolygonMesh extends InstancedBatchedMesh {
       }
     `;
 
-    const customUvParsFragment = /* glsl */ `
-      #undef USE_INSTANCING
-
-      #if ( defined( USE_UV ) && ! defined( UVS_VERTEX_ONLY ) )
-        varying vec2 vUv;
-      #endif
-    `;
-
     const customBeginVertex = /* glsl */ `
       #include <begin_vertex>
 
@@ -243,10 +251,18 @@ export class PolygonMesh extends InstancedBatchedMesh {
       }
     `;
 
+    const customUvParsFragment = /* glsl */ `
+      #undef USE_INSTANCING
+
+      #include <uv_pars_fragment>
+    `;
+
+    const customColorFragment = /* glsl */ `
+      #include <alphamap_fragment>
+    `;
+
     // material
-    const material = new THREE.MeshStandardMaterial({
-      // map: atlasTextures.map,
-      // normalMap: atlasTextures.normalMap,
+    const material = new THREE.MeshPhongMaterial({
       side: THREE.DoubleSide,
       transparent: true,
       alphaTest: 0.1,
@@ -256,6 +272,7 @@ export class PolygonMesh extends InstancedBatchedMesh {
           customUvParsVertex,
           customBeginVertex,
           customUvParsFragment,
+          customColorFragment,
         });
         return shader;
       },
@@ -271,6 +288,7 @@ export class PolygonMesh extends InstancedBatchedMesh {
         customUvParsVertex: _addDepthPackingShaderCode(customUvParsVertex),
         customBeginVertex: customBeginVertex,
         customUvParsFragment: _addDepthPackingShaderCode(customUvParsFragment),
+        customColorFragment,
       });
     };
 
@@ -284,6 +302,7 @@ export class PolygonMesh extends InstancedBatchedMesh {
         customUvParsVertex: _addDepthPackingShaderCode(customUvParsVertex),
         customBeginVertex: customBeginVertex,
         customUvParsFragment: _addDepthPackingShaderCode(customUvParsFragment),
+        customColorFragment,
       });
     };
 
@@ -300,15 +319,6 @@ export class PolygonMesh extends InstancedBatchedMesh {
       this.receiveShadow = true;
     }
 
-    // this.procGenInstance = procGenInstance;
-    // this.meshes = lodMeshes;
-    // this.shapeAddresses = shapeAddresses;
-    // this.physicsGeometries = physicsGeometries;
-    // this.physics = physics;
-    // this.physicsObjects = [];
-
-    // this.instanceObjects = new Map();
-
     this.instance = instance;
     this.lodCutoff = lodCutoff;
 
@@ -319,59 +329,23 @@ export class PolygonMesh extends InstancedBatchedMesh {
     if (chunkResult) {
       const instances = chunkResult;
       if (chunk.lod < this.lodCutoff && instances.length > 0) {
-        const _renderLitterPolygonGeometry = (drawCall, ps, qs) => {
+        const _renderPolygonGeometry = (drawCall, ps, qs) => {
           const pTexture = drawCall.getTexture("p");
           const pOffset = drawCall.getTextureOffset("p");
           const qTexture = drawCall.getTexture("q");
           const qOffset = drawCall.getTextureOffset("q");
-          // const sTexture = drawCall.getTexture('s');
-          // const sOffset = drawCall.getTextureOffset('s');
 
           let index = 0;
           for (let j = 0; j < ps.length; j += 3) {
-            const indexOffset = index * 4;
-
             // geometry
-            const px = ps[index * 3];
-            const py = ps[index * 3 + 1];
-            const pz = ps[index * 3 + 2];
-            pTexture.image.data[pOffset + indexOffset] = px;
-            pTexture.image.data[pOffset + indexOffset + 1] = py;
-            pTexture.image.data[pOffset + indexOffset + 2] = pz;
-
-            const qx = qs[index * 4];
-            const qy = qs[index * 4 + 1];
-            const qz = qs[index * 4 + 2];
-            const qw = qs[index * 4 + 3];
-            qTexture.image.data[qOffset + indexOffset] = qx;
-            qTexture.image.data[qOffset + indexOffset + 1] = qy;
-            qTexture.image.data[qOffset + indexOffset + 2] = qz;
-            qTexture.image.data[qOffset + indexOffset + 3] = qw;
-
-            // XXX get scales from the mapped geometry
-            /* const sx = ss[index * 3];
-          const sy = ss[index * 3 + 1];
-          const sz = ss[index * 3 + 2]; */
-            // const sx = 1;
-            // const sy = 1;
-            // const sz = 1;
-            // sTexture.image.data[sOffset + indexOffset] = sx;
-            // sTexture.image.data[sOffset + indexOffset + 1] = sy;
-            // sTexture.image.data[sOffset + indexOffset + 2] = sz;
-
-            // physics
-            // const shapeAddress = this.#getShapeAddress(drawCall.geometryIndex);
-            // const physicsObject = this.#addPhysicsShape(shapeAddress, drawCall.geometryIndex, px, py, pz, qx, qy, qz, qw);
-            // this.physicsObjects.push(physicsObject);
-            // localPhysicsObjects.push(physicsObject);
-            // this.instanceObjects.set(physicsObject.physicsId, drawCall);
+            _writeToTexture(ps, pTexture, pOffset, index, 3);
+            _writeToTexture(qs, qTexture, qOffset, index, 4);
 
             index++;
           }
 
           drawCall.updateTexture("p", pOffset, index * 4);
           drawCall.updateTexture("q", qOffset, index * 4);
-          // drawCall.updateTexture('s', sOffset, index * 4);
         };
 
         const {chunkSize} = this.instance;
@@ -400,7 +374,7 @@ export class PolygonMesh extends InstancedBatchedMesh {
             numInstances,
             boundingBox,
           );
-          _renderLitterPolygonGeometry(drawChunk, ps, qs);
+          _renderPolygonGeometry(drawChunk, ps, qs);
           drawChunks[i] = drawChunk;
         }
         const key = procGenManager.getNodeHash(chunk);
@@ -420,34 +394,6 @@ export class PolygonMesh extends InstancedBatchedMesh {
     this.allocatedChunks.delete(key);
   }
 
-  /* #getShapeAddress(geometryIndex) {
-    return this.shapeAddresses[geometryIndex];
-  }
-  #getShapeGeometry(geometryIndex){
-    return this.physicsGeometries[geometryIndex];
-  }
-  #addPhysicsShape(shapeAddress, geometryIndex, px, py, pz, qx, qy, qz, qw) {    
-    localVector.set(px, py, pz);
-    localQuaternion.set(qx, qy, qz, qw);
-    localVector2.set(1, 1, 1);
-    localMatrix.compose(localVector, localQuaternion, localVector2)
-      .premultiply(this.matrixWorld)
-      .decompose(localVector, localQuaternion, localVector2);
-
-    const position = localVector;
-    const quaternion = localQuaternion;
-    const scale = localVector2;
-    const dynamic = false;
-    const external = true;
-
-    const physicsGeometry = this.#getShapeGeometry(geometryIndex);
-    const physicsObject = this.physics.addConvexShape(shapeAddress, position, quaternion, scale, dynamic, external,physicsGeometry);
-  
-    this.physicsObjects.push(physicsObject);
-
-    return physicsObject;
-  } */
-
   grabInstance(physicsId) {
     const phys = metaversefile.getPhysicsObjectByPhysicsId(physicsId);
     this.physics.removeGeometry(phys);
@@ -455,9 +401,6 @@ export class PolygonMesh extends InstancedBatchedMesh {
     drawcall.decrementInstanceCount();
   }
 
-  /* getPhysicsObjects() {
-    return this.physicsObjects;
-  } */
   setPackage(pkg) {
     // console.log('set package', pkg);
     const {lodMeshes, textureNames} = pkg;
@@ -485,6 +428,7 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
     maxNumGeometries,
     maxInstancesPerGeometryPerDrawCall,
     maxDrawCallsPerGeometry,
+    shadow,
   } = {}) {
     // allocator
     const allocator = new InstancedGeometryAllocator(
@@ -528,8 +472,6 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
       texture.anisotropy = maxAnisotropy;
     }
 
-    // geometry
-    // const geometry = new THREE.BufferGeometry();
     let geometry;
 
     // custom shaders
@@ -559,7 +501,11 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
       };
     };
 
-    const customGrassVertex = /* glsl */ `
+    const customUvParsVertex = /* glsl */ `
+      #undef USE_INSTANCING
+
+      #include <uv_pars_vertex>
+
       precision highp isampler2D;
 
       uniform sampler2D pTexture;
@@ -569,8 +515,8 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
       uniform sampler2D grassPropsTexture;
       uniform float uGrassBladeHeight;
 
-      varying vec2 vUv;
-      varying vec3 vNormal;
+      varying vec2 vObjectUv;
+      varying vec3 vObjectNormal;
       varying vec3 vPosition;
 
       flat varying ivec4 vMaterials;
@@ -582,50 +528,54 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
       vec3 rotate_vertex_position(vec3 position, vec4 q) { 
         return position + 2.0 * cross(q.xyz, cross(q.xyz, position) + q.w * position);
       }
+    `;
 
-      void main() {
-        int instanceIndex = gl_DrawID * ${maxInstancesPerGeometryPerDrawCall} + gl_InstanceID;
+    const customBeginVertex = /* glsl */ `
+      #include <begin_vertex>
 
-        const float width = ${attributeTextures.p.image.width.toFixed(8)};
-        const float height = ${attributeTextures.p.image.height.toFixed(8)};
+      int instanceIndex = gl_DrawID * ${maxInstancesPerGeometryPerDrawCall} + gl_InstanceID;
 
-        float x = mod(float(instanceIndex), width);
-        float y = floor(float(instanceIndex) / width);
-        vec2 pUv = (vec2(x, y) + 0.5) / vec2(width, height);
+      const float width = ${attributeTextures.p.image.width.toFixed(8)};
+      const float height = ${attributeTextures.p.image.height.toFixed(8)};
 
-        vec3 p = texture2D(pTexture, pUv).xyz;
-        vec4 q = texture2D(qTexture, pUv).xyzw;
+      float x = mod(float(instanceIndex), width);
+      float y = floor(float(instanceIndex) / width);
+      vec2 pUv = (vec2(x, y) + 0.5) / vec2(width, height);
 
-        vec4 materials = texture2D(materialsTexture, pUv).xyzw;
-        vec4 materialsWeights = texture2D(materialsWeightsTexture, pUv).xyzw;
+      vec3 p = texture2D(pTexture, pUv).xyz;
+      vec4 q = texture2D(qTexture, pUv).xyzw;
 
-        vec4 grassProps = texture2D(grassPropsTexture, pUv).xyzw;
-        vec3 grassColorMultiplier = grassProps.xyz;
-        float grassHeightMultiplier = grassProps.w;
+      vec4 materials = texture2D(materialsTexture, pUv).xyzw;
+      vec4 materialsWeights = texture2D(materialsWeightsTexture, pUv).xyzw;
 
-        // * Grass Height Range -> [0.0, 1.0]
-        float grassHeight = position.y / uGrassBladeHeight * grassHeightMultiplier;
-        vec3 scaledPosition = position;
-        scaledPosition.y *= grassHeight;
+      vec4 grassProps = texture2D(grassPropsTexture, pUv).xyzw;
+      vec3 grassColorMultiplier = grassProps.xyz;
+      float grassHeightMultiplier = grassProps.w;
 
-        vec3 worldPosition = rotate_vertex_position(scaledPosition, q);
-        worldPosition  += p;
+      // * Grass Height Range -> [0.0, 1.0]
+      float grassHeight = transformed.y / uGrassBladeHeight * grassHeightMultiplier;
+      vec3 scaledPosition = transformed;
+      scaledPosition.y *= grassHeight;
 
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPosition , 1.0);
+      transformed = rotate_vertex_position(scaledPosition, q);
+      transformed += p;
 
-        vUv = uv;
-        vNormal = normal;
-        vPosition = worldPosition;
-        vGrassHeight = grassHeight;
-        vGrassColorMultiplier = grassColorMultiplier;
-        vMaterials = ivec4(materials);
-        vMaterialsWeights = materialsWeights;
-      }
-        `;
+      // vObjectUv = uv;
+      vObjectNormal = normal;
+      vPosition = transformed;
+      vGrassHeight = grassHeight;
+      vGrassColorMultiplier = grassColorMultiplier;
+      vMaterials = ivec4(materials);
+      vMaterialsWeights = materialsWeights;
+      `;
 
-    const customGrassFragment = /* glsl */ `
-      varying vec2 vUv;
-      varying vec3 vNormal;
+    const customUvParsFragment = /* glsl */ `
+      #undef USE_INSTANCING
+
+      #include <uv_pars_fragment>
+
+      varying vec2 vObjectUv;
+      varying vec3 vObjectNormal;
       varying vec3 vPosition;
 
       flat varying ivec4 vMaterials;
@@ -634,7 +584,7 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
       varying float vGrassHeight;
       varying vec3 vGrassColorMultiplier;
 
-      uniform sampler2D map;
+      // uniform sampler2D map;
 
       vec3 getGrassColor(int ${GET_COLOR_PARAMETER_NAME}) {
         ${GRASS_COLORS_SHADER_CODE};
@@ -653,47 +603,105 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
 
         return blendSamples(samples, weights);
       }
-      void main() {
-        float grassAlpha = texture2D(map, vUv).a * vGrassHeight;
-        vec3 grassColor = blendGrassColors(vMaterials, vMaterialsWeights);
+    `;
 
-        grassColor.r += vGrassHeight / 3.f;
-        grassColor.g += vGrassHeight / 4.f;
-        grassColor.b += vGrassHeight / 5.f;
+    const customColorFragment = /* glsl */ `
+      #include <alphamap_fragment>
 
-        grassColor *= vGrassColorMultiplier;
+      float grassAlpha = diffuseColor.a * vGrassHeight;
+      vec3 grassColor = blendGrassColors(vMaterials, vMaterialsWeights);
 
-        gl_FragColor = vec4(grassColor, grassAlpha);
-      }
-        `;
+      grassColor.r += vGrassHeight / 1.5;
+      grassColor.g += vGrassHeight / 1.5;
+      grassColor.b += vGrassHeight / 4.0;
+
+      grassColor *= vGrassColorMultiplier;
+
+      diffuseColor = vec4(grassColor, grassAlpha);
+    `;
+
+    THREE.ShaderLib.lambert.fragmentShader =
+      THREE.ShaderLib.lambert.fragmentShader.replace(
+      /* glsl */ `
+        vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + totalEmissiveRadiance;
+      `,
+       /* glsl */ `
+        #ifndef NO_LIGHT
+          vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + totalEmissiveRadiance;
+        #else
+          vec3 outgoingLight = diffuseColor.rgb * (1.0 - 0.5 * (1.0 - getShadowMask())); // shadow intensity hardwired to 0.5 here
+        #endif
+    `,
+    );
 
     // material
-    const material = new THREE.ShaderMaterial({
-      // map: atlasTextures.map,
-      // normalMap: atlasTextures.normalMap,
+    const material = new THREE.MeshLambertMaterial({
+      metalness: 0.8,
+      roughness: 0.1,
       side: THREE.DoubleSide,
       transparent: true,
       depthWrite: false,
-      alphaTest: 0.01,
-      vertexShader: customGrassVertex,
-      fragmentShader: customGrassFragment,
+      // alphaTest: 0.01,
+      onBeforeCompile: shader => {
+        _setupUniforms(shader);
+        _setupPolygonMeshShaderCode(shader, {
+          customUvParsVertex,
+          customBeginVertex,
+          customUvParsFragment,
+          customColorFragment,
+        });
+        return shader;
+      },
     });
 
-    _setupUniforms(material);
+    material.lights = false;
+
+    material.defines = material.defines || {};
+    material.defines.NO_LIGHT = "";
+
+    const customDepthMaterial = new THREE.MeshDepthMaterial({
+      depthPacking: THREE.RGBADepthPacking,
+      alphaTest: 0.5,
+    });
+    customDepthMaterial.onBeforeCompile = shader => {
+      _setupUniforms(shader);
+      _setupPolygonMeshShaderCode(shader, {
+        customUvParsVertex: _addDepthPackingShaderCode(customUvParsVertex),
+        customBeginVertex: customBeginVertex,
+        customUvParsFragment: _addDepthPackingShaderCode(customUvParsFragment),
+        customColorFragment,
+      });
+    };
+
+    const customDistanceMaterial = new THREE.MeshDistanceMaterial({
+      depthPacking: THREE.RGBADepthPacking,
+      alphaTest: 0.5,
+    });
+    customDistanceMaterial.onBeforeCompile = shader => {
+      _setupUniforms(shader);
+      _setupPolygonMeshShaderCode(shader, {
+        customUvParsVertex: _addDepthPackingShaderCode(customUvParsVertex),
+        customBeginVertex: customBeginVertex,
+        customUvParsFragment: _addDepthPackingShaderCode(customUvParsFragment),
+        customColorFragment,
+      });
+    };
 
     // mesh
     super(geometry, material, allocator);
+
+    this.shadow = shadow;
+
+    if (shadow) {
+      // ? See more details here : https://discourse.threejs.org/t/shadow-for-instances/7947/10
+      this.customDepthMaterial = customDepthMaterial;
+      this.customDistanceMaterial = customDistanceMaterial;
+      // this.castShadow = true;
+      this.receiveShadow = true;
+    }
+
     this.frustumCulled = false;
     this.visible = false;
-
-    // this.procGenInstance = procGenInstance;
-    // this.meshes = lodMeshes;
-    // this.shapeAddresses = shapeAddresses;
-    // this.physicsGeometries = physicsGeometries;
-    // this.physics = physics;
-    // this.physicsObjects = [];
-
-    // this.instanceObjects = new Map();
 
     this.instance = instance;
     this.lodCutoff = lodCutoff;
@@ -706,20 +714,7 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
   addChunk(chunk, instances) {
     if (instances) {
       if (chunk.lod < this.lodCutoff && instances.length > 0) {
-        const _writeToTexture = (
-          array,
-          texture,
-          textureOffset,
-          index,
-          number,
-        ) => {
-          const indexOffset = index * 4;
-          for (let j = 0; j < number; j++) {
-            const value = array[index * number + j];
-            texture.image.data[textureOffset + indexOffset + j] = value;
-          }
-        };
-        const _renderLitterPolygonGeometry = (
+        const _renderGrassPolygonGeometry = (
           drawCall,
           ps,
           qs,
@@ -812,7 +807,7 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
             numInstances,
             boundingBox,
           );
-          _renderLitterPolygonGeometry(
+          _renderGrassPolygonGeometry(
             drawChunk,
             ps,
             qs,
@@ -864,11 +859,18 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
     this.geometry = this.allocator.geometry;
 
     for (const textureName of textureNames) {
-      const uniform = (this.material.uniforms[textureName] = {});
-      uniform.value = lodMeshes[0][0].material[textureName];
+      this.material[textureName] = lodMeshes[0][0].material[textureName];
     }
 
-    this.material.uniforms.uGrassBladeHeight.value = LOD0MeshHeight;
+    const setUniforms = shader => {
+      shader.uniforms.uGrassBladeHeight = {value: LOD0MeshHeight};
+    };
+
+    _patchOnBeforeCompileFunction(this.material, setUniforms);
+    if (this.shadow) {
+      _patchOnBeforeCompileFunction(this.customDepthMaterial, setUniforms);
+      _patchOnBeforeCompileFunction(this.customDistanceMaterial, setUniforms);
+    }
 
     this.visible = true;
   }
