@@ -29,8 +29,8 @@ const meshLodSpecs = {
     targetError: 0.1,
   }, */
 };
-const maxNumGeometries = 2;
-const maxInstancesPerGeometryPerDrawCall = 8192;
+const maxNumGeometries = 1;
+const maxInstancesPerGeometryPerDrawCall = 16384;
 const maxDrawCallsPerGeometry = 256;
 
 //

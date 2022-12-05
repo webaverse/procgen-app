@@ -28,8 +28,8 @@ const meshLodSpecs = {
     targetError: 0.1,
   },
 };
-const maxNumGeometries = 16;
-const maxInstancesPerGeometryPerDrawCall = 256;
+const maxNumGeometries = 1;
+const maxInstancesPerGeometryPerDrawCall = 8192;
 const maxDrawCallsPerGeometry = 256;
 
 //
@@ -114,8 +114,11 @@ export class InstancedObjectGroup extends THREE.Object3D {
     if (chunkResults) {
       for (let i = 0; i < this.meshes.length; i++) {
         const mesh = this.meshes[i];
-        const chunkResult = chunkResults[i].instances;
-        mesh.addChunk(chunk, chunkResult);
+        const chunkResult = chunkResults[i];
+        if(chunkResult) {
+          const chunkResultInstances = chunkResult.instances;
+          mesh.addChunk(chunk, chunkResultInstances);
+        }
       }
     }
   }

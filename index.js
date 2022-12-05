@@ -4,7 +4,7 @@ import * as THREE from "three";
 import {TerrainMesh} from "./layers/terrain-mesh.js";
 import {WaterMesh} from "./layers/water-mesh.js";
 // import {BarrierMesh} from './layers/barrier-mesh.js';
-import {glbUrlSpecs, _setAssetsRootPath} from "./assets.js";
+import {glbUrlSpecs} from "./assets.js";
 import {BIOMES, _createDataRecursively} from "./biomes.js";
 import {GrassMesh} from "./layers/grass-mesh.js";
 import {HudMesh} from "./layers/hud-mesh.js";
@@ -31,6 +31,7 @@ const {GenerationTaskManager} = useGenerationTask();
 
 // urls
 const treeUrls = glbUrlSpecs.trees;
+const flowerUrls = glbUrlSpecs.flowers;
 const bushUrls = glbUrlSpecs.bushes.slice(0, 1);
 const rockUrls = glbUrlSpecs.rocks.slice(0, 1);
 const stoneUrls = glbUrlSpecs.stones.slice(0, 1);
@@ -57,9 +58,7 @@ export default e => {
   // ! for development
   const BIOMES_STRING = "biomes";
   const appHasBiomes = app.hasComponent(BIOMES_STRING);
-  console.log(appHasBiomes);
   const pickAssetsLocally = appHasBiomes;
-  _setAssetsRootPath(pickAssetsLocally);
 
   const biomes = appHasBiomes ? app.getComponent(BIOMES_STRING) : BIOMES;
   const BIOMES_DATA = _createDataRecursively(BIOMES_STRING, biomes);
@@ -124,6 +123,7 @@ export default e => {
 
       const TERRAIN_OBJECTS_MESHES = {
         treeMesh: new TerrainObjectSpecs(InstancedObjectGroup, treeUrls, true),
+        flowerMesh: new TerrainObjectSpecs(InstancedObjectGroup, flowerUrls, true),
         bushMesh: new TerrainObjectSpecs(InstancedObjectMesh, bushUrls, true),
         rockMesh: new TerrainObjectSpecs(InstancedObjectMesh, rockUrls, true),
         stoneMesh: new TerrainObjectSpecs(
@@ -152,6 +152,7 @@ export default e => {
           const {heightfield} = result;
           const {
             treeInstances,
+            flowerInstances,
             bushInstances,
             rockInstances,
             stoneInstances,
@@ -168,6 +169,7 @@ export default e => {
 
           const terrainObjectInstances = {
             treeMesh: treeInstances,
+            flowerMesh: flowerInstances,
             bushMesh: bushInstances,
             rockMesh: rockInstances,
             stoneMesh: stoneInstances,
@@ -192,14 +194,14 @@ export default e => {
             water: true,
             barrier: false,
             vegetation: true,
-            rock: false,
+            rock: true,
             grass: true,
             poi: false,
           };
-          const numVegetationInstances = treeUrls.length;
-          const numRockInstances = rockUrls.length;
-          const numGrassInstances = grassUrls.length;
-          const numPoiInstances = hudUrls.length;
+          const numVegetationInstances = 1;
+          const numRockInstances = 1;
+          const numGrassInstances = 1;
+          const numPoiInstances = 1;
           const options = {
             signal,
           };
