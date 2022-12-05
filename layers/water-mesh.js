@@ -11,8 +11,6 @@ import {textureUrlSpecs} from '../water-effect/assets.js';
 import _createWaterMaterial from './water-material.js';
 import WaterRenderer from '../water-effect/water-render.js';
 
-const SHADER_TEXTURE_PATHS = textureUrlSpecs.shaderTexturePath;
-
 const {useProcGenManager, useGeometryBuffering, useLocalPlayer, useInternals} = metaversefile;
 const {BufferedMesh, GeometryAllocator} = useGeometryBuffering();
 const procGenManager = useProcGenManager();
@@ -29,6 +27,8 @@ const localVector = new THREE.Vector3();
 //
 
 // constants
+const SHADER_TEXTURE_PATHS = textureUrlSpecs.shaderTexturePath;
+
 const SWIM_HEIGHT_THRESHOLD = 0.75;
 const SWIM_ONSURFACE_RANGE = 0.05;
 const NORMAL_DAMPING = 1;
@@ -426,6 +426,7 @@ export class WaterMesh extends BufferedMesh {
   
     this.waterRenderer = new WaterRenderer(renderer, scene, camera, this);
     
+    // depth
     this.material.uniforms.tDepth.value = this.waterRenderer.depthRenderTarget.texture;
     this.material.uniforms.cameraNear.value = camera.near;
     this.material.uniforms.cameraFar.value = camera.far;
@@ -433,12 +434,12 @@ export class WaterMesh extends BufferedMesh {
         window.innerWidth * window.devicePixelRatio,
         window.innerHeight * window.devicePixelRatio
     );
-    
+    // reflection refraction
     this.material.uniforms.refractionTexture.value = this.waterRenderer.refractionRenderTarget.texture;
     this.material.uniforms.mirror.value = this.waterRenderer.mirrorRenderTarget.texture;
     this.material.uniforms.textureMatrix.value = this.waterRenderer.textureMatrix;
     this.material.uniforms.eye.value = this.waterRenderer.eye;
-
+    //foam
     this.material.uniforms.foamTexture.value = shaderTextures.foamTexture;
     this.material.uniforms.tDistortion.value = shaderTextures.tDistortion;
   }
