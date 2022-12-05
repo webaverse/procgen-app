@@ -2,6 +2,14 @@ import metaversefile from 'metaversefile';
 import * as THREE from 'three';
 const {useLocalPlayer} = metaversefile;
 
+const INITIAL_TEXTURE_MATRIX = new THREE.Matrix4();
+INITIAL_TEXTURE_MATRIX.set(
+  0.5, 0.0, 0.0, 0.5,
+  0.0, 0.5, 0.0, 0.5,
+  0.0, 0.0, 0.5, 0.5,
+  0.0, 0.0, 0.0, 1.0
+)
+
 class WaterRenderer {
   constructor(renderer, scene, camera, water) {
     this.renderer = renderer;
@@ -128,12 +136,7 @@ class WaterRenderer {
     this.reflectionVirtualCamera.projectionMatrix.copy(camera.projectionMatrix);
 
     // Update the texture matrix
-    this.textureMatrix.set(
-      0.5, 0.0, 0.0, 0.5,
-      0.0, 0.5, 0.0, 0.5,
-      0.0, 0.0, 0.5, 0.5,
-      0.0, 0.0, 0.0, 1.0
-    );
+    this.textureMatrix.copy(INITIAL_TEXTURE_MATRIX);
     this.textureMatrix.multiply(this.reflectionVirtualCamera.projectionMatrix);
     this.textureMatrix.multiply(this.reflectionVirtualCamera.matrixWorldInverse);
     this.textureMatrix.multiply(this.water.matrixWorld);
@@ -240,12 +243,7 @@ class WaterRenderer {
 
     this.refractorPlane.setFromNormalAndCoplanarPoint(this.normal, this.refractP);
 
-    this.textureMatrix.set(
-      0.5, 0.0, 0.0, 0.5,
-      0.0, 0.5, 0.0, 0.5,
-      0.0, 0.0, 0.5, 0.5,
-      0.0, 0.0, 0.0, 1.0
-    );
+    this.textureMatrix.copy(INITIAL_TEXTURE_MATRIX);
     this.textureMatrix.multiply(camera.projectionMatrix);
     this.textureMatrix.multiply(camera.matrixWorldInverse);
     this.textureMatrix.multiply(this.water.matrixWorld);
