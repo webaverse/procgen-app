@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import {oceanShader} from '../water-effect/ocean-shader.js';
-import {riverShader} from '../water-effect/river-shader.js';
+import {oceanShader} from '../liquid-effect/ocean-shader.js';
+import {riverShader} from '../liquid-effect/river-shader.js';
 
-const _createWaterMaterial = () => {
+const _createLiquidMaterial = () => {
   const material = new THREE.ShaderMaterial({
     uniforms: {
       uTime: {
@@ -233,4 +233,4 @@ const _createWaterMaterial = () => {
   return material;
 };
 
-export default _createWaterMaterial;
+export default _createLiquidMaterial;

@@ -4,7 +4,7 @@ const textureLoader = new THREE.TextureLoader();
 const cubeMaploader = new THREE.CubeTextureLoader();
 
 const _textureError = (err) => {
-  console.error('Water Package : Loading texture failed : ', err);
+  console.error('Liquid Package : Loading texture failed : ', err);
 };
 
 const _loadTexture = (u) =>
@@ -20,7 +20,7 @@ const _loadTexture = (u) =>
   });
 
 
-class WaterPackage {
+class LiquidPackage {
   constructor(textures) {
     this.textures = textures;
   }
@@ -56,9 +56,9 @@ class WaterPackage {
     textures['shaderTextures'] = shaderTextures;
     textures['textureCube'] = textureCube;
     // * Create new package
-    const pkg = new WaterPackage(textures);
+    const pkg = new LiquidPackage(textures);
     return pkg;
   }
 }
 
-export default WaterPackage;
+export default LiquidPackage;
