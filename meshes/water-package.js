@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 const textureLoader = new THREE.TextureLoader();
+const cubeMaploader = new THREE.CubeTextureLoader();
 
 const _textureError = (err) => {
   console.error('Water Package : Loading texture failed : ', err);
@@ -25,7 +26,7 @@ class WaterPackage {
   }
 
   static async loadUrls(paths) {
-    const {shaderTexturePath} = paths;
+    const {shaderTexturePath, cubeMapPath} = paths;
 
     const mapObjectToArray = (obj) => {
       const res = [];
@@ -47,9 +48,13 @@ class WaterPackage {
       return obj;
     });
 
+    
+    cubeMaploader.setPath(cubeMapPath);
+    const textureCube = cubeMaploader.load( [ 'px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png' ] );
+
     const textures = {};
     textures['shaderTextures'] = shaderTextures;
-
+    textures['textureCube'] = textureCube;
     // * Create new package
     const pkg = new WaterPackage(textures);
     return pkg;

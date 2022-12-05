@@ -28,6 +28,7 @@ const localVector = new THREE.Vector3();
 
 // constants
 const SHADER_TEXTURE_PATHS = textureUrlSpecs.shaderTexturePath;
+const CUBEMAP_PATHS = textureUrlSpecs.cubeMapPath;
 
 const SWIM_HEIGHT_THRESHOLD = 0.75;
 const SWIM_ONSURFACE_RANGE = 0.05;
@@ -423,6 +424,7 @@ export class WaterMesh extends BufferedMesh {
   }
   setPackage(pkg) {
     const shaderTextures = pkg.textures['shaderTextures'];
+    const cubeMap = pkg.textures['textureCube'];
   
     this.waterRenderer = new WaterRenderer(renderer, scene, camera, this);
     
@@ -442,10 +444,15 @@ export class WaterMesh extends BufferedMesh {
     //foam
     this.material.uniforms.foamTexture.value = shaderTextures.foamTexture;
     this.material.uniforms.tDistortion.value = shaderTextures.tDistortion;
+
+    //river
+    this.material.uniforms.waterNormalTexture.value = shaderTextures.waterNormalTexture;
+    this.material.uniforms.cubeMap.value = cubeMap;
   }
   async waitForLoad() {
     const paths = {
       shaderTexturePath: SHADER_TEXTURE_PATHS,
+      cubeMapPath: CUBEMAP_PATHS,
     };
     const waterPackage = await WaterPackage.loadUrls(paths);
 

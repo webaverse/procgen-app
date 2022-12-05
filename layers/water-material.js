@@ -41,7 +41,13 @@ const _createWaterMaterial = () => {
       },
       tDistortion: {
         value: null
-      }
+      },
+      waterNormalTexture: {
+        value: null
+      },
+      cubeMap: {
+        value: null
+      },
     },
     vertexShader: `\
         
@@ -131,20 +137,24 @@ const _createWaterMaterial = () => {
         uniform float cameraFar;
         uniform vec2 resolution;
         uniform sampler2D tDistortion;
+
+        uniform sampler2D waterNormalTexture;
+        uniform samplerCube cubeMap;
       
         varying vec3 vWorldPosition;
         varying vec3 vNormal;
         varying vec4 vUv;
         varying vec3 vPos;
 
+        const float TAU = 2. * 3.14159265;
+
         const vec3 eyePosition = vec3(0.7579705245610807, 0.6382203660633491, 0.1347421546456965);
 
+        // cosine gradient 
         const vec4 phases = vec4(0.28, 0.50, 0.07, 0);
         const vec4 amplitudes = vec4(4.02, 0.34, 0.65, 0);
         const vec4 frequencies = vec4(0.00, 0.48, 0.08, 0);
         const vec4 offsets = vec4(0.00, 0.17, 0.00, 0);
-
-        const float TAU = 2. * 3.14159265;
 
         vec4 cosine_gradient(float x, vec4 phase, vec4 amp, vec4 freq, vec4 offset){
           phase *= TAU;
@@ -157,17 +167,33 @@ const _createWaterMaterial = () => {
             offset.a + amp.a * 0.5 * cos(x * freq.a + phase.a) + 0.5
           );
         }
+
         float getDepth(const in vec2 screenPosition) {
           return unpackRGBAToDepth(texture2D(tDepth, screenPosition));
         }
+
         float getViewZ(const in float depth) {
           return perspectiveDepthToViewZ(depth, cameraNear, cameraFar);
         }  
+
         float getDepthFade(float fragmentLinearEyeDepth, float linearEyeDepth, float depthScale, float depthFalloff) {
           return pow(saturate(1. - (fragmentLinearEyeDepth - linearEyeDepth) / depthScale), depthFalloff);
         }
+
         vec4 cutout(float depth, float alpha) {
           return vec4(ceil(depth - saturate(alpha)));
+        }
+
+        vec4 getNoise( vec2 uv ) {
+          vec2 uv0 = ( uv / 103.0 ) - vec2(uTime / 17.0, uTime / 29.0);
+          vec2 uv1 = uv / 107.0 + vec2( uTime / -19.0, uTime / 31.0 );
+          vec2 uv2 = uv / vec2( 8907.0, 9803.0 ) - vec2( uTime / 101.0, uTime / 97.0 );
+          vec2 uv3 = uv / vec2( 1091.0, 1027.0 ) + vec2( uTime / 109.0, uTime / -113.0 );
+          vec4 noise = texture2D( waterNormalTexture, uv0 ) +
+            texture2D( waterNormalTexture, uv1 ) +
+            texture2D( waterNormalTexture, uv2 ) +
+            texture2D( waterNormalTexture, uv3 );
+          return noise * 0.5 - 1.0;
         }
         
         void main() {
@@ -278,10 +304,34 @@ const _createWaterMaterial = () => {
             }
           }
           else { // river, for temporary
-            gl_FragColor = vec4(1.0, 0., 0., 1.0);
+            float depthScale = 15.;
+            float depthFalloff = 3.;
+            float sceneDepth = getDepthFade(fragmentLinearEyeDepth, linearEyeDepth, depthScale, depthFalloff);
+
+            vec4 cos_grad = cosine_gradient(sceneDepth, phases, amplitudes, frequencies, offsets);
+            cos_grad = clamp(cos_grad, vec4(0.), vec4(1.));
+            vec4 waterColor = vec4(cos_grad.rgb, 1. - sceneDepth);
+           
+            vec3 surfaceNormal = normalize(getNoise(vWorldPosition.xz)).rgb;
+            vec3 worldToEye = eye - vWorldPosition.xyz;
+            vec3 eyeDirection = normalize(worldToEye);
+            float distance = length(worldToEye);
+            float distortionScale = 3.;
+            vec3 distortion = surfaceNormal.xyz * (0.001 + 1.0 / distance) * distortionScale;
+            vec3 normalizedVWorldPosition = normalize(vWorldPosition);
+
+            vec3 cameraToFrag = normalize(vWorldPosition.xyz - eye);
+            vec3 reflectionSample = textureCube(cubeMap, cameraToFrag + distortion).rgb;
+           
+            float theta = max(dot(eyePosition, surfaceNormal), 0.0);
+            float rf0 = 0.3;
+            float reflectance = rf0 + (1.0 - rf0) * pow((1.0 - theta), 5.0);
+            vec3 col1 = reflectionSample * 0.6;
+            vec3 col2 = reflectionSample * 0.4;
+            vec3 albedo = mix(col1, col2, reflectance);
+            gl_FragColor = vec4(albedo, waterColor.a);
+            gl_FragColor.rgb += waterColor.rgb;    
           }
-          
-          // #include <tonemapping_fragment>
           ${THREE.ShaderChunk.logdepthbuf_fragment}
         }
     `,
