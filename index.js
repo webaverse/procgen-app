@@ -248,7 +248,7 @@ export default e => {
       await _waitForLoad();
 
       // frame handling
-      frameCb = () => {
+      frameCb = (timestamp) => {
         const _updateLodTracker = () => {
           const localPlayer = useLocalPlayer();
 
@@ -284,7 +284,7 @@ export default e => {
         _updateTerrainObjects();
 
         const _updateWaterMesh = () => {
-          waterMesh.update();
+          waterMesh.update(timestamp);
           waterMesh.lastUpdateCoord.set(
             lodTracker.lastUpdateCoord.x,
             lodTracker.lastUpdateCoord.y,
@@ -297,8 +297,8 @@ export default e => {
     })(),
   );
 
-  useFrame(() => {
-    frameCb && frameCb();
+  useFrame(({timestamp}) => {
+    frameCb && frameCb(timestamp);
   });
 
   return app;

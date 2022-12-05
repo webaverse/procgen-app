@@ -399,7 +399,7 @@ export class WaterMesh extends BufferedMesh {
       }
     }
   }
-  update() {
+  update(timestamp) {
     const localPlayer = useLocalPlayer();
     const lastUpdateCoordKey = getHashKey(
       this.lastUpdateCoord.x,
@@ -420,7 +420,7 @@ export class WaterMesh extends BufferedMesh {
       this.handleSwimAction(contactWater, localPlayer, WATER_HEIGHT);
     }
     this.underWater = camera.position.y < WATER_HEIGHT;
-    this.material.uniforms.uTime.value = performance.now() / 1000;
+    this.material.uniforms.uTime.value = timestamp / 1000;
     this.material.uniforms.playerPos.value.copy(localPlayer.position);
     this.material.uniforms.cameraInWater.value = this.underWater;
   }
