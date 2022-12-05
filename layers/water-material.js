@@ -322,7 +322,7 @@ const _createWaterMaterial = () => {
 
             vec3 cameraToFrag = normalize(vWorldPosition.xyz - eye);
             vec3 reflectionSample = textureCube(cubeMap, cameraToFrag + distortion).rgb;
-           
+            
             float theta = max(dot(eyePosition, surfaceNormal), 0.0);
             float rf0 = 0.3;
             float reflectance = rf0 + (1.0 - rf0) * pow((1.0 - theta), 5.0);

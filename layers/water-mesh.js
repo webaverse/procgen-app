@@ -389,12 +389,14 @@ export class WaterMesh extends BufferedMesh {
     }
   }
   onBeforeRender(renderer, scene, camera) {
-    this.waterRenderer && this.waterRenderer.renderDepthTexture(this.depthInvisibleList);
-    if (this.underWater) {
-      this.waterRenderer && this.waterRenderer.renderRefraction(renderer, scene, camera);
-    }
-    else {
-      this.waterRenderer && this.waterRenderer.renderMirror(renderer, scene, camera);
+    if (this.waterRenderer) {
+      this.waterRenderer.renderDepthTexture(this.depthInvisibleList);
+      if (this.underWater) {
+        this.waterRenderer.renderRefraction(renderer, scene, camera);
+      }
+      else {
+        this.waterRenderer.renderMirror(renderer, scene, camera);
+      }
     }
   }
   update() {
