@@ -50,7 +50,7 @@ class WaterPackage {
 
     
     cubeMaploader.setPath(cubeMapPath);
-    const textureCube = cubeMaploader.load( [ 'px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png' ] );
+    const textureCube = cubeMaploader.load(['px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png']);
 
     const textures = {};
     textures['shaderTextures'] = shaderTextures;

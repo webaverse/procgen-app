@@ -6,7 +6,7 @@ import {
   GRASS_COLOR_NAME
 } from "./constants.js";
 
-const LOCAL_URL = "https://webaverse.github.io/procgen-assets/";
+const LOCAL_URL = "https://local.webaverse.com/scenes/heightfield/procgen-assets/";
 const ONLINE_URL = "https://webaverse.github.io/procgen-assets/";
 export let procgenAssetsBaseUrl = LOCAL_URL;
 
