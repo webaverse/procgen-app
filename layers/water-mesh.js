@@ -6,11 +6,17 @@ import {
   MIN_WORLD_HEIGHT,
   MAX_WORLD_HEIGHT,
 } from "../constants.js";
+import WaterPackage from '../meshes/water-package.js';
+import {textureUrlSpecs} from '../water-effect/assets.js';
+import _createWaterMaterial from './water-material.js';
+import WaterRenderer from '../water-effect/water-render.js';
 
-const {useProcGenManager, useGeometryBuffering, useLocalPlayer} = metaversefile;
+const SHADER_TEXTURE_PATHS = textureUrlSpecs.shaderTexturePath;
+
+const {useProcGenManager, useGeometryBuffering, useLocalPlayer, useInternals} = metaversefile;
 const {BufferedMesh, GeometryAllocator} = useGeometryBuffering();
 const procGenManager = useProcGenManager();
-
+const {renderer, camera, scene} = useInternals();
 //
 const fakeMaterial = new THREE.MeshBasicMaterial({
   color: 0xffffff,
@@ -70,8 +76,8 @@ export class WaterMesh extends BufferedMesh {
     );
 
     const {geometry} = allocator;
-
-    super(geometry);
+    const material = _createWaterMaterial();
+    super(geometry, material);
 
     this.instance = instance;
     this.gpuTaskManager = gpuTaskManager;
@@ -80,12 +86,6 @@ export class WaterMesh extends BufferedMesh {
     this.gpuTasks = new Map();
     this.geometryBindings = new Map();
 
-    this.material = new THREE.MeshBasicMaterial({
-      color: 0x0000ff,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.9,
-    });
     this.geometry = geometry;
     this.physics = physics;
     this.physicsObjectsMap = new Map();
@@ -94,6 +94,8 @@ export class WaterMesh extends BufferedMesh {
 
     this.lastSwimmingHand = null;
     this.swimDamping = 1;
+
+    this.depthInvisibleList = [];
   }
 
   addChunk(chunk, chunkResult) {
@@ -345,8 +347,6 @@ export class WaterMesh extends BufferedMesh {
     };
 
     if (contactWater) {
-      this.material.color.setHex(0x0000ff); // for testing
-
       const _calculateSwimHeight = () => {
         const outsideWaterRange =
           player.avatar.height * (1 - SWIM_HEIGHT_THRESHOLD);
@@ -370,7 +370,6 @@ export class WaterMesh extends BufferedMesh {
         _removeSwimAction();
       }
     } else {
-      this.material.color.setHex(0xff0000); // for testing
       _removeSwimAction();
     }
 
@@ -388,7 +387,15 @@ export class WaterMesh extends BufferedMesh {
       swimAction.swimDamping = this.swimDamping;
     }
   }
-
+  onBeforeRender(renderer, scene, camera) {
+    this.waterRenderer && this.waterRenderer.renderDepthTexture(this.depthInvisibleList);
+    if (this.underWater) {
+      this.waterRenderer && this.waterRenderer.renderRefraction(renderer, scene, camera);
+    }
+    else {
+      this.waterRenderer && this.waterRenderer.renderMirror(renderer, scene, camera);
+    }
+  }
   update() {
     const localPlayer = useLocalPlayer();
     const lastUpdateCoordKey = getHashKey(
@@ -409,5 +416,38 @@ export class WaterMesh extends BufferedMesh {
       // handle swimming action
       this.handleSwimAction(contactWater, localPlayer, WATER_HEIGHT);
     }
+    this.underWater = camera.position.y < WATER_HEIGHT;
+    this.material.uniforms.uTime.value = performance.now() / 1000;
+    this.material.uniforms.playerPos.value.copy(localPlayer.position);
+    this.material.uniforms.cameraInWater.value = this.underWater;
+  }
+  setPackage(pkg) {
+    const shaderTextures = pkg.textures['shaderTextures'];
+  
+    this.waterRenderer = new WaterRenderer(renderer, scene, camera, this);
+    
+    this.material.uniforms.tDepth.value = this.waterRenderer.depthRenderTarget.texture;
+    this.material.uniforms.cameraNear.value = camera.near;
+    this.material.uniforms.cameraFar.value = camera.far;
+    this.material.uniforms.resolution.value.set(
+        window.innerWidth * window.devicePixelRatio,
+        window.innerHeight * window.devicePixelRatio
+    );
+    
+    this.material.uniforms.refractionTexture.value = this.waterRenderer.refractionRenderTarget.texture;
+    this.material.uniforms.mirror.value = this.waterRenderer.mirrorRenderTarget.texture;
+    this.material.uniforms.textureMatrix.value = this.waterRenderer.textureMatrix;
+    this.material.uniforms.eye.value = this.waterRenderer.eye;
+
+    this.material.uniforms.foamTexture.value = shaderTextures.foamTexture;
+    this.material.uniforms.tDistortion.value = shaderTextures.tDistortion;
+  }
+  async waitForLoad() {
+    const paths = {
+      shaderTexturePath: SHADER_TEXTURE_PATHS,
+    };
+    const waterPackage = await WaterPackage.loadUrls(paths);
+
+    this.setPackage(waterPackage);
   }
 }
