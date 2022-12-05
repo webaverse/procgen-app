@@ -68,6 +68,16 @@ export class WaterMesh extends BufferedMesh {
           Type: Float32Array,
           itemSize: 1,
         },
+        {
+          name: "liquids",
+          Type: Int32Array,
+          itemSize: 4,
+        },
+        {
+          name: "liquidsWeights",
+          Type: Float32Array,
+          itemSize: 4,
+        },
       ],
       {
         bufferSize,
@@ -121,6 +131,9 @@ export class WaterMesh extends BufferedMesh {
         const positionOffset = geometryBinding.getAttributeOffset("position");
         const normalOffset = geometryBinding.getAttributeOffset("normal");
         const factorOffset = geometryBinding.getAttributeOffset("factor");
+        const liquidsOffset = geometryBinding.getAttributeOffset("liquids");
+        const liquidsWeightsOffset =
+          geometryBinding.getAttributeOffset("liquidsWeights");
         const indexOffset = geometryBinding.getIndexOffset();
 
         _mapOffsettedIndices(
@@ -146,6 +159,18 @@ export class WaterMesh extends BufferedMesh {
           factorOffset,
           waterGeometry.factors.length,
           waterGeometry.factors,
+          0,
+        );
+        geometry.attributes.liquids.update(
+          liquidsOffset,
+          waterGeometry.liquids.length,
+          waterGeometry.liquids,
+          0,
+        );
+        geometry.attributes.liquidsWeights.update(
+          liquidsWeightsOffset,
+          waterGeometry.liquidsWeights.length,
+          waterGeometry.liquidsWeights,
           0,
         );
         geometry.index.update(indexOffset, waterGeometry.indices.length);

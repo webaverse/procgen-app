@@ -6,22 +6,13 @@ import {
   GRASS_COLOR_NAME
 } from "./constants.js";
 
-const LOCAL_URL = "https://webaverse.github.io/procgen-assets/";
-const ONLINE_URL = "https://webaverse.github.io/procgen-assets/";
-export let procgenAssetsBaseUrl = LOCAL_URL;
-
-export const _setAssetsRootPath = isLocal => {
-  if(isLocal) {
-    procgenAssetsBaseUrl = LOCAL_URL;
-  } else {
-    procgenAssetsBaseUrl = ONLINE_URL;
-  }
-};
-
+const USE_LOCAL_ASSETS = false;
+export const procgenAssetsBaseUrl = USE_LOCAL_ASSETS ? 'https://webaverse.github.io/procgen-assets/' : 'https://webaverse.github.io/procgen-assets/';
 
 // Directories Names
 const TERRAIN_TEXTURES_DIRECTORY_NAME = 'terrain/textures/';
 const TREE_MODELS_DIRECTORY_NAME = 'vegetation/jungle-trees/';
+const FLOWER_MODELS_DIRECTORY_NAME = 'vegetation/flowers/';
 const BUSH_MODELS_DIRECTORY_NAME = 'vegetation/bushes/';
 const ROCK_MODELS_DIRECTORY_NAME = 'rocks/';
 const ORE_MODELS_DIRECTORY_NAME = 'ores/';
@@ -32,9 +23,12 @@ const MODEL_FILES_EXTENSION = "glb";
 const TEXTURE_FILES_EXTENSION = "png";
 
 // Model Files
-const SHORT_TREE_NAME = "jungle_tree_1_variant_texta";
+const SHORT_TREE_NAME = "jungle_tree_2_variant_texta";
 const MEDIUM_TREE_NAME = "jungle_tree_1_variant_texta";
-const TALL_TREE_NAME = "jungle_tree_1_variant_texta";
+const TALL_TREE_NAME = "jungle_tree_3_variant_texta";
+const FLOWER_1_NAME = "flowers_RedLavender_3";
+const FLOWER_2_NAME = "flowers_RedLavender_3";
+const FLOWER_3_NAME = "flowers_RedLavender_3";
 const BUSH_NAME = 'bush_1_dream';
 const BIG_ROCK_NAME = 'big_rock_v2';
 const MED_ROCK_NAME = 'med_rock_v2';
@@ -118,6 +112,11 @@ export const TREES_INFO = [
   new ModelInfo(MEDIUM_TREE_NAME, TREE_MODELS_DIRECTORY_NAME),
   new ModelInfo(TALL_TREE_NAME, TREE_MODELS_DIRECTORY_NAME),
 ];
+export const FLOWERS_INFO = [
+  new ModelInfo(FLOWER_1_NAME, FLOWER_MODELS_DIRECTORY_NAME),
+  new ModelInfo(FLOWER_2_NAME, FLOWER_MODELS_DIRECTORY_NAME),
+  new ModelInfo(FLOWER_3_NAME, FLOWER_MODELS_DIRECTORY_NAME),
+];
 export const BUSHES_INFO = [
   new ModelInfo(BUSH_NAME, BUSH_MODELS_DIRECTORY_NAME),
 ];
@@ -136,6 +135,9 @@ export const ORES_INFO = [
 
 export const glbUrlSpecs = {
   trees: TREES_INFO.map(t => t.getModelPath()).map(u => {
+    return `${procgenAssetsBaseUrl}${u}`;
+  }),
+  flowers: FLOWERS_INFO.map(t => t.getModelPath()).map(u => {
     return `${procgenAssetsBaseUrl}${u}`;
   }),
   bushes: BUSHES_INFO.map(t => t.getModelPath()).map(u => {

@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import {oceanShader} from '../water-effect/ocean-shader.js';
+import {riverShader} from '../water-effect/river-shader.js';
 
 const _createWaterMaterial = () => {
   const material = new THREE.ShaderMaterial({
@@ -53,12 +55,16 @@ const _createWaterMaterial = () => {
         
       ${THREE.ShaderChunk.common}
       ${THREE.ShaderChunk.logdepthbuf_pars_vertex}
+      attribute ivec4 liquids;
+
       uniform float uTime;
       uniform mat4 textureMatrix;
       varying vec4 vUv;
       varying vec3 vWorldPosition;
       varying vec3 vPos;
       varying vec3 vNormal;
+
+      flat varying ivec4 vLiquids;
 
       vec3 gerstnerWave(float dirX, float dirZ, float steepness, float waveLength, inout vec3 tangent, inout vec3 binormal, vec3 pos) {
         vec2 dirXZ = vec2(dirX, dirZ);
@@ -89,6 +95,7 @@ const _createWaterMaterial = () => {
         vec3 pos = position;
         vPos = position;
         vUv = textureMatrix * vec4( pos, 1.0 );
+        vLiquids = liquids;
 
         // set wave here, now using 4 waves for ocean
         // 1.dirX  2.dirZ  3.steepness  4.waveLength
@@ -145,12 +152,12 @@ const _createWaterMaterial = () => {
         varying vec3 vNormal;
         varying vec4 vUv;
         varying vec3 vPos;
-
-        const float TAU = 2. * 3.14159265;
+        flat varying ivec4 vLiquids;
 
         const vec3 eyePosition = vec3(0.7579705245610807, 0.6382203660633491, 0.1347421546456965);
 
         // cosine gradient 
+        const float TAU = 2. * 3.14159265;
         const vec4 phases = vec4(0.28, 0.50, 0.07, 0);
         const vec4 amplitudes = vec4(4.02, 0.34, 0.65, 0);
         const vec4 frequencies = vec4(0.00, 0.48, 0.08, 0);
@@ -198,139 +205,22 @@ const _createWaterMaterial = () => {
         
         void main() {
           vec2 screenUV = gl_FragCoord.xy / resolution;
-
           float fragmentLinearEyeDepth = getViewZ(gl_FragCoord.z);
           float linearEyeDepth = getViewZ(getDepth(screenUV));
 
-          if (vPos.y <= 0.01) { // ocean shader, for temporary. TODO: We should have attribute to indicate the water type(ocean, river, waterfall, etc.,)
-            if (!cameraInWater) {
-              //################################## compute waterColor ##################################
-              float depthScale = 15.;
-              float depthFalloff = 3.;
-              float sceneDepth = getDepthFade(fragmentLinearEyeDepth, linearEyeDepth, depthScale, depthFalloff);
-
-              // set green water color below player. 
-              vec3 viewIncidentDir = normalize(eye - vWorldPosition.xyz);
-              vec3 viewReflectDir = reflect(viewIncidentDir, vec3(0., 1.0, 0.));
-              float fresnelCoe = (dot(viewIncidentDir,viewReflectDir) + 1.) / 2.;
-              fresnelCoe = clamp(fresnelCoe, 0., 1.0);
-              float waterColorDepth = getDepthFade(fragmentLinearEyeDepth, linearEyeDepth, 20., 1.);
-              float colorLerp = mix(fresnelCoe, 1. - waterColorDepth, waterColorDepth);
-              colorLerp = mix(colorLerp, 1. - waterColorDepth, saturate(distance(eye, vWorldPosition) / 150.));
-
-              // water color
-              vec4 cosGradColor = cosGradient(saturate(1. - colorLerp), phases, amplitudes, frequencies, offsets);
-              cosGradColor = clamp(cosGradColor, vec4(0.), vec4(1.));
-              vec4 waterColor = vec4(cosGradColor.rgb, 1. - sceneDepth);
-              
-              //################################## handle foam ##################################
-              float fadeoutDistance = 50.;
-              float fadeoutScale = 3.;
-              float fadeoutLerp = pow(saturate(distance(playerPos, vWorldPosition) / fadeoutDistance), fadeoutScale);
-          
-              // foam distortion
-              vec4 ds2 = texture2D( 
-                tDistortion, 
-                vec2(
-                  0.25 * vWorldPosition.x + uTime * 0.01,
-                  0.25 * vWorldPosition.z + uTime * 0.01
-                ) 
-              );
-              vec4 ds = texture2D( 
-                tDistortion, 
-                vec2(
-                  0.3 * vWorldPosition.x + uTime * 0.005,
-                  0.3 * vWorldPosition.z + uTime * 0.005
-                ) 
-              );
-              float foamDistortionDepth = getDepthFade(fragmentLinearEyeDepth, linearEyeDepth, 8., 2.);
-              float foamDistortionScale = 0.2;
-              float foamDistortionDegree = pow(clamp((1. - foamDistortionDepth), 0.2, 1.0), foamDistortionScale);
-              vec2 foamDistortion = vec2(ds2.r + ds.r, ds2.g + ds.g) * foamDistortionDegree;
-
-              // foam
-              float foamDepth = getDepthFade(fragmentLinearEyeDepth, linearEyeDepth, 8., 2.);
-              float foamDiff = saturate( fragmentLinearEyeDepth - linearEyeDepth );
-              float foamScale = -0.02;
-              float foamSpeed = 0.4;
-              float foamUvX = (vWorldPosition.x + vWorldPosition.z) * foamScale;
-              float foamUvY = (vWorldPosition.x + vWorldPosition.z) * foamScale + foamDepth * 1.5 - uTime * foamSpeed;
-              float foamDistortionLerp = 0.15;
-              vec2 foamUv = mix(vec2(foamUvX, foamUvY), foamDistortion, foamDistortionLerp);
-              vec4 foamTex = texture2D(foamTexture, foamUv);
-              foamTex = step(vec4(0.9), foamTex);
-              float foamTextScale = 2.;
-              vec4 foamT = vec4(foamTex.r * (1.0 - foamDepth) * foamTextScale);
-              foamT = mix(vec4(0.), foamT, foamDepth * fadeoutLerp);
-              vec4 foamLineCutOut = saturate(foamT);
-              waterColor = waterColor * ((vec4(1.0) - foamLineCutOut)) + foamT;
-  
-              //################################## handle mirror ##################################
-              vec3 surfaceNormal = normalize(vNormal * vec3(1.5, 1.0, 1.5));
-              vec3 worldToEye = eye - vWorldPosition.xyz;
-              float distance = length(worldToEye);
-              float distortionScale = 3.;
-              vec2 distortion = surfaceNormal.xz * (0.001 + 1.0 / distance) * distortionScale;
-              vec3 reflectionSample = vec3(texture2D(mirror, vUv.xy / vUv.w + distortion));
-              float theta = max(dot(eyePosition, surfaceNormal), 0.0);
-              float rf0 = 0.1;
-              float reflectance = rf0 + (1.0 - rf0) * pow((1.0 - theta), 5.0);
-              float reflectanceScale = 5.;
-              vec3 col1 = reflectionSample * 0.6;
-              vec3 col2 = reflectionSample * 0.2;
-              vec3 albedo = mix(col1, col2, reflectance * reflectanceScale);
-              gl_FragColor = vec4(albedo, waterColor.a);
-              gl_FragColor.rgb += waterColor.rgb;
-            }
-            else{
-              //################################## refraction ##################################
-              vec3 waterColor = vec3(0.126, 0.47628, 0.6048);
-              
-              vec3 surfaceNormal = normalize(vNormal * vec3(1.5, 1.0, 1.5));
-              vec3 worldToEye = eye - vWorldPosition.xyz;
-              float distance = length(worldToEye);
-              float distortionScale = 0.1;
-              vec2 distortion = surfaceNormal.xz * (0.001 + 1.0 / distance) * distortionScale;
-              vec3 reflectionSample = vec3(texture2D(refractionTexture, vUv.xy / vUv.w + distortion));
-              float theta = max(dot(eyePosition, surfaceNormal), 0.0);
-              float rf0 = 0.1;
-              float reflectance = rf0 + (1.0 - rf0) * pow((1.0 - theta), 5.0);
-              float reflectanceScale = 5.;
-              vec3 col1 = reflectionSample * 0.6;
-              vec3 col2 = reflectionSample * 0.2;
-              vec3 albedo = mix(col1, col2, reflectance * reflectanceScale);
-              gl_FragColor = vec4(albedo, 1.0);
-              gl_FragColor.rgb += waterColor.rgb;
-            }
-          }
-          else { // river, for temporary
-            float depthScale = 15.;
-            float depthFalloff = 3.;
-            float sceneDepth = getDepthFade(fragmentLinearEyeDepth, linearEyeDepth, depthScale, depthFalloff);
-
-            vec4 cosGradColor = cosGradient(sceneDepth, phases, amplitudes, frequencies, offsets);
-            cosGradColor = clamp(cosGradColor, vec4(0.), vec4(1.));
-            vec4 waterColor = vec4(cosGradColor.rgb, 1. - sceneDepth);
-           
-            vec3 surfaceNormal = normalize(getNoise(vWorldPosition.xz)).rgb;
-            vec3 worldToEye = eye - vWorldPosition.xyz;
-            vec3 eyeDirection = normalize(worldToEye);
-            float distance = length(worldToEye);
-            float distortionScale = 3.;
-            vec3 distortion = surfaceNormal.xyz * (0.001 + 1.0 / distance) * distortionScale;
-            vec3 normalizedVWorldPosition = normalize(vWorldPosition);
-
-            vec3 cameraToFrag = normalize(vWorldPosition.xyz - eye);
-            vec3 reflectionSample = textureCube(cubeMap, cameraToFrag + distortion).rgb;
-            
-            float theta = max(dot(eyePosition, surfaceNormal), 0.0);
-            float rf0 = 0.3;
-            float reflectance = rf0 + (1.0 - rf0) * pow((1.0 - theta), 5.0);
-            vec3 col1 = reflectionSample * 0.6;
-            vec3 col2 = reflectionSample * 0.4;
-            vec3 albedo = mix(col1, col2, reflectance);
-            gl_FragColor = vec4(albedo, waterColor.a);
-            gl_FragColor.rgb += waterColor.rgb;    
+          switch (vLiquids.x) {
+            case 0:
+              ${oceanShader}
+              break;
+            case 1:
+              ${riverShader}
+              break;
+            case 2:
+              gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+              break;
+            case 3:
+              gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+              break;
           }
           ${THREE.ShaderChunk.logdepthbuf_fragment}
         }
