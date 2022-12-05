@@ -156,7 +156,7 @@ const _createWaterMaterial = () => {
         const vec4 frequencies = vec4(0.00, 0.48, 0.08, 0);
         const vec4 offsets = vec4(0.00, 0.17, 0.00, 0);
 
-        vec4 cosine_gradient(float x, vec4 phase, vec4 amp, vec4 freq, vec4 offset){
+        vec4 cosGradient(float x, vec4 phase, vec4 amp, vec4 freq, vec4 offset){
           phase *= TAU;
           x *= TAU;
 
@@ -219,9 +219,9 @@ const _createWaterMaterial = () => {
               colorLerp = mix(colorLerp, 1. - waterColorDepth, saturate(distance(eye, vWorldPosition) / 150.));
 
               // water color
-              vec4 cos_grad = cosine_gradient(saturate(1. - colorLerp), phases, amplitudes, frequencies, offsets);
-              cos_grad = clamp(cos_grad, vec4(0.), vec4(1.));
-              vec4 waterColor = vec4(cos_grad.rgb, 1. - sceneDepth);
+              vec4 cosGradColor = cosGradient(saturate(1. - colorLerp), phases, amplitudes, frequencies, offsets);
+              cosGradColor = clamp(cosGradColor, vec4(0.), vec4(1.));
+              vec4 waterColor = vec4(cosGradColor.rgb, 1. - sceneDepth);
               
               //################################## handle foam ##################################
               float fadeoutDistance = 50.;
@@ -308,9 +308,9 @@ const _createWaterMaterial = () => {
             float depthFalloff = 3.;
             float sceneDepth = getDepthFade(fragmentLinearEyeDepth, linearEyeDepth, depthScale, depthFalloff);
 
-            vec4 cos_grad = cosine_gradient(sceneDepth, phases, amplitudes, frequencies, offsets);
-            cos_grad = clamp(cos_grad, vec4(0.), vec4(1.));
-            vec4 waterColor = vec4(cos_grad.rgb, 1. - sceneDepth);
+            vec4 cosGradColor = cosGradient(sceneDepth, phases, amplitudes, frequencies, offsets);
+            cosGradColor = clamp(cosGradColor, vec4(0.), vec4(1.));
+            vec4 waterColor = vec4(cosGradColor.rgb, 1. - sceneDepth);
            
             vec3 surfaceNormal = normalize(getNoise(vWorldPosition.xz)).rgb;
             vec3 worldToEye = eye - vWorldPosition.xyz;
