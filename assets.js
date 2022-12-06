@@ -6,7 +6,7 @@ import {
   GRASS_COLOR_NAME
 } from "./constants.js";
 
-const USE_LOCAL_ASSETS = false;
+const USE_LOCAL_ASSETS = true;
 export const procgenAssetsBaseUrl = USE_LOCAL_ASSETS ? 'https://local.webaverse.com/scenes/heightfield/procgen-assets/' : 'https://webaverse.github.io/procgen-assets/';
 
 // Directories Names
@@ -26,9 +26,9 @@ const TEXTURE_FILES_EXTENSION = "png";
 const SHORT_TREE_NAME = "jungle_tree_2_variant_texta";
 const MEDIUM_TREE_NAME = "jungle_tree_1_variant_texta";
 const TALL_TREE_NAME = "jungle_tree_3_variant_texta";
-const FLOWER_1_NAME = "flowers_RedLavender_3";
-const FLOWER_2_NAME = "flowers_RedLavender_3";
-const FLOWER_3_NAME = "flowers_RedLavender_3";
+const FLOWER_1_NAME = "flowers1";
+const FLOWER_2_NAME = "flowers2";
+const FLOWER_3_NAME = "flowers4";
 const BUSH_NAME = 'bush_1_dream';
 const BIG_ROCK_NAME = 'big_rock_v2';
 const MED_ROCK_NAME = 'med_rock_v2';
@@ -39,7 +39,7 @@ const ORE_NAME = 'green_biome_ore';
 const GRASS_MATERIAL_NAME = 'stylized_grass';
 const DIRT_MATERIAL_NAME = 'dirt_ground';
 const ROCK_MATERIAL_NAME = 'stylized_stone';
-const STONE_MATERIAL_NAME = 'stylized_stone';
+const STONE_MATERIAL_NAME = 'stylized_rock';
 
 //
 
