@@ -24,13 +24,14 @@ class WaterRenderer {
       window.innerHeight * pixelRatio
     );
     window.addEventListener('resize', () => {
+      const pr = this.renderer.getPixelRatio();
       this.depthRenderTarget.setSize(
-        window.innerWidth * pixelRatio,
-        window.innerHeight * pixelRatio
+        window.innerWidth * pr,
+        window.innerHeight * pr
       );
       this.water.material.uniforms.resolution.value.set(
-        window.innerWidth * pixelRatio,
-        window.innerHeight * pixelRatio
+        window.innerWidth * pr,
+        window.innerHeight * pr
       );
     })
     this.depthRenderTarget.texture.minFilter = THREE.NearestFilter;
