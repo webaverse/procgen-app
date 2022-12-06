@@ -7,7 +7,8 @@ import {
 } from "./constants.js";
 
 const USE_LOCAL_ASSETS = false;
-export const procgenAssetsBaseUrl = USE_LOCAL_ASSETS ? 'https://webaverse.github.io/procgen-assets/' : 'https://webaverse.github.io/procgen-assets/';
+
+export const procgenAssetsBaseUrl = USE_LOCAL_ASSETS ? 'https://local.webaverse.com/scenes/heightfield/procgen-assets/' : 'https://webaverse.github.io/procgen-assets/';
 
 // Directories Names
 const TERRAIN_TEXTURES_DIRECTORY_NAME = 'terrain/textures/';

@@ -6,15 +6,11 @@ import {
   MIN_WORLD_HEIGHT,
   MAX_WORLD_HEIGHT,
 } from "../constants.js";
-import LiquidPackage from '../meshes/liquid-package.js';
-import {textureUrlSpecs} from '../liquid-effect/assets.js';
-import _createLiquidMaterial from './liquid-material.js';
-import WaterRenderer from '../liquid-effect/water-render.js';
 
-const {useProcGenManager, useGeometryBuffering, useLocalPlayer, useInternals} = metaversefile;
+const {useProcGenManager, useGeometryBuffering, useLocalPlayer} = metaversefile;
 const {BufferedMesh, GeometryAllocator} = useGeometryBuffering();
 const procGenManager = useProcGenManager();
-const {renderer, camera, scene} = useInternals();
+
 //
 const fakeMaterial = new THREE.MeshBasicMaterial({
   color: 0xffffff,
@@ -27,9 +23,6 @@ const localVector = new THREE.Vector3();
 //
 
 // constants
-const SHADER_TEXTURE_PATHS = textureUrlSpecs.shaderTexturePath;
-const CUBEMAP_PATHS = textureUrlSpecs.cubeMapPath;
-
 const SWIM_HEIGHT_THRESHOLD = 0.75;
 const SWIM_ONSURFACE_RANGE = 0.05;
 const NORMAL_DAMPING = 1;
@@ -49,7 +42,7 @@ const getHashKey = (x, y) => {
   return ((x & 0xfff) << 20) | ((y & 0xfff) << 8);
 };
 
-export class LiquidMesh extends BufferedMesh {
+export class WaterMesh extends BufferedMesh {
   constructor({instance, gpuTaskManager, physics}) {
     const allocator = new GeometryAllocator(
       [
@@ -87,8 +80,8 @@ export class LiquidMesh extends BufferedMesh {
     );
 
     const {geometry} = allocator;
-    const material = _createLiquidMaterial();
-    super(geometry, material);
+
+    super(geometry);
 
     this.instance = instance;
     this.gpuTaskManager = gpuTaskManager;
@@ -97,6 +90,12 @@ export class LiquidMesh extends BufferedMesh {
     this.gpuTasks = new Map();
     this.geometryBindings = new Map();
 
+    this.material = new THREE.MeshBasicMaterial({
+      color: 0x0000ff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.9,
+    });
     this.geometry = geometry;
     this.physics = physics;
     this.physicsObjectsMap = new Map();
@@ -105,8 +104,6 @@ export class LiquidMesh extends BufferedMesh {
 
     this.lastSwimmingHand = null;
     this.swimDamping = 1;
-
-    this.depthInvisibleList = [];
   }
 
   addChunk(chunk, chunkResult) {
@@ -123,8 +120,8 @@ export class LiquidMesh extends BufferedMesh {
           dstIndices[dstOffset + i] = srcIndices[i] + positionIndex;
         }
       };
-      const _renderLiquidMeshDataToGeometry = (
-        liquidGeometry,
+      const _renderWaterMeshDataToGeometry = (
+        waterGeometry,
         geometry,
         geometryBinding,
       ) => {
@@ -137,7 +134,7 @@ export class LiquidMesh extends BufferedMesh {
         const indexOffset = geometryBinding.getIndexOffset();
 
         _mapOffsettedIndices(
-          liquidGeometry.indices,
+          waterGeometry.indices,
           geometry.index.array,
           indexOffset,
           positionOffset,
@@ -145,37 +142,37 @@ export class LiquidMesh extends BufferedMesh {
 
         geometry.attributes.position.update(
           positionOffset,
-          liquidGeometry.positions.length,
-          liquidGeometry.positions,
+          waterGeometry.positions.length,
+          waterGeometry.positions,
           0,
         );
         geometry.attributes.normal.update(
           normalOffset,
-          liquidGeometry.normals.length,
-          liquidGeometry.normals,
+          waterGeometry.normals.length,
+          waterGeometry.normals,
           0,
         );
         geometry.attributes.factor.update(
           factorOffset,
-          liquidGeometry.factors.length,
-          liquidGeometry.factors,
+          waterGeometry.factors.length,
+          waterGeometry.factors,
           0,
         );
         geometry.attributes.liquids.update(
           liquidsOffset,
-          liquidGeometry.liquids.length,
-          liquidGeometry.liquids,
+          waterGeometry.liquids.length,
+          waterGeometry.liquids,
           0,
         );
         geometry.attributes.liquidsWeights.update(
           liquidsWeightsOffset,
-          liquidGeometry.liquidsWeights.length,
-          liquidGeometry.liquidsWeights,
+          waterGeometry.liquidsWeights.length,
+          waterGeometry.liquidsWeights,
           0,
         );
-        geometry.index.update(indexOffset, liquidGeometry.indices.length);
+        geometry.index.update(indexOffset, waterGeometry.indices.length);
       };
-      const _handleLiquidMesh = liquidGeometry => {
+      const _handleWaterMesh = waterGeometry => {
         const {chunkSize} = this.instance;
 
         const boundingBox = localBox.set(
@@ -207,8 +204,8 @@ export class LiquidMesh extends BufferedMesh {
         // console.log(localVector3D.x + ", " + localVector3D2.x);
 
         const geometryBinding = this.allocator.alloc(
-          liquidGeometry.positions.length,
-          liquidGeometry.indices.length,
+          waterGeometry.positions.length,
+          waterGeometry.indices.length,
           boundingBox,
           // min,
           // max,
@@ -216,25 +213,25 @@ export class LiquidMesh extends BufferedMesh {
           // waterGeometry.peeks
         );
         // console.log(localVector3D);
-        _renderLiquidMeshDataToGeometry(
-          liquidGeometry,
+        _renderWaterMeshDataToGeometry(
+          waterGeometry,
           this.allocator.geometry,
           geometryBinding,
         );
 
         this.geometryBindings.set(key, geometryBinding);
       };
-      const liquidGeometry = chunkResult.waterGeometry;
-      liquidGeometry && _handleLiquidMesh(liquidGeometry);
+      const waterGeometry = chunkResult.waterGeometry;
+      waterGeometry && _handleWaterMesh(waterGeometry);
 
       const _handlePhysics = async () => {
         const physicsGeo = new THREE.BufferGeometry();
         physicsGeo.setAttribute(
           "position",
-          new THREE.BufferAttribute(liquidGeometry.positions, 3),
+          new THREE.BufferAttribute(waterGeometry.positions, 3),
         );
         physicsGeo.setIndex(
-          new THREE.BufferAttribute(liquidGeometry.indices, 1),
+          new THREE.BufferAttribute(waterGeometry.indices, 1),
         );
         const physicsMesh = new THREE.Mesh(physicsGeo, fakeMaterial);
 
@@ -260,7 +257,7 @@ export class LiquidMesh extends BufferedMesh {
           this.chunkPhysicObjcetMap.set(chunkKey, physicsObject); // use chunk.min as a key to map each physicsObject
         }
       };
-      liquidGeometry && liquidGeometry.indices.length !== 0 && _handlePhysics();
+      waterGeometry && waterGeometry.indices.length !== 0 && _handlePhysics();
     });
     this.gpuTasks.set(key, task);
   }
@@ -373,6 +370,8 @@ export class LiquidMesh extends BufferedMesh {
     };
 
     if (contactWater) {
+      this.material.color.setHex(0x0000ff); // for testing
+
       const _calculateSwimHeight = () => {
         const outsideWaterRange =
           player.avatar.height * (1 - SWIM_HEIGHT_THRESHOLD);
@@ -396,6 +395,7 @@ export class LiquidMesh extends BufferedMesh {
         _removeSwimAction();
       }
     } else {
+      this.material.color.setHex(0xff0000); // for testing
       _removeSwimAction();
     }
 
@@ -413,18 +413,8 @@ export class LiquidMesh extends BufferedMesh {
       swimAction.swimDamping = this.swimDamping;
     }
   }
-  onBeforeRender(renderer, scene, camera) {
-    if (this.waterRenderer) {
-      this.waterRenderer.renderDepthTexture(this.depthInvisibleList);
-      if (this.underWater) {
-        this.waterRenderer.renderRefraction(renderer, scene, camera);
-      }
-      else {
-        this.waterRenderer.renderMirror(renderer, scene, camera);
-      }
-    }
-  }
-  update(timestamp) {
+
+  update() {
     const localPlayer = useLocalPlayer();
     const lastUpdateCoordKey = getHashKey(
       this.lastUpdateCoord.x,
@@ -444,45 +434,5 @@ export class LiquidMesh extends BufferedMesh {
       // handle swimming action
       this.handleSwimAction(contactWater, localPlayer, WATER_HEIGHT);
     }
-    this.underWater = camera.position.y < WATER_HEIGHT;
-    this.material.uniforms.uTime.value = timestamp / 1000;
-    this.material.uniforms.playerPos.value.copy(localPlayer.position);
-    this.material.uniforms.cameraInWater.value = this.underWater;
-  }
-  setPackage(pkg) {
-    const shaderTextures = pkg.textures['shaderTextures'];
-    const cubeMap = pkg.textures['textureCube'];
-  
-    this.waterRenderer = new WaterRenderer(renderer, scene, camera, this);
-    
-    // depth
-    this.material.uniforms.tDepth.value = this.waterRenderer.depthRenderTarget.texture;
-    this.material.uniforms.cameraNear.value = camera.near;
-    this.material.uniforms.cameraFar.value = camera.far;
-    this.material.uniforms.resolution.value.set(
-        window.innerWidth * window.devicePixelRatio,
-        window.innerHeight * window.devicePixelRatio
-    );
-    // reflection refraction
-    this.material.uniforms.refractionTexture.value = this.waterRenderer.refractionRenderTarget.texture;
-    this.material.uniforms.mirror.value = this.waterRenderer.mirrorRenderTarget.texture;
-    this.material.uniforms.textureMatrix.value = this.waterRenderer.textureMatrix;
-    this.material.uniforms.eye.value = this.waterRenderer.eye;
-    //foam
-    this.material.uniforms.foamTexture.value = shaderTextures.foamTexture;
-    this.material.uniforms.tDistortion.value = shaderTextures.tDistortion;
-
-    //river
-    this.material.uniforms.waterNormalTexture.value = shaderTextures.waterNormalTexture;
-    this.material.uniforms.cubeMap.value = cubeMap;
-  }
-  async waitForLoad() {
-    const paths = {
-      shaderTexturePath: SHADER_TEXTURE_PATHS,
-      cubeMapPath: CUBEMAP_PATHS,
-    };
-    const liquidPackage = await LiquidPackage.loadUrls(paths);
-
-    this.setPackage(liquidPackage);
   }
 }
