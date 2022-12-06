@@ -89,7 +89,7 @@ export class InstancedObjectGroup extends THREE.Object3D {
 
     this.urls = urls;
     this.meshes = [];
-    const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
+
     for (let i = 0; i < urls.length; i++) {
       const meshUrl = urls[i];
       const mesh = new InstancedObjectMesh({
@@ -98,7 +98,6 @@ export class InstancedObjectGroup extends THREE.Object3D {
         instance,
         physics,
       });
-      mesh.material = material;
       this.meshes.push(mesh);
       this.add(mesh);
     }
