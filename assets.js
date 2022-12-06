@@ -6,7 +6,7 @@ import {
   GRASS_COLOR_NAME
 } from "./constants.js";
 
-const USE_LOCAL_ASSETS = true;
+const USE_LOCAL_ASSETS = false;
 export const procgenAssetsBaseUrl = USE_LOCAL_ASSETS ? 'https://local.webaverse.com/scenes/heightfield/procgen-assets/' : 'https://webaverse.github.io/procgen-assets/';
 
 // Directories Names
@@ -39,7 +39,7 @@ const ORE_NAME = 'green_biome_ore';
 const GRASS_MATERIAL_NAME = 'stylized_grass';
 const DIRT_MATERIAL_NAME = 'dirt_ground';
 const ROCK_MATERIAL_NAME = 'stylized_stone';
-const STONE_MATERIAL_NAME = 'stylized_rock';
+const STONE_MATERIAL_NAME = 'stylized_snow';
 
 //
 
