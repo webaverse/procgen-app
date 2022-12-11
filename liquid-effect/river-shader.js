@@ -1,11 +1,14 @@
 export const riverShader =  `
+  float mask = readDepth(tMask, screenUV);
   float depthScale = 15.;
   float depthFalloff = 3.;
   float sceneDepth = getDepthFade(fragmentLinearEyeDepth, linearEyeDepth, depthScale, depthFalloff);
+  sceneDepth = mask < 1. ? sceneDepth : 1. - sceneDepth;
 
   vec4 cosGradColor = cosGradient(sceneDepth, phases, amplitudes, frequencies, offsets);
   cosGradColor = clamp(cosGradColor, vec4(0.), vec4(1.));
-  vec4 waterColor = vec4(cosGradColor.rgb, 1. - sceneDepth);
+	float op = mask < 1. ? 1. - sceneDepth : 1.0;
+  vec4 waterColor = vec4(cosGradColor.rgb, op);
 
   vec3 surfaceNormal = normalize(getNoise(vWorldPosition.xz)).rgb;
   vec3 worldToEye = eye - vWorldPosition.xyz;

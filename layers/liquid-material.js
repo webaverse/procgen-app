@@ -11,6 +11,9 @@ const _createLiquidMaterial = () => {
       tDepth: {
         value: null
       },
+      tMask: {
+        value: null
+      },
       cameraNear: {
         value: 0
       },
@@ -139,6 +142,7 @@ const _createLiquidMaterial = () => {
 
         uniform float uTime;
         uniform sampler2D tDepth;
+        uniform sampler2D tMask;
         uniform sampler2D foamTexture;
         uniform float cameraNear;
         uniform float cameraFar;
@@ -185,6 +189,12 @@ const _createLiquidMaterial = () => {
 
         float getDepthFade(float fragmentLinearEyeDepth, float linearEyeDepth, float depthScale, float depthFalloff) {
           return pow(saturate(1. - (fragmentLinearEyeDepth - linearEyeDepth) / depthScale), depthFalloff);
+        }
+
+        float readDepth( sampler2D depthSampler, vec2 coord ) {
+          float fragCoordZ = texture2D( depthSampler, coord ).x;
+          float viewZ = perspectiveDepthToViewZ( fragCoordZ, cameraNear, cameraFar );
+          return viewZToOrthographicDepth( viewZ, cameraNear, cameraFar );
         }
 
         vec4 cutout(float depth, float alpha) {

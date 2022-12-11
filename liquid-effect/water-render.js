@@ -39,6 +39,11 @@ class WaterRenderer {
     this.depthRenderTarget.texture.generateMipmaps = false;
     this.depthRenderTarget.stencilBuffer = false;
 
+    this.depthRenderTarget.depthTexture = new THREE.DepthTexture();
+    this.depthRenderTarget.depthTexture.type = THREE.UnsignedShortType;
+    this.depthRenderTarget.depthTexture.minFilter = THREE.NearestFilter;
+    this.depthRenderTarget.depthTexture.maxFilter = THREE.NearestFilter;
+
     this.depthMaterial = new THREE.MeshDepthMaterial();
     this.depthMaterial.depthPacking = THREE.RGBADepthPacking;
     this.depthMaterial.blending = THREE.NoBlending;

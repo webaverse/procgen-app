@@ -5,19 +5,23 @@ export const oceanShader =  `
 		float depthFalloff = 3.;
 		float sceneDepth = getDepthFade(fragmentLinearEyeDepth, linearEyeDepth, depthScale, depthFalloff);
 
+		float mask = readDepth(tMask, screenUV);
+
 		// set green water color below player. 
 		vec3 viewIncidentDir = normalize(eye - vWorldPosition.xyz);
 		vec3 viewReflectDir = reflect(viewIncidentDir, vec3(0., 1.0, 0.));
 		float fresnelCoe = (dot(viewIncidentDir,viewReflectDir) + 1.) / 2.;
 		fresnelCoe = clamp(fresnelCoe, 0., 1.0);
 		float waterColorDepth = getDepthFade(fragmentLinearEyeDepth, linearEyeDepth, 20., 1.);
+		waterColorDepth = mask < 1. ? waterColorDepth : 1. - waterColorDepth;
 		float colorLerp = mix(fresnelCoe, 1. - waterColorDepth, waterColorDepth);
 		colorLerp = mix(colorLerp, 1. - waterColorDepth, saturate(distance(eye, vWorldPosition) / 150.));
 
 		// water color
 		vec4 cosGradColor = cosGradient(saturate(1. - colorLerp), phases, amplitudes, frequencies, offsets);
 		cosGradColor = clamp(cosGradColor, vec4(0.), vec4(1.));
-		vec4 waterColor = vec4(cosGradColor.rgb, 1. - sceneDepth);
+		float op = mask < 1. ? 1. - sceneDepth : 1.0;
+		vec4 waterColor = vec4(cosGradColor.rgb, op);
 		
 		//################################## handle foam ##################################
 		float fadeoutDistance = 50.;

@@ -456,6 +456,7 @@ export class LiquidMesh extends BufferedMesh {
     this.waterRenderer = new WaterRenderer(renderer, scene, camera, this);
     
     // depth
+    this.material.uniforms.tMask.value = this.waterRenderer.depthRenderTarget.depthTexture;
     this.material.uniforms.tDepth.value = this.waterRenderer.depthRenderTarget.texture;
     this.material.uniforms.cameraNear.value = camera.near;
     this.material.uniforms.cameraFar.value = camera.far;
