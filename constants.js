@@ -11,4 +11,7 @@ export const GRASS_COLOR_NAME = 'grassColor';
 export const GRASS_COLOR_ABOVE_GRASS = '#00f070';
 export const GRASS_COLOR_ABOVE_DIRT = '#99ff00';
 
+// Materials
+export const NO_LIGHT_MATERIAL_SHADOW_INTENSITY = 0.5;
+
 export const GET_COLOR_PARAMETER_NAME = 'materialIndex';

@@ -2,6 +2,7 @@ import metaversefile from "metaversefile";
 import * as THREE from "three";
 
 import {MATERIALS_INFO} from "../assets.js";
+import {_disableOutgoingLights} from "../utils/utils.js";
 import {NUM_TERRAIN_MATERIALS} from "./terrain-mesh.js";
 
 const {useAtlasing} = metaversefile;
@@ -26,11 +27,11 @@ const _createTerrainMaterial = () => {
     NUM_TERRAIN_MATERIALS,
   );
 
-  const material = new THREE.MeshPhysicalMaterial({
-    roughness: 0.95,
-    metalness: 0.1,
+  const material = new THREE.MeshStandardMaterial({
+    // roughness: 0.95,
+    // metalness: 0.1,
     // envMap: new THREE.Texture(),
-    envMapIntensity: 1,
+    // envMapIntensity: 1,
     onBeforeCompile: shader => {
       for (const k in materialUniforms) {
         shader.uniforms[k] = materialUniforms[k];
@@ -177,8 +178,7 @@ const _createTerrainMaterial = () => {
         }
 
         vec4 mapTextures(vec3 inputPosition, vec3 inputNormal, sampler2D inputTextures){
-          // float depth = clamp(abs(distance(cameraPosition.xz, vPosition.xz) / 100.f), 1.0, 20.0);
-          float textureScale = /* depth * */ TEXTURE_SCALE;
+          float textureScale = TEXTURE_SCALE;
           vec2 textureUv = inputPosition.xz * (1.f / textureScale);
           vec4 textureColor = blendMaterials(inputTextures, textureUv);
           return textureColor;
@@ -273,6 +273,8 @@ const _createTerrainMaterial = () => {
   });
 
   material.uniforms = materialUniforms;
+
+  _disableOutgoingLights(material);
 
   return material;
 };
