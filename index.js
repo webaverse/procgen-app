@@ -5,15 +5,15 @@ import {TerrainMesh} from "./layers/terrain-mesh.js";
 import {WaterMesh} from "./layers/water-mesh.js";
 // import {BarrierMesh} from './layers/barrier-mesh.js';
 import {glbUrlSpecs} from "./assets.js";
-import {BIOMES, _createDataRecursively} from "./biomes.js";
 import {GrassMesh} from "./layers/grass-mesh.js";
 import {HudMesh} from "./layers/hud-mesh.js";
 import {InstancedObjectGroup, InstancedObjectMesh} from "./layers/instanced-object-mesh.js";
 
 import {
   TerrainObjectsMesh,
-  TerrainObjectSpecs,
+  TerrainObjectSpecs
 } from "./meshes/terrain-objects-mesh.js";
+import {_addNoLightingShaderChunk} from "./utils/utils.js";
 
 const {
   useApp,
@@ -55,14 +55,6 @@ export default e => {
   const procGenManager = useProcGenManager();
   const physics = usePhysics();
 
-  // ! for development
-  const BIOMES_STRING = "biomes";
-  const appHasBiomes = app.hasComponent(BIOMES_STRING);
-  const pickAssetsLocally = appHasBiomes;
-
-  const biomes = appHasBiomes ? app.getComponent(BIOMES_STRING) : BIOMES;
-  const BIOMES_DATA = _createDataRecursively(BIOMES_STRING, biomes);
-
   // locals
 
   let frameCb = null;
@@ -91,6 +83,9 @@ export default e => {
       // managers
       const gpuTaskManager = new GPUTaskManager();
       const generationTaskManager = new GenerationTaskManager();
+
+      // material setup
+      _addNoLightingShaderChunk();
 
       // meshes
       const terrainMesh = new TerrainMesh({
