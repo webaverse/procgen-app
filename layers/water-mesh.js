@@ -1,13 +1,14 @@
-import * as THREE from "three";
-import metaversefile from "metaversefile";
+import * as THREE from 'three';
+import metaversefile from 'metaversefile';
 import {
   bufferSize,
   WORLD_BASE_HEIGHT,
   MIN_WORLD_HEIGHT,
   MAX_WORLD_HEIGHT,
-} from "../constants.js";
+} from '../constants.js';
 
-const {useProcGenManager, useGeometryBuffering, useLocalPlayer} = metaversefile;
+const {useProcGenManager, useGeometryBuffering, useLocalPlayer} =
+  metaversefile;
 const {BufferedMesh, GeometryAllocator} = useGeometryBuffering();
 const procGenManager = useProcGenManager();
 
@@ -28,9 +29,9 @@ const SWIM_ONSURFACE_RANGE = 0.05;
 const NORMAL_DAMPING = 1;
 const MAX_DAMPING = 4.2;
 const DAMPING_RATE = 1.03;
-const BREASTSTROKE = "breaststroke";
+const BREASTSTROKE = 'breaststroke';
 const WATER_HEIGHT = 0;
-const SWIM_ACTION = "swim";
+const SWIM_ACTION = 'swim';
 const INITIAL_SWIM_ACTION = {
   type: SWIM_ACTION,
   onSurface: false,
@@ -47,36 +48,41 @@ export class WaterMesh extends BufferedMesh {
     const allocator = new GeometryAllocator(
       [
         {
-          name: "position",
+          name: 'position',
           Type: Float32Array,
           itemSize: 3,
         },
         {
-          name: "normal",
+          name: 'normal',
           Type: Float32Array,
           itemSize: 3,
         },
         {
-          name: "factor",
+          name: 'flow',
+          Type: Float32Array,
+          itemSize: 3,
+        },
+        {
+          name: 'factor',
           Type: Float32Array,
           itemSize: 1,
         },
         {
-          name: "liquids",
+          name: 'liquids',
           Type: Int32Array,
           itemSize: 4,
         },
         {
-          name: "liquidsWeights",
+          name: 'liquidsWeights',
           Type: Float32Array,
           itemSize: 4,
         },
       ],
       {
         bufferSize,
-        boundingType: "box",
+        boundingType: 'box',
         // hasOcclusionCulling: true
-      },
+      }
     );
 
     const {geometry} = allocator;
@@ -90,12 +96,27 @@ export class WaterMesh extends BufferedMesh {
     this.gpuTasks = new Map();
     this.geometryBindings = new Map();
 
-    this.material = new THREE.MeshBasicMaterial({
-      color: 0x0000ff,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.9,
+    this.material = new THREE.ShaderMaterial({
+      // simple boilerplate vertex shader
+      vertexShader: `
+        attribute vec3 flow;
+        varying vec3 vFlow;
+
+        void main() {
+          vFlow = flow;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      // simple boilerplate fragment shader
+      fragmentShader: `
+        varying vec3 vFlow;
+
+        void main() {
+          gl_FragColor = vec4((vFlow.xz + 1.0) / 2.0, 0.f, 1.0);
+        }
+      `
     });
+
     this.geometry = geometry;
     this.physics = physics;
     this.physicsObjectsMap = new Map();
@@ -113,7 +134,7 @@ export class WaterMesh extends BufferedMesh {
         srcIndices,
         dstIndices,
         dstOffset,
-        positionOffset,
+        positionOffset
       ) => {
         const positionIndex = positionOffset / 3;
         for (let i = 0; i < srcIndices.length; i++) {
@@ -123,69 +144,76 @@ export class WaterMesh extends BufferedMesh {
       const _renderWaterMeshDataToGeometry = (
         waterGeometry,
         geometry,
-        geometryBinding,
+        geometryBinding
       ) => {
-        const positionOffset = geometryBinding.getAttributeOffset("position");
-        const normalOffset = geometryBinding.getAttributeOffset("normal");
-        const factorOffset = geometryBinding.getAttributeOffset("factor");
-        const liquidsOffset = geometryBinding.getAttributeOffset("liquids");
+        const positionOffset = geometryBinding.getAttributeOffset('position');
+        const normalOffset = geometryBinding.getAttributeOffset('normal');
+        const flowOffset = geometryBinding.getAttributeOffset('flow');
+        const factorOffset = geometryBinding.getAttributeOffset('factor');
+        const liquidsOffset = geometryBinding.getAttributeOffset('liquids');
         const liquidsWeightsOffset =
-          geometryBinding.getAttributeOffset("liquidsWeights");
+          geometryBinding.getAttributeOffset('liquidsWeights');
         const indexOffset = geometryBinding.getIndexOffset();
 
         _mapOffsettedIndices(
           waterGeometry.indices,
           geometry.index.array,
           indexOffset,
-          positionOffset,
+          positionOffset
         );
 
         geometry.attributes.position.update(
           positionOffset,
           waterGeometry.positions.length,
           waterGeometry.positions,
-          0,
+          0
         );
         geometry.attributes.normal.update(
           normalOffset,
           waterGeometry.normals.length,
           waterGeometry.normals,
-          0,
+          0
+        );
+        geometry.attributes.flow.update(
+          flowOffset,
+          waterGeometry.flows.length,
+          waterGeometry.flows,
+          0
         );
         geometry.attributes.factor.update(
           factorOffset,
           waterGeometry.factors.length,
           waterGeometry.factors,
-          0,
+          0
         );
         geometry.attributes.liquids.update(
           liquidsOffset,
           waterGeometry.liquids.length,
           waterGeometry.liquids,
-          0,
+          0
         );
         geometry.attributes.liquidsWeights.update(
           liquidsWeightsOffset,
           waterGeometry.liquidsWeights.length,
           waterGeometry.liquidsWeights,
-          0,
+          0
         );
         geometry.index.update(indexOffset, waterGeometry.indices.length);
       };
-      const _handleWaterMesh = waterGeometry => {
+      const _handleWaterMesh = (waterGeometry) => {
         const {chunkSize} = this.instance;
 
         const boundingBox = localBox.set(
           localVector3D.set(
             chunk.min.x * chunkSize,
             -WORLD_BASE_HEIGHT + MIN_WORLD_HEIGHT,
-            chunk.min.y * chunkSize,
+            chunk.min.y * chunkSize
           ),
           localVector3D2.set(
             (chunk.min.x + chunk.lod) * chunkSize,
             -WORLD_BASE_HEIGHT + MAX_WORLD_HEIGHT,
-            (chunk.min.y + chunk.lod) * chunkSize,
-          ),
+            (chunk.min.y + chunk.lod) * chunkSize
+          )
         );
         /* localSphere.center.set(
             (chunk.min.x + 0.5) * chunkSize,
@@ -206,7 +234,7 @@ export class WaterMesh extends BufferedMesh {
         const geometryBinding = this.allocator.alloc(
           waterGeometry.positions.length,
           waterGeometry.indices.length,
-          boundingBox,
+          boundingBox
           // min,
           // max,
           // this.appMatrix,
@@ -216,7 +244,7 @@ export class WaterMesh extends BufferedMesh {
         _renderWaterMeshDataToGeometry(
           waterGeometry,
           this.allocator.geometry,
-          geometryBinding,
+          geometryBinding
         );
 
         this.geometryBindings.set(key, geometryBinding);
@@ -227,29 +255,29 @@ export class WaterMesh extends BufferedMesh {
       const _handlePhysics = async () => {
         const physicsGeo = new THREE.BufferGeometry();
         physicsGeo.setAttribute(
-          "position",
-          new THREE.BufferAttribute(waterGeometry.positions, 3),
+          'position',
+          new THREE.BufferAttribute(waterGeometry.positions, 3)
         );
         physicsGeo.setIndex(
-          new THREE.BufferAttribute(waterGeometry.indices, 1),
+          new THREE.BufferAttribute(waterGeometry.indices, 1)
         );
         const physicsMesh = new THREE.Mesh(physicsGeo, fakeMaterial);
 
         const geometryBuffer = await this.physics.cookGeometryAsync(
-          physicsMesh,
+          physicsMesh
         );
 
         if (geometryBuffer && geometryBuffer.length !== 0) {
           this.matrixWorld.decompose(
             localVector3D,
             localQuaternion,
-            localVector3D2,
+            localVector3D2
           );
           const physicsObject = this.physics.addCookedGeometry(
             geometryBuffer,
             localVector3D,
             localQuaternion,
-            localVector3D2,
+            localVector3D2
           );
           this.physics.disableGeometryQueries(physicsObject); // disable each physicsObject
           this.physicsObjectsMap.set(key, physicsObject);
@@ -308,20 +336,20 @@ export class WaterMesh extends BufferedMesh {
           height,
           width,
           player.position,
-          player.quaternion,
+          player.quaternion
         ).objectIds;
       } else {
         localVector.set(
           player.position.x,
           waterSurfaceHeight,
-          player.position.z,
+          player.position.z
         );
         collisionIds = this.physics.overlapBox(
           width,
           height,
           width,
           localVector,
-          player.quaternion,
+          player.quaternion
         ).objectIds;
       }
       for (const collisionId of collisionIds) {
@@ -370,15 +398,13 @@ export class WaterMesh extends BufferedMesh {
     };
 
     if (contactWater) {
-      this.material.color.setHex(0x0000ff); // for testing
-
       const _calculateSwimHeight = () => {
         const outsideWaterRange =
           player.avatar.height * (1 - SWIM_HEIGHT_THRESHOLD);
         return player.position.y - outsideWaterRange;
       };
 
-      const _calculateSwimSurfaceHeight = swimHeight => {
+      const _calculateSwimSurfaceHeight = (swimHeight) => {
         const onSurfaceRange = player.avatar.height * SWIM_ONSURFACE_RANGE;
         return swimHeight + onSurfaceRange;
       };
@@ -395,7 +421,6 @@ export class WaterMesh extends BufferedMesh {
         _removeSwimAction();
       }
     } else {
-      this.material.color.setHex(0xff0000); // for testing
       _removeSwimAction();
     }
 
@@ -418,7 +443,7 @@ export class WaterMesh extends BufferedMesh {
     const localPlayer = useLocalPlayer();
     const lastUpdateCoordKey = getHashKey(
       this.lastUpdateCoord.x,
-      this.lastUpdateCoord.y,
+      this.lastUpdateCoord.y
     );
     const currentChunkPhysicObject =
       this.chunkPhysicObjcetMap.get(lastUpdateCoordKey); // use lodTracker.lastUpdateCoord as a key to check which chunk player currently at
@@ -428,7 +453,7 @@ export class WaterMesh extends BufferedMesh {
       const contactWater = this.checkWaterContact(
         currentChunkPhysicObject,
         localPlayer,
-        WATER_HEIGHT,
+        WATER_HEIGHT
       ); // check whether player contact the water
 
       // handle swimming action

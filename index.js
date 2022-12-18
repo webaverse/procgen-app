@@ -240,7 +240,7 @@ export default e => {
       await _waitForLoad();
 
       // frame handling
-      frameCb = () => {
+      frameCb = (timestamp) => {
         const _updateLodTracker = () => {
           const localPlayer = useLocalPlayer();
 
@@ -271,7 +271,7 @@ export default e => {
         _updateLodTracker();
 
         const _updateTerrainObjects = () => {
-          terrainObjects.update();
+          terrainObjects.update(timestamp);
         };
         _updateTerrainObjects();
 
@@ -289,8 +289,8 @@ export default e => {
     })(),
   );
 
-  useFrame(() => {
-    frameCb && frameCb();
+  useFrame(({timestamp}) => {
+    frameCb && frameCb(timestamp);
   });
 
   return app;

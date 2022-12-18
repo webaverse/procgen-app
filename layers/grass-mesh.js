@@ -71,7 +71,7 @@ export class GrassMesh extends THREE.Object3D {
     this.polygonMesh.setPackage(polygonPackage);
   }
 
-  update() {
-    // nothing
+  update(timestamp) {
+    this.polygonMesh.update(timestamp);
   }
 }
