@@ -62,6 +62,8 @@ const _createLiquidMaterial = () => {
 
       uniform float uTime;
       uniform mat4 textureMatrix;
+      uniform sampler2D waterNormalTexture;
+
       varying vec4 vUv;
       varying vec3 vWorldPosition;
       varying vec3 vPos;
@@ -93,23 +95,18 @@ const _createLiquidMaterial = () => {
           d.y * (a * cos(f))
         );
       }
-      
-      void main() {
-        vec3 pos = position;
-        vPos = position;
-        vUv = textureMatrix * vec4( pos, 1.0 );
-        vLiquids = liquids;
 
+      void setOcean (inout vec3 normal, inout vec3 pos) {
         // set wave here, now using 4 waves for ocean
         // 1.dirX  2.dirZ  3.steepness  4.waveLength
         vec4 waveA = vec4(1.0, 1.0, 0.05, 30.);
         vec4 waveB = vec4(1.0, 0.6, 0.05, 15.);
         vec4 waveC = vec4(1.0, 1.3, 0.05, 8.);
-        vec4 waveD = vec4(0.6, 1.0, 0.05, 5.);
+        vec4 waveD = vec4(-0.3, -0.7, 0.05, 1.75);
 
         vec3 tangent = vec3(1.0, 0.0, 0.0);
         vec3 binormal = vec3(0.0, 0.0, 1.0);
-        vec3 tempPos = position;
+        vec3 tempPos = pos;
   
         pos += gerstnerWave(waveA.x, waveA.y, waveA.z, waveA.w, tangent, binormal, tempPos);
         pos += gerstnerWave(waveB.x, waveB.y, waveB.z, waveB.w, tangent, binormal, tempPos);
@@ -118,7 +115,45 @@ const _createLiquidMaterial = () => {
 
         // set normal
         vec3 waveNormal = normalize(cross(binormal, tangent));
-        vNormal = waveNormal;
+        normal = waveNormal;
+      }
+
+      vec4 getNoise(vec2 uv) {
+        vec2 uv0 = (uv / 103.0) - vec2(uTime / 17.0, uTime / 29.0);
+        vec2 uv1 = uv / 107.0 + vec2( uTime / -19.0, uTime / 31.0 );
+        vec2 uv2 = uv / vec2(8907.0, 9803.0) - vec2(uTime / 101.0, uTime / 97.0);
+        vec2 uv3 = uv / vec2(1091.0, 1027.0) + vec2(uTime / 109.0, uTime / -113.0);
+        vec4 noise = texture2D(waterNormalTexture, uv0) +
+          texture2D(waterNormalTexture, uv1) +
+          texture2D(waterNormalTexture, uv2) +
+          texture2D(waterNormalTexture, uv3);
+        return noise * 0.5 - 1.0;
+      }
+      
+      void setRiver (inout vec3 normal, inout vec3 pos, vec2 uv) {
+        normal = normalize(getNoise(uv.xy)).rgb;
+        pos += normal;
+      }
+      
+      void main() {
+        vec3 pos = position;
+        vPos = position;
+        vUv = textureMatrix * vec4( pos, 1.0 );
+        vLiquids = liquids;
+
+        switch (liquids.x) {
+          case 0:
+            setOcean(vNormal, pos);
+            break;
+          case 1: // river
+          case 3: // waterfall
+            vec2 riverUv = (modelMatrix * vec4(pos, 1.0)).xz;
+            setRiver(vNormal, pos, riverUv);
+            break;
+          case 2:
+            // lava
+            break;
+        }
 
         vec4 modelPosition = modelMatrix * vec4(pos, 1.0);
         vec4 viewPosition = viewMatrix * modelPosition;
@@ -201,15 +236,15 @@ const _createLiquidMaterial = () => {
           return vec4(ceil(depth - saturate(alpha)));
         }
 
-        vec4 getNoise( vec2 uv ) {
-          vec2 uv0 = ( uv / 103.0 ) - vec2(uTime / 17.0, uTime / 29.0);
+        vec4 getNoise(vec2 uv) {
+          vec2 uv0 = (uv / 103.0) - vec2(uTime / 17.0, uTime / 29.0);
           vec2 uv1 = uv / 107.0 + vec2( uTime / -19.0, uTime / 31.0 );
-          vec2 uv2 = uv / vec2( 8907.0, 9803.0 ) - vec2( uTime / 101.0, uTime / 97.0 );
-          vec2 uv3 = uv / vec2( 1091.0, 1027.0 ) + vec2( uTime / 109.0, uTime / -113.0 );
-          vec4 noise = texture2D( waterNormalTexture, uv0 ) +
-            texture2D( waterNormalTexture, uv1 ) +
-            texture2D( waterNormalTexture, uv2 ) +
-            texture2D( waterNormalTexture, uv3 );
+          vec2 uv2 = uv / vec2(8907.0, 9803.0) - vec2(uTime / 101.0, uTime / 97.0);
+          vec2 uv3 = uv / vec2(1091.0, 1027.0) + vec2(uTime / 109.0, uTime / -113.0);
+          vec4 noise = texture2D(waterNormalTexture, uv0) +
+            texture2D(waterNormalTexture, uv1) +
+            texture2D(waterNormalTexture, uv2) +
+            texture2D(waterNormalTexture, uv3);
           return noise * 0.5 - 1.0;
         }
         
@@ -223,13 +258,11 @@ const _createLiquidMaterial = () => {
               ${oceanShader}
               break;
             case 1:
+            case 3:
               ${riverShader}
               break;
             case 2:
               gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-              break;
-            case 3:
-              gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
               break;
           }
           ${THREE.ShaderChunk.logdepthbuf_fragment}
