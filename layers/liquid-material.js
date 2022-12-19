@@ -118,23 +118,6 @@ const _createLiquidMaterial = () => {
         normal = waveNormal;
       }
 
-      vec4 getNoise(vec2 uv) {
-        vec2 uv0 = (uv / 103.0) - vec2(uTime / 17.0, uTime / 29.0);
-        vec2 uv1 = uv / 107.0 + vec2( uTime / -19.0, uTime / 31.0 );
-        vec2 uv2 = uv / vec2(8907.0, 9803.0) - vec2(uTime / 101.0, uTime / 97.0);
-        vec2 uv3 = uv / vec2(1091.0, 1027.0) + vec2(uTime / 109.0, uTime / -113.0);
-        vec4 noise = texture2D(waterNormalTexture, uv0) +
-          texture2D(waterNormalTexture, uv1) +
-          texture2D(waterNormalTexture, uv2) +
-          texture2D(waterNormalTexture, uv3);
-        return noise * 0.5 - 1.0;
-      }
-      
-      void setRiver (inout vec3 normal, inout vec3 pos, vec2 uv) {
-        normal = normalize(getNoise(uv.xy)).rgb;
-        pos += normal;
-      }
-      
       void main() {
         vec3 pos = position;
         vPos = position;
@@ -146,12 +129,10 @@ const _createLiquidMaterial = () => {
             setOcean(vNormal, pos);
             break;
           case 1: // river
-          case 3: // waterfall
-            vec2 riverUv = (modelMatrix * vec4(pos, 1.0)).xz;
-            setRiver(vNormal, pos, riverUv);
             break;
-          case 2:
-            // lava
+          case 2: // lava
+            break;
+          case 3: // waterfall
             break;
         }
 
