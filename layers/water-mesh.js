@@ -12,6 +12,8 @@ const {useProcGenManager, useGeometryBuffering, useLocalPlayer} =
 const {BufferedMesh, GeometryAllocator} = useGeometryBuffering();
 const procGenManager = useProcGenManager();
 
+const BASE_URL = import.meta.url.replace(/\/[^/]*$/, '');
+
 //
 const fakeMaterial = new THREE.MeshBasicMaterial({
   color: 0xffffff,
@@ -96,23 +98,41 @@ export class WaterMesh extends BufferedMesh {
     this.gpuTasks = new Map();
     this.geometryBindings = new Map();
 
+    const texture = new THREE.TextureLoader().load(BASE_URL + '/procgen-assets/noise.png');
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+
     this.material = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: {value: 0},
+        uTexture: {value: texture},
+      },
       // simple boilerplate vertex shader
       vertexShader: `
         attribute vec3 flow;
         varying vec3 vFlow;
+        varying vec4 vPosition;
 
         void main() {
+          vec4 modelPosition = modelMatrix * vec4(position, 1.0);
+          vec4 viewPosition = viewMatrix * modelPosition;
+          vec4 projectedPosition = projectionMatrix * viewPosition;
+          gl_Position = projectedPosition;
+
           vFlow = flow;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          vPosition = modelPosition;
         }
       `,
       // simple boilerplate fragment shader
       fragmentShader: `
+        uniform sampler2D uTexture;
+        uniform float uTime;
         varying vec3 vFlow;
+        varying vec4 vPosition;
 
         void main() {
-          gl_FragColor = vec4((vFlow.xz + 1.0) / 2.0, 0.f, 1.0);
+          vec2 uv = vec2(vPosition.x * 0.001 + uTime * vFlow.x, vPosition.z * 0.001 + uTime * vFlow.z);
+          vec4 color = texture2D(uTexture, uv);
+          gl_FragColor = vec4(color);
         }
       `
     });
@@ -439,7 +459,8 @@ export class WaterMesh extends BufferedMesh {
     }
   }
 
-  update() {
+  update(timestamp) {
+    this.material.uniforms.uTime.value = timestamp / 1000;
     const localPlayer = useLocalPlayer();
     const lastUpdateCoordKey = getHashKey(
       this.lastUpdateCoord.x,

@@ -276,7 +276,7 @@ export default e => {
         _updateTerrainObjects();
 
         const _updateWaterMesh = () => {
-          waterMesh.update();
+          waterMesh.update(timestamp);
           waterMesh.lastUpdateCoord.set(
             lodTracker.lastUpdateCoord.x,
             lodTracker.lastUpdateCoord.y,
