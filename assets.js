@@ -198,7 +198,17 @@ export const glbUrlSpecs = {
   }),
 };
 
-export const textureUrlSpecs = {
+// liquid
+export const liquidTextureUrlSpecs = {
+  shaderTexturePath: {
+    foamTexture: [`${procgenAssetsBaseUrl}water/water-shader/textures/Waves10.png`, true],
+    tDistortion: [`${procgenAssetsBaseUrl}water/water-shader/textures/distortion.png`, true],
+    waterNormalTexture: [`${procgenAssetsBaseUrl}water/water-shader/textures/waterNormal.png`, true],
+  },
+  cubeMapPath: `${procgenAssetsBaseUrl}water/water-shader/textures/cubeMap/`,
+};
+
+export const terrainTextureUrlSpecs = {
   simplexMap: `${procgenAssetsBaseUrl}noise/simplex-noise.png`,
   terrainEnvMap: `${procgenAssetsBaseUrl}terrain/envmaps/env.exr`,
   terrainDiffuseMaps: MATERIALS_INFO.map(m => {

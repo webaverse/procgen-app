@@ -4,11 +4,23 @@ const {useLocalPlayer} = metaversefile;
 
 const INITIAL_TEXTURE_MATRIX = new THREE.Matrix4();
 INITIAL_TEXTURE_MATRIX.set(
-  0.5, 0.0, 0.0, 0.5,
-  0.0, 0.5, 0.0, 0.5,
-  0.0, 0.0, 0.5, 0.5,
-  0.0, 0.0, 0.0, 1.0
-)
+  0.5,
+  0.0,
+  0.0,
+  0.5,
+  0.0,
+  0.5,
+  0.0,
+  0.5,
+  0.0,
+  0.0,
+  0.5,
+  0.5,
+  0.0,
+  0.0,
+  0.0,
+  1.0
+);
 
 class WaterRenderer {
   constructor(renderer, scene, camera, water) {
@@ -17,7 +29,7 @@ class WaterRenderer {
     this.camera = camera;
     this.water = water;
 
-    // for depth 
+    // for depth
     const pixelRatio = this.renderer.getPixelRatio();
     this.depthRenderTarget = new THREE.WebGLRenderTarget(
       window.innerWidth * pixelRatio,
@@ -33,7 +45,7 @@ class WaterRenderer {
         window.innerWidth * pr,
         window.innerHeight * pr
       );
-    })
+    });
     this.depthRenderTarget.texture.minFilter = THREE.NearestFilter;
     this.depthRenderTarget.texture.magFilter = THREE.NearestFilter;
     this.depthRenderTarget.texture.generateMipmaps = false;
@@ -63,28 +75,36 @@ class WaterRenderer {
     this.textureMatrix = new THREE.Matrix4();
     this.reflectionVirtualCamera = new THREE.PerspectiveCamera();
     const parameters = {
-        minFilter: THREE.LinearFilter,
-        magFilter: THREE.LinearFilter,
-        format: THREE.RGBAFormat,
-        stencilBuffer: false,
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      format: THREE.RGBAFormat,
+      stencilBuffer: false,
     };
-    this.mirrorRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio, parameters);
+    this.mirrorRenderTarget = new THREE.WebGLRenderTarget(
+      window.innerWidth * window.devicePixelRatio,
+      window.innerHeight * window.devicePixelRatio,
+      parameters
+    );
 
     // for refraction
     this.refractionVirtualCamera = new THREE.PerspectiveCamera();
     this.refractionVirtualCamera.matrixAutoUpdate = false;
     this.refractionVirtualCamera.userData.refractor = true;
     this.refractorPlane = new THREE.Plane();
-    this.refractionRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio, parameters);
+    this.refractionRenderTarget = new THREE.WebGLRenderTarget(
+      window.innerWidth * window.devicePixelRatio,
+      window.innerHeight * window.devicePixelRatio,
+      parameters
+    );
     this.refractorWorldPosition = new THREE.Vector3();
     this.refractP = new THREE.Vector3();
     this.refractQ = new THREE.Quaternion();
     this.refractS = new THREE.Vector3();
     this.clipVector = new THREE.Vector4();
     this.refractionClipPlane = new THREE.Plane();
-    
   }
-  renderDepthTexture(depthInvisibleList){
+
+  renderDepthTexture(depthInvisibleList) {
     this.renderer.setRenderTarget(this.depthRenderTarget);
     this.renderer.clear();
     for (const o of depthInvisibleList) {
@@ -102,6 +122,7 @@ class WaterRenderer {
     }
     this.water.visible = true;
   }
+
   renderMirror(renderer, scene, camera) {
     this.reflectorWorldPosition.setFromMatrixPosition(this.water.matrixWorld);
     this.cameraWorldPosition.setFromMatrixPosition(camera.matrixWorld);
@@ -144,20 +165,26 @@ class WaterRenderer {
     // Update the texture matrix
     this.textureMatrix.copy(INITIAL_TEXTURE_MATRIX);
     this.textureMatrix.multiply(this.reflectionVirtualCamera.projectionMatrix);
-    this.textureMatrix.multiply(this.reflectionVirtualCamera.matrixWorldInverse);
+    this.textureMatrix.multiply(
+      this.reflectionVirtualCamera.matrixWorldInverse
+    );
     this.textureMatrix.multiply(this.water.matrixWorld);
-
 
     // Now update projection matrix with new clip plane, implementing code from: http://www.terathon.com/code/oblique.html
     // Paper explaining this technique: http://www.terathon.com/lengyel/Lengyel-Oblique.pdf
-    this.reflectorPlane.setFromNormalAndCoplanarPoint(this.normal, this.reflectorWorldPosition);
-    this.reflectorPlane.applyMatrix4(this.reflectionVirtualCamera.matrixWorldInverse);
+    this.reflectorPlane.setFromNormalAndCoplanarPoint(
+      this.normal,
+      this.reflectorWorldPosition
+    );
+    this.reflectorPlane.applyMatrix4(
+      this.reflectionVirtualCamera.matrixWorldInverse
+    );
 
     this.clipPlane.set(
       this.reflectorPlane.normal.x,
       this.reflectorPlane.normal.y,
       this.reflectorPlane.normal.z,
-      this.reflectorPlane.constant
+      this.reflectorPlane.constant,
     );
 
     const projectionMatrix = this.reflectionVirtualCamera.projectionMatrix;
@@ -169,7 +196,8 @@ class WaterRenderer {
       (Math.sign(this.clipPlane.y) + projectionMatrix.elements[9]) /
       projectionMatrix.elements[5];
     this.q.z = -1.0;
-    this.q.w = (1.0 + projectionMatrix.elements[10]) / projectionMatrix.elements[14];
+    this.q.w =
+      (1.0 + projectionMatrix.elements[10]) / projectionMatrix.elements[14];
 
     // Calculate the scaled plane vector
     this.clipPlane.multiplyScalar(2.0 / this.clipPlane.dot(this.q));
@@ -182,7 +210,7 @@ class WaterRenderer {
     projectionMatrix.elements[14] = this.clipPlane.w;
 
     this.eye.setFromMatrixPosition(camera.matrixWorld);
-    
+
     // Render
 
     // this.mirrorRenderTarget.texture.encoding = renderer.outputEncoding;
@@ -226,10 +254,11 @@ class WaterRenderer {
 
     this.water.visible = true;
   }
+
   renderRefraction(renderer, scene, camera) {
     // ensure refractors are rendered only once per frame
 
-    if ( camera.userData.refractor === true ) return;
+    if (camera.userData.refractor === true) return;
 
     this.refractorWorldPosition.setFromMatrixPosition(this.water.matrixWorld);
     this.cameraWorldPosition.setFromMatrixPosition(camera.matrixWorld);
@@ -241,13 +270,20 @@ class WaterRenderer {
 
     if (this.view.dot(this.normal) > 0) return;
 
-    this.water.matrixWorld.decompose(this.refractP, this.refractQ, this.refractS);
+    this.water.matrixWorld.decompose(
+      this.refractP,
+      this.refractQ,
+      this.refractS,
+    );
     this.normal.set(0, -1, 0).applyQuaternion(this.refractQ).normalize();
 
     // flip the normal because we want to cull everything above the plane
     this.normal.negate();
 
-    this.refractorPlane.setFromNormalAndCoplanarPoint(this.normal, this.refractP);
+    this.refractorPlane.setFromNormalAndCoplanarPoint(
+      this.normal,
+      this.refractP,
+    );
 
     this.textureMatrix.copy(INITIAL_TEXTURE_MATRIX);
     this.textureMatrix.multiply(camera.projectionMatrix);
@@ -255,7 +291,9 @@ class WaterRenderer {
     this.textureMatrix.multiply(this.water.matrixWorld);
 
     this.refractionVirtualCamera.matrixWorld.copy(camera.matrixWorld);
-    this.refractionVirtualCamera.matrixWorldInverse.copy(this.refractionVirtualCamera.matrixWorld).invert();
+    this.refractionVirtualCamera.matrixWorldInverse
+      .copy(this.refractionVirtualCamera.matrixWorld)
+      .invert();
     this.refractionVirtualCamera.projectionMatrix.copy(camera.projectionMatrix);
     this.refractionVirtualCamera.far = camera.far; // used in WebGLBackground
 
@@ -264,19 +302,31 @@ class WaterRenderer {
     // Journal of Game Development, Vol. 1, No. 2 (2005), Charles River Media, pp. 5–16
 
     this.refractionClipPlane.copy(this.refractorPlane);
-    this.refractionClipPlane.applyMatrix4(this.refractionVirtualCamera.matrixWorldInverse);
+    this.refractionClipPlane.applyMatrix4(
+      this.refractionVirtualCamera.matrixWorldInverse
+    );
 
-    this.clipVector.set(this.refractionClipPlane.normal.x, this.refractionClipPlane.normal.y, this.refractionClipPlane.normal.z, this.refractionClipPlane.constant);
+    this.clipVector.set(
+      this.refractionClipPlane.normal.x,
+      this.refractionClipPlane.normal.y,
+      this.refractionClipPlane.normal.z,
+      this.refractionClipPlane.constant,
+    );
 
     // calculate the clip-space corner point opposite the clipping plane and
     // transform it into camera space by multiplying it by the inverse of the projection matrix
 
     const projectionMatrix = this.refractionVirtualCamera.projectionMatrix;
 
-    this.q.x = (Math.sign(this.clipVector.x) + projectionMatrix.elements[8]) / projectionMatrix.elements[0];
-    this.q.y = (Math.sign(this.clipVector.y) + projectionMatrix.elements[9]) / projectionMatrix.elements[5];
-    this.q.z = - 1.0;
-    this.q.w = (1.0 + projectionMatrix.elements[10]) / projectionMatrix.elements[14];
+    this.q.x =
+      (Math.sign(this.clipVector.x) + projectionMatrix.elements[8]) /
+      projectionMatrix.elements[0];
+    this.q.y =
+      (Math.sign(this.clipVector.y) + projectionMatrix.elements[9]) /
+      projectionMatrix.elements[5];
+    this.q.z = -1.0;
+    this.q.w =
+      (1.0 + projectionMatrix.elements[10]) / projectionMatrix.elements[14];
 
     // calculate the scaled plane vector
 
@@ -316,8 +366,6 @@ class WaterRenderer {
 
     this.water.visible = true;
   }
-  
-
 }
 
 export default WaterRenderer;

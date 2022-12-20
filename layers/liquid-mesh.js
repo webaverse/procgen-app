@@ -7,7 +7,7 @@ import {
   MAX_WORLD_HEIGHT,
 } from "../constants.js";
 import LiquidPackage from '../meshes/liquid-package.js';
-import {textureUrlSpecs} from '../liquid-effect/assets.js';
+import {liquidTextureUrlSpecs} from '../assets.js';
 import _createLiquidMaterial from './liquid-material.js';
 import WaterRenderer from '../liquid-effect/water-render.js';
 
@@ -27,8 +27,8 @@ const localVector = new THREE.Vector3();
 //
 
 // constants
-const SHADER_TEXTURE_PATHS = textureUrlSpecs.shaderTexturePath;
-const CUBEMAP_PATHS = textureUrlSpecs.cubeMapPath;
+const SHADER_TEXTURE_PATHS = liquidTextureUrlSpecs.shaderTexturePath;
+const CUBEMAP_PATHS = liquidTextureUrlSpecs.cubeMapPath;
 
 const SWIM_HEIGHT_THRESHOLD = 0.75;
 const SWIM_ONSURFACE_RANGE = 0.05;
