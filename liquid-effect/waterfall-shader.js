@@ -1,4 +1,6 @@
-export const riverShader = /* glsl */ `
+export const waterfallShader = /* glsl */ `
+  const float WATERFALL_OPACITY = 0.7;
+
   float mask = readDepth(tMask, screenUV);
   float depthScale = 15.;
   float depthFalloff = 3.;
@@ -7,8 +9,7 @@ export const riverShader = /* glsl */ `
 
   vec4 cosGradColor = cosGradient(sceneDepth, phases, amplitudes, frequencies, offsets);
   cosGradColor = clamp(cosGradColor, vec4(0.), vec4(1.));
-	float op = mask < 1. ? 1. - sceneDepth : 1.0;
-  vec4 waterColor = vec4(cosGradColor.rgb, op);
+  vec4 waterColor = vec4(cosGradColor.rgb, WATERFALL_OPACITY);
 
   vec3 surfaceNormal = normalize(getNoise(vWorldPosition.xz)).rgb;
   vec3 worldToEye = eye - vWorldPosition.xyz;

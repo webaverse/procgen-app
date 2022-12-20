@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {oceanShader} from '../liquid-effect/ocean-shader.js';
 import {riverShader} from '../liquid-effect/river-shader.js';
+import {waterfallShader} from '../liquid-effect/waterfall-shader.js';
 
 const _createLiquidMaterial = () => {
   const material = new THREE.ShaderMaterial({
@@ -236,15 +237,25 @@ const _createLiquidMaterial = () => {
 
           switch (vLiquids.x) {
             case 0:
+            {
               ${oceanShader}
               break;
+            }
             case 1:
-            case 3:
+            {
               ${riverShader}
               break;
+            }
+            case 3:
+            {
+              ${waterfallShader}
+              break;
+            }
             case 2:
+            {
               gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
               break;
+            }
           }
           ${THREE.ShaderChunk.logdepthbuf_fragment}
         }
