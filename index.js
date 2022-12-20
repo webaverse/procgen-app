@@ -2,7 +2,7 @@ import metaversefile from "metaversefile";
 import * as THREE from "three";
 
 import {TerrainMesh} from "./layers/terrain-mesh.js";
-import {WaterMesh} from "./layers/water-mesh.js";
+import {LiquidMesh} from "./layers/liquid-mesh.js";
 // import {BarrierMesh} from './layers/barrier-mesh.js';
 import {glbUrlSpecs} from "./assets.js";
 import {GrassMesh} from "./layers/grass-mesh.js";
@@ -99,22 +99,15 @@ export default e => {
       app.add(terrainMesh);
       terrainMesh.updateMatrixWorld();
 
-      const waterMesh = new WaterMesh({
-        instance,
-        gpuTaskManager,
-        physics,
-      });
-      waterMesh.frustumCulled = false;
-      app.add(waterMesh);
-      waterMesh.updateMatrixWorld();
+      
 
       /* const barrierMesh = new BarrierMesh({
-      instance,
-      gpuTaskManager,
-    });
-    barrierMesh.frustumCulled = false;
-    app.add(barrierMesh);
-    barrierMesh.updateMatrixWorld(); */
+        instance,
+        gpuTaskManager,
+      });
+      barrierMesh.frustumCulled = false;
+      app.add(barrierMesh);
+      barrierMesh.updateMatrixWorld(); */
 
       const TERRAIN_OBJECTS_MESHES = {
         treeMesh: new TerrainObjectSpecs(InstancedObjectGroup, treeUrls, true),
@@ -137,6 +130,17 @@ export default e => {
       );
       app.add(terrainObjects);
       terrainObjects.updateMatrixWorld();
+
+      const liquidMesh = new LiquidMesh({
+        instance,
+        gpuTaskManager,
+        physics,
+      });
+      liquidMesh.frustumCulled = false;
+      app.add(liquidMesh);
+      liquidMesh.depthInvisibleList.push(terrainObjects);
+      liquidMesh.updateMatrixWorld();
+      
       // genration events handling
       lodTracker.onChunkAdd(async chunk => {
         const key = procGenManager.getNodeHash(chunk);
@@ -159,7 +163,7 @@ export default e => {
 
           // heightfield
           terrainMesh.addChunk(chunk, heightfield);
-          waterMesh.addChunk(chunk, heightfield);
+          liquidMesh.addChunk(chunk, heightfield);
           // barrierMesh.addChunk(chunk, heightfield);
 
           const terrainObjectInstances = {
@@ -176,7 +180,7 @@ export default e => {
         generation.addEventListener("geometryremove", e => {
           // heightfield
           terrainMesh.removeChunk(chunk);
-          waterMesh.removeChunk(chunk);
+          liquidMesh.removeChunk(chunk);
           // barrierMesh.removeChunk(chunk);
 
           terrainObjects.removeChunks(chunk);
@@ -235,6 +239,7 @@ export default e => {
         await Promise.all([
           terrainMesh.waitForLoad(),
           terrainObjects.waitForLoad(),
+          liquidMesh.waitForLoad(),
         ]);
       };
       await _waitForLoad();
@@ -275,14 +280,14 @@ export default e => {
         };
         _updateTerrainObjects();
 
-        const _updateWaterMesh = () => {
-          waterMesh.update(timestamp);
-          waterMesh.lastUpdateCoord.set(
+        const _updateLiquidMesh = () => {
+          liquidMesh.update(timestamp);
+          liquidMesh.lastUpdateCoord.set(
             lodTracker.lastUpdateCoord.x,
             lodTracker.lastUpdateCoord.y,
           );
         };
-        _updateWaterMesh();
+        _updateLiquidMesh();
 
         gpuTaskManager.update();
       };
