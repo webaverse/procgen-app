@@ -1,4 +1,4 @@
-export const riverShader =  `
+export const riverShader =  /* glsl */`
   float mask = readDepth(tMask, screenUV);
   float depthScale = 15.;
   float depthFalloff = 3.;

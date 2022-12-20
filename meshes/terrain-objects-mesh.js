@@ -46,9 +46,9 @@ export class TerrainObjectsMesh extends THREE.Object3D {
     }
   }
 
-  update() {
+  update(timestamp) {
     for (const [key, mesh] of Object.entries(this.meshes)) {
-      mesh.update();
+      mesh.update(timestamp);
     }
   }
 }

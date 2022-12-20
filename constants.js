@@ -14,4 +14,9 @@ export const GRASS_COLOR_ABOVE_DIRT = '#99ff00';
 // Materials
 export const NO_LIGHT_MATERIAL_SHADOW_INTENSITY = 0.5;
 
+// Env Effects
+
+export const WIND_EFFECT_OVER_GRASS = 0.4;
+export const WIND_SPEED = 0.5;
+
 export const GET_COLOR_PARAMETER_NAME = 'materialIndex';

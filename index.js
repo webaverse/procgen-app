@@ -276,7 +276,7 @@ export default e => {
         _updateLodTracker();
 
         const _updateTerrainObjects = () => {
-          terrainObjects.update();
+          terrainObjects.update(timestamp);
         };
         _updateTerrainObjects();
 

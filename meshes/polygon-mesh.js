@@ -6,6 +6,8 @@ import {
   maxAnisotropy,
   MAX_WORLD_HEIGHT,
   MIN_WORLD_HEIGHT,
+  WIND_EFFECT_OVER_GRASS,
+  WIND_SPEED,
   // bufferSize,
   WORLD_BASE_HEIGHT,
 } from "../constants.js";
@@ -92,6 +94,11 @@ const _renderPolygonGeometry = (
     drawCall.updateTexture(instanceAttribute.name, textures[i].offset, index * 4);
   }
 };
+
+const _storeShader = (material, shader) => {
+  // storing the shader so we can access it later
+  material.userData.shader = shader;
+}
 
 const _addDepthPackingShaderCode = shader => {
   return /* glsl */ `#define DEPTH_PACKING 3201` + "\n" + shader;
@@ -233,19 +240,24 @@ export class PolygonPackage {
 
 const POLYGON_MESH_INSTANCE_ATTRIBUTES = [
   {
-    name: "p",
+    name: "p", // position
     Type: Float32Array,
     itemSize: 3,
   },
   {
-    name: "q",
+    name: "q", // quaternion
     Type: Float32Array,
     itemSize: 4,
   },
   {
-    name: "s",
+    name: "s", // scale
     Type: Float32Array,
     itemSize: 1,
+  },
+  {
+    name: "c", // color
+    Type: Float32Array,
+    itemSize: 3,
   },
 ];
 export class PolygonMesh extends InstancedBatchedMesh {
@@ -283,11 +295,14 @@ export class PolygonMesh extends InstancedBatchedMesh {
 
       #include <uv_pars_vertex>
 
+      varying vec3 vColor;
+
       uniform sampler2D pTexture;
       uniform sampler2D qTexture;
       uniform sampler2D sTexture;
+      uniform sampler2D cTexture;
 
-      vec3 rotate_vertex_position(vec3 position, vec4 q) { 
+      vec3 rotateVertexPosition(vec3 position, vec4 q) { 
         return position + 2.0 * cross(q.xyz, cross(q.xyz, position) + q.w * position);
       }
     `;
@@ -301,19 +316,25 @@ export class PolygonMesh extends InstancedBatchedMesh {
       float x = mod(float(instanceIndex), width);
       float y = floor(float(instanceIndex) / width);
       vec2 pUv = (vec2(x, y) + 0.5) / vec2(width, height);
-      vec3 p = texture2D(pTexture, pUv).xyz;
-      vec4 q = texture2D(qTexture, pUv).xyzw;
-      float s = texture2D(sTexture, pUv).x;
+
+      vec3 p = texture2D(pTexture, pUv).xyz; // position
+      vec4 q = texture2D(qTexture, pUv).xyzw; // quaternion
+      float s = texture2D(sTexture, pUv).x; // scale
+      vec3 c = texture2D(cTexture, pUv).xyz; // color
 
       transformed *= s; // scale
-      transformed = rotate_vertex_position(transformed, q);
+      transformed = rotateVertexPosition(transformed, q);
       transformed += p;
+
+      vColor = c;
     `;
 
     const customUvParsFragment = /* glsl */ `
       #undef USE_INSTANCING
 
       #include <uv_pars_fragment>
+
+      varying vec3 vColor;
     `;
 
     const customColorFragment = /* glsl */ `
@@ -411,7 +432,7 @@ export class PolygonMesh extends InstancedBatchedMesh {
         const lodIndex = Math.log2(chunk.lod);
         const drawChunks = Array(instances.length);
         for (let i = 0; i < instances.length; i++) {
-          const {instanceId, ps, qs, scales} = instances[i];
+          const {instanceId, ps, qs, scales, colors} = instances[i];
           const geometryIndex = instanceId;
           const numInstances = ps.length / 3;
 
@@ -421,7 +442,7 @@ export class PolygonMesh extends InstancedBatchedMesh {
             numInstances,
             boundingBox,
           );
-          const attributes = [ps, qs, scales];
+          const attributes = [ps, qs, scales, colors];
 
           _renderPolygonGeometry(drawChunk, attributes, this.positionIndex, this.instanceAttributes);
           drawChunks[i] = drawChunk;
@@ -472,19 +493,24 @@ export class PolygonMesh extends InstancedBatchedMesh {
 
 const GRASS_INSTANCE_ATTRIBUTES = [
   {
-    name: "p",
+    name: "p", // position
     Type: Float32Array,
     itemSize: 3,
   },
   {
-    name: "q",
+    name: "q", // quaternion
     Type: Float32Array,
     itemSize: 4,
   },
   {
-    name: "s",
+    name: "s", // scale
     Type: Float32Array,
     itemSize: 1,
+  },
+  {
+    name: "c", // color
+    Type: Float32Array,
+    itemSize: 3,
   },
   {
     name: "materials",
@@ -534,6 +560,9 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
       shader.uniforms.uGrassBladeHeight = {
         value: null,
       };
+      shader.uniforms.uTime = {
+        value: 0,
+      };
     };
 
     const customUvParsVertex = /* glsl */ `
@@ -543,23 +572,25 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
 
       uniform sampler2D pTexture;
       uniform sampler2D qTexture;
+      uniform sampler2D cTexture;
       uniform sampler2D sTexture;
       uniform sampler2D materialsTexture;
       uniform sampler2D materialsWeightsTexture;
       uniform sampler2D grassPropsTexture;
       uniform float uGrassBladeHeight;
+      uniform float uTime;
 
       varying vec2 vObjectUv;
       varying vec3 vObjectNormal;
       varying vec3 vPosition;
+      varying vec3 vColor;
 
       flat varying ivec4 vMaterials;
       varying vec4 vMaterialsWeights;
 
       varying float vGrassHeight;
-      varying vec3 vGrassColorMultiplier;
 
-      vec3 rotate_vertex_position(vec3 position, vec4 q) { 
+      vec3 rotateVertexPosition(vec3 position, vec4 q) { 
         return position + 2.0 * cross(q.xyz, cross(q.xyz, position) + q.w * position);
       }
     `;
@@ -576,31 +607,42 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
       float y = floor(float(instanceIndex) / width);
       vec2 pUv = (vec2(x, y) + 0.5) / vec2(width, height);
 
-      vec3 p = texture2D(pTexture, pUv).xyz;
-      vec4 q = texture2D(qTexture, pUv).xyzw;
-      float s = texture2D(sTexture, pUv).x;
+      vec3 p = texture2D(pTexture, pUv).xyz; // position
+      vec4 q = texture2D(qTexture, pUv).xyzw; // quaternion
+      float s = texture2D(sTexture, pUv).x; // scale
+      vec3 c = texture2D(cTexture, pUv).xyz; // color
 
       vec4 materials = texture2D(materialsTexture, pUv).xyzw;
       vec4 materialsWeights = texture2D(materialsWeightsTexture, pUv).xyzw;
 
       vec4 grassProps = texture2D(grassPropsTexture, pUv).xyzw;
-      vec3 grassColorMultiplier = grassProps.xyz;
+
+      float randomBladeValue = grassProps.x;
       float grassHeightMultiplier = grassProps.w;
 
       // * Grass Height Range -> [0.0, 1.0]
       float grassHeight = transformed.y / uGrassBladeHeight * grassHeightMultiplier;
       vec3 scaledPosition = transformed;
-      scaledPosition.x *= s; // scale
+      scaledPosition *= s; // scale
       scaledPosition.y *= grassHeight; // height scale
 
-      transformed = rotate_vertex_position(scaledPosition, q);
+      // height
+      float grassWorldHeight = grassHeight * s;
+
+      // wind
+      float windSpeed = uTime * randomBladeValue * ${WIND_SPEED};
+      float wind = sin(windSpeed) * grassWorldHeight * ${WIND_EFFECT_OVER_GRASS};
+
+      // transform processing
+      transformed = rotateVertexPosition(scaledPosition, q);
       transformed += p;
+      transformed.x += wind;
 
       // vObjectUv = uv;
       vObjectNormal = normal;
       vPosition = transformed;
-      vGrassHeight = grassHeight * s; // scale
-      vGrassColorMultiplier = grassColorMultiplier;
+      vColor = c;
+      vGrassHeight = grassWorldHeight;
       vMaterials = ivec4(materials);
       vMaterialsWeights = materialsWeights;
       `;
@@ -613,14 +655,14 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
       varying vec2 vObjectUv;
       varying vec3 vObjectNormal;
       varying vec3 vPosition;
+      varying vec3 vColor;
 
       flat varying ivec4 vMaterials;
       varying vec4 vMaterialsWeights;
 
       varying float vGrassHeight;
-      varying vec3 vGrassColorMultiplier;
 
-      // uniform sampler2D map;
+      uniform float uTime;
 
       vec3 getGrassColor(int ${GET_COLOR_PARAMETER_NAME}) {
         ${GRASS_COLORS_SHADER_CODE};
@@ -651,7 +693,9 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
       grassColor.g += vGrassHeight / 1.5;
       grassColor.b += vGrassHeight / 4.0;
 
-      grassColor *= vGrassColorMultiplier;
+      grassColor *= vColor;
+
+      grassColor = clamp(grassColor, 0.0, 0.85);
 
       diffuseColor = vec4(grassColor, grassAlpha);
     `;
@@ -665,6 +709,7 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
       depthWrite: false,
       // alphaTest: 0.01,
       onBeforeCompile: shader => {
+        _storeShader(material, shader);
         _setupUniforms(shader);
         _setupPolygonMeshShaderCode(shader, {
           customUvParsVertex,
@@ -672,6 +717,8 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
           customUvParsFragment,
           customColorFragment,
         });
+
+
         return shader;
       },
     });
@@ -752,7 +799,7 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
         const lodIndex = Math.log2(chunk.lod);
         const drawChunks = Array(instances.length);
         for (let i = 0; i < instances.length; i++) {
-          const {instanceId, ps, qs, scales, materials, materialsWeights, grassProps} =
+          const {instanceId, ps, qs, scales, colors, materials, materialsWeights, grassProps} =
             instances[i];
           const geometryIndex = instanceId;
           const numInstances = ps.length / 3;
@@ -763,7 +810,7 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
             numInstances,
             boundingBox,
           );
-          const attributes = [ps, qs, scales, materials, materialsWeights, grassProps];
+          const attributes = [ps, qs, scales, colors, materials, materialsWeights, grassProps];
           _renderPolygonGeometry(
             drawChunk,
             attributes,
@@ -794,6 +841,13 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
     this.physics.removeGeometry(phys);
     const drawcall = this.instanceObjects.get(physicsId);
     drawcall.decrementInstanceCount();
+  }
+
+  update(timestamp) {
+    const shader = this.material.userData.shader;
+    if(shader) {
+      shader.uniforms.uTime.value = timestamp / 1000;
+    }
   }
 
   setPackage(pkg) {
