@@ -72,8 +72,9 @@ export const oceanShader =  /* glsl */`
 
 		vec3 worldToEye = eye - vWorldPosition.xyz;
 		float distance = length(worldToEye);
-		float distortionScale = 3.;
-		vec2 distortion = surfaceNormal.xz * (0.001 + 1.0 / distance) * distortionScale;
+		float distortionScaleDepth = getDepthFade(fragmentLinearEyeDepth, linearEyeDepth, 200., 1.5);
+		float distortionScale = 2. * (1. - distortionScaleDepth);
+		vec2 distortion = surfaceNormal.xz * (0.001 + 0.3 / distance) * distortionScale;
 		vec3 reflectionSample = vec3(texture2D(mirror, vUv.xy / vUv.w + distortion));
 		float theta = max(dot(eyePosition, surfaceNormal), 0.0);
 		float rf0 = 0.1;
