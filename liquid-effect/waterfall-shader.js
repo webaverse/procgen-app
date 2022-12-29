@@ -11,7 +11,7 @@ export const waterfallShader = /* glsl */ `
   cosGradColor = clamp(cosGradColor, vec4(0.), vec4(1.));
   vec4 waterColor = vec4(cosGradColor.rgb, WATERFALL_OPACITY);
 
-  vec3 surfaceNormal = normalize(getNoise(vWorldPosition.xz)).rgb;
+  vec3 surfaceNormal = normalize(getNoise(vWorldPosition.xz * 5., uTime)).rgb;
   vec3 worldToEye = eye - vWorldPosition.xyz;
   vec3 eyeDirection = normalize(worldToEye);
   float distance = length(worldToEye);

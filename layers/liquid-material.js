@@ -218,11 +218,11 @@ const _createLiquidMaterial = () => {
           return vec4(ceil(depth - saturate(alpha)));
         }
 
-        vec4 getNoise(vec2 uv) {
-          vec2 uv0 = (uv / 103.0) - vec2(uTime / 17.0, uTime / 29.0);
-          vec2 uv1 = uv / 107.0 + vec2( uTime / -19.0, uTime / 31.0 );
-          vec2 uv2 = uv / vec2(8907.0, 9803.0) - vec2(uTime / 101.0, uTime / 97.0);
-          vec2 uv3 = uv / vec2(1091.0, 1027.0) + vec2(uTime / 109.0, uTime / -113.0);
+        vec4 getNoise(vec2 uv, float time) {
+          vec2 uv0 = (uv / 103.0) - vec2(time / 17.0, time / 29.0);
+          vec2 uv1 = uv / 107.0 + vec2( time / -19.0, time / 31.0 );
+          vec2 uv2 = uv / vec2(8907.0, 9803.0) - vec2(time / 101.0, time / 97.0);
+          vec2 uv3 = uv / vec2(1091.0, 1027.0) + vec2(time / 109.0, time / -113.0);
           vec4 noise = texture2D(waterNormalTexture, uv0) +
             texture2D(waterNormalTexture, uv1) +
             texture2D(waterNormalTexture, uv2) +
