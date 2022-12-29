@@ -66,7 +66,10 @@ export const oceanShader =  /* glsl */`
 		waterColor = waterColor * ((vec4(1.0) - foamLineCutOut)) + foamT;
 
 		//################################## handle mirror ##################################
-		vec3 surfaceNormal = normalize(vNormal * vec3(1.5, 1.0, 1.5));
+		float noiseNormalScale = 0.9;
+		vec3 noiseNormal = normalize(getNoise(vWorldPosition.xz * 5., uTime * 0.25)).rgb * noiseNormalScale;
+		vec3 surfaceNormal = normalize((vNormal + noiseNormal) * vec3(1.5, 1.0, 1.5));
+
 		vec3 worldToEye = eye - vWorldPosition.xyz;
 		float distance = length(worldToEye);
 		float distortionScale = 3.;

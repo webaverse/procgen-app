@@ -10,7 +10,7 @@ export const riverShader = /* glsl */ `
 	float op = mask < 1. ? 1. - sceneDepth : 1.0;
   vec4 waterColor = vec4(cosGradColor.rgb, op);
 
-  vec3 surfaceNormal = normalize(getNoise(vWorldPosition.xz)).rgb;
+  vec3 surfaceNormal = normalize(getNoise(vWorldPosition.xz * 5., uTime)).rgb;
   vec3 worldToEye = eye - vWorldPosition.xyz;
   vec3 eyeDirection = normalize(worldToEye);
   float distance = length(worldToEye);
