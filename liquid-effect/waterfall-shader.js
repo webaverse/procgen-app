@@ -1,15 +1,22 @@
 export const waterfallShader = /* glsl */ `
   const float WATERFALL_OPACITY = 0.7;
 
-  float mask = readDepth(tMask, screenUV);
-  float depthScale = 15.;
-  float depthFalloff = 3.;
-  float sceneDepth = getDepthFade(fragmentLinearEyeDepth, linearEyeDepth, depthScale, depthFalloff);
-  sceneDepth = mask < 1. ? sceneDepth : 1. - sceneDepth;
+  float opDepthScale = 15.;
+  float opDepthFalloff = 3.;
+  float opDepth = getDepthFade(fragmentLinearEyeDepth, linearEyeDepth, opDepthScale, opDepthFalloff);
 
-  vec4 cosGradColor = cosGradient(sceneDepth, phases, amplitudes, frequencies, offsets);
+  float mask = readDepth(tMask, screenUV);
+  float op = mask < 1. ? 1. - opDepth : 1.0;
+
+  float colorDepthScale = 50.;
+  float colorDepthFalloff = 3.;
+  float colorDepth = getDepthFade(fragmentLinearEyeDepth, linearEyeDepth, colorDepthScale, colorDepthFalloff);
+
+  float colorLerp = mask < 1. ? colorDepth : 0.0;
+  vec4 cosGradColor = cosGradient(colorLerp, phases, amplitudes, frequencies, offsets);
   cosGradColor = clamp(cosGradColor, vec4(0.), vec4(1.));
-  vec4 waterColor = vec4(cosGradColor.rgb, WATERFALL_OPACITY);
+
+  vec4 waterColor = vec4(cosGradColor.rgb, op);
 
   vec3 surfaceNormal = normalize(getNoise(vWorldPosition.xz * 5., uTime)).rgb;
   vec3 worldToEye = eye - vWorldPosition.xyz;

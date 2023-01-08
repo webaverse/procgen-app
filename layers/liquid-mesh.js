@@ -11,10 +11,11 @@ import {liquidTextureUrlSpecs} from '../assets.js';
 import _createLiquidMaterial from './liquid-material.js';
 import WaterRenderer from '../liquid-effect/water-render.js';
 
-const {useProcGenManager, useGeometryBuffering, useLocalPlayer, useInternals} = metaversefile;
+const {useProcGenManager, useGeometryBuffering, useLocalPlayer, useInternals, useLightsManager} = metaversefile;
 const {BufferedMesh, GeometryAllocator} = useGeometryBuffering();
 const procGenManager = useProcGenManager();
 const {renderer, camera, scene} = useInternals();
+const lightsManager = useLightsManager();
 //
 const fakeMaterial = new THREE.MeshBasicMaterial({
   color: 0xffffff,
@@ -456,6 +457,16 @@ export class LiquidMesh extends BufferedMesh {
       // handle swimming action
       this.handleSwimAction(contactWater, localPlayer, WATER_HEIGHT);
     }
+
+    const sunMoonRotationRadius = 500;
+    for (const light of lightsManager.lights) {
+      if (light.isDirectionalLight) {
+        this.material.uniforms.lightPos.value.copy(light.position).multiplyScalar(sunMoonRotationRadius);
+        this.material.uniforms.lightIntensity.value = light.intensity;
+        break;
+      }
+    }
+    
     this.underWater = camera.position.y < WATER_HEIGHT;
     this.material.uniforms.uTime.value = timestamp / 1000;
     this.material.uniforms.playerPos.value.copy(localPlayer.position);
