@@ -54,6 +54,12 @@ const _createLiquidMaterial = () => {
       cubeMap: {
         value: null
       },
+      lightPos: {
+        value: new THREE.Vector3()
+      },
+      lightIntensity: {
+        value: 0
+      },
     },
     vertexShader: `\
         
@@ -103,7 +109,7 @@ const _createLiquidMaterial = () => {
         vec4 waveA = vec4(1.0, 1.0, 0.05, 30.);
         vec4 waveB = vec4(1.0, 0.6, 0.05, 15.);
         vec4 waveC = vec4(1.0, 1.3, 0.05, 8.);
-        vec4 waveD = vec4(-0.3, -0.7, 0.05, 1.75);
+        // vec4 waveD = vec4(-0.3, -0.7, 0.05, 1.75);
 
         vec3 tangent = vec3(1.0, 0.0, 0.0);
         vec3 binormal = vec3(0.0, 0.0, 1.0);
@@ -112,7 +118,7 @@ const _createLiquidMaterial = () => {
         pos += gerstnerWave(waveA.x, waveA.y, waveA.z, waveA.w, tangent, binormal, tempPos);
         pos += gerstnerWave(waveB.x, waveB.y, waveB.z, waveB.w, tangent, binormal, tempPos);
         pos += gerstnerWave(waveC.x, waveC.y, waveC.z, waveC.w, tangent, binormal, tempPos);
-        pos += gerstnerWave(waveD.x, waveD.y, waveD.z, waveD.w, tangent, binormal, tempPos);
+        // pos += gerstnerWave(waveD.x, waveD.y, waveD.z, waveD.w, tangent, binormal, tempPos);
 
         // set normal
         vec3 waveNormal = normalize(cross(binormal, tangent));
@@ -168,6 +174,9 @@ const _createLiquidMaterial = () => {
 
         uniform sampler2D waterNormalTexture;
         uniform samplerCube cubeMap;
+
+        uniform vec3 lightPos;
+        uniform float lightIntensity;
       
         varying vec3 vWorldPosition;
         varying vec3 vNormal;
