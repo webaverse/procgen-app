@@ -74,17 +74,17 @@ export const oceanShader =  /* glsl */`
 		float theta = max(dot(eyePosition, surfaceNormal), 0.0);
 		float rf0 = 0.1;
 		float reflectance = rf0 + (1.0 - rf0) * pow((1.0 - theta), 5.0);
-		float reflectanceScale = 5.;
+		float reflectanceScale = 1.2;
 		vec3 col1 = reflectionSample * 0.2;
 		vec3 col2 = vec3(0.8);
-		vec3 albedo = mix(col1, col2, reflectance);
+		vec3 albedo = mix(col1, col2, clamp(reflectance * reflectanceScale, 0.0, 1.0));
 		gl_FragColor = vec4(albedo, waterColor.a);
 		gl_FragColor.rgb += waterColor.rgb;
 
 		vec3 eyeDirection = normalize(eye - vWorldPosition);
 		vec3 lightDir = normalize(lightPos - vWorldPosition);
 		float lightDiffuse = max(0.0, dot(lightDir, noiseNormal));
-		float lightDiffuseIntensity = 0.01;
+		float lightDiffuseIntensity = 0.025;
 		lightDiffuse *= lightDiffuseIntensity;
 		
 
@@ -95,7 +95,7 @@ export const oceanShader =  /* glsl */`
 		lightSpecular = pow(lightSpecular, specularShinny);
 		lightSpecular *= lightSpecularIntensity;
 
-		gl_FragColor.rgb += (lightSpecular + lightDiffuse) * lightIntensity;
+		gl_FragColor.rgb += (lightSpecular + lightDiffuse) * lightIntensity * col2;
 	}
 	else{
 		//################################## refraction ##################################
