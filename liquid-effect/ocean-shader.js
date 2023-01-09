@@ -61,7 +61,7 @@ export const oceanShader =  /* glsl */`
 		waterColor = waterColor * ((vec4(1.0) - foamLineCutOut)) + foamT;
 
 		//################################## handle mirror ##################################
-		float noiseNormalScale = 0.7;
+		float noiseNormalScale = 1. - clamp(distance(eye, vWorldPosition) / 200., 0.1, 0.5);
 		vec3 noiseNormal = normalize(getNoise(vWorldPosition.xz * 2., uTime * 0.5)).rgb;
 		vec3 surfaceNormal = normalize((vNormal + noiseNormal * noiseNormalScale) * vec3(1.5, 1.0, 1.5));
 
@@ -84,9 +84,9 @@ export const oceanShader =  /* glsl */`
 		//################################## handle light ##################################
 		vec3 eyeDirection = normalize(eye - vWorldPosition);
 		vec3 lightDir = normalize(lightPos - vWorldPosition);
-		float lightDiffuse = max(0.0, dot(lightDir, noiseNormal));
-		float lightDiffuseIntensity = 0.025;
-		lightDiffuse *= lightDiffuseIntensity;
+		// float lightDiffuse = max(0.0, dot(lightDir, noiseNormal));
+		// float lightDiffuseIntensity = 0.025;
+		// lightDiffuse *= lightDiffuseIntensity;
 		
 
 		vec3 reflection = normalize( reflect( -lightDir, noiseNormal ) );
@@ -96,7 +96,7 @@ export const oceanShader =  /* glsl */`
 		lightSpecular = pow(lightSpecular, specularShinny);
 		lightSpecular *= lightSpecularIntensity;
 
-		gl_FragColor.rgb += (lightSpecular + lightDiffuse) * lightIntensity;
+		gl_FragColor.rgb += lightSpecular * lightIntensity;
 	}
 	else{
 		//################################## refraction ##################################
