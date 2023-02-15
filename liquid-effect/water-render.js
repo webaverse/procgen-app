@@ -1,6 +1,6 @@
-import metaversefile from 'metaversefile';
+// import metaversefile from 'metaversefile';
 import * as THREE from 'three';
-const {useLocalPlayer} = metaversefile;
+// const {useLocalPlayer} = metaversefile;
 
 const INITIAL_TEXTURE_MATRIX = new THREE.Matrix4();
 INITIAL_TEXTURE_MATRIX.set(
@@ -23,11 +23,28 @@ INITIAL_TEXTURE_MATRIX.set(
 );
 
 class WaterRenderer {
-  constructor(renderer, scene, camera, water) {
+  constructor(renderer, scene, camera, water, ctx) {
+    if (
+      !renderer ||
+      !scene ||
+      !camera ||
+      !water ||
+      !ctx
+    ) {
+      console.warn('missing args', {
+        renderer,
+        scene,
+        camera,
+        water,
+        ctx,
+      });
+      debugger;
+    }
     this.renderer = renderer;
     this.scene = scene;
     this.camera = camera;
     this.water = water;
+    this.ctx = ctx;
 
     // for depth
     const pixelRatio = this.renderer.getPixelRatio();
@@ -214,10 +231,10 @@ class WaterRenderer {
     // Render
 
     // this.mirrorRenderTarget.texture.encoding = renderer.outputEncoding;
-    const localPlayer = useLocalPlayer();
-    if (localPlayer.avatar) {
-      localPlayer.avatar.app.visible = false;
-    }
+    const localPlayer = this.ctx.useLocalPlayer();
+    // if (localPlayer.avatar) {
+    //   localPlayer.avatar.app.visible = false;
+    // }
 
     this.water.visible = false;
 
@@ -248,9 +265,9 @@ class WaterRenderer {
       renderer.state.viewport(viewport);
     }
 
-    if (localPlayer.avatar) {
-      localPlayer.avatar.app.visible = true;
-    }
+    // if (localPlayer.avatar) {
+    //   localPlayer.avatar.app.visible = true;
+    // }
 
     this.water.visible = true;
   }
