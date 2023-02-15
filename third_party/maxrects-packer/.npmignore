@@ -1,0 +1,16 @@
+.tmp
+output
+node_modules
+.DS_Store
+coverage
+.eslintrc
+tslint.json
+.gitignore
+*.png
+.vscode
+docs
+test
+jest.config.js
+rollup.config.js
+.travis.yml
+TODO

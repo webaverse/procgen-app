@@ -1,0 +1,73 @@
+{
+  "name": "maxrects-packer",
+  "version": "2.7.3",
+  "description": "A max rectangle 2d bin packer for packing glyphs or images into multiple sprite-sheet/atlas",
+  "type": "module",
+  "main": "dist/maxrects-packer.js",
+  "module": "dist/maxrects-packer.mjs",
+  "types": "dist/maxrects-packer.d.ts",
+  "scripts": {
+    "clean": "rimraf ./lib && rimraf ./dist",
+    "build": "rollup -c",
+    "build:clean": "npm run clean && npm run build",
+    "doc": "typedoc && touch docs/.nojekyll",
+    "doc:json": "typedoc --json docs/typedoc.json",
+    "doc:publish": "gh-pages --dotfiles=true -m \"[ci skip] Updates\" -d docs",
+    "test": "npm run build:clean && jest",
+    "cover": "npm run build:clean && jest --coverage",
+    "version": "standard-version",
+    "prepare-release": "npm run test && npm run version"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://soimy@github.com/soimy/maxrects-packer.git"
+  },
+  "keywords": [
+    "spritesheet",
+    "atlas",
+    "bin",
+    "pack",
+    "max",
+    "rect"
+  ],
+  "author": "YM Shen <soimy@163.com> (http://github.com/soimy)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/soimy/maxrects-packer/issues"
+  },
+  "homepage": "https://github.com/soimy/maxrects-packer#readme",
+  "devDependencies": {
+    "@rollup/plugin-terser": "^0.3.0",
+    "@types/jest": "^29.2.5",
+    "@types/node": "^18.11.18",
+    "@typescript-eslint/eslint-plugin": "^5.47.1",
+    "@typescript-eslint/eslint-plugin-tslint": "^5.48.0",
+    "@typescript-eslint/parser": "^5.47.1",
+    "ascii-table": "0.0.9",
+    "coveralls": "^3.1.1",
+    "cz-conventional-changelog": "^3.3.0",
+    "esbuild": "^0.16.12",
+    "eslint": "^8.31.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-jsdoc": "^39.6.4",
+    "gh-pages": "^4.0.0",
+    "jest": "^29.3.1",
+    "rimraf": "^3.0.2",
+    "rollup": "^3.9.1",
+    "rollup-plugin-dts": "^5.1.0",
+    "rollup-plugin-esbuild": "^5.0.0",
+    "rollup-plugin-typescript2": "^0.34.1",
+    "standard-version": "^9.5.0",
+    "ts-jest": "^29.0.3",
+    "ts-node": "^10.9.1",
+    "tslib": "^2.4.1",
+    "tslint-config-standard": "^9.0.0",
+    "typedoc": "^0.23.23",
+    "typescript": "^4.9.4"
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  }
+}
