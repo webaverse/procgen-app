@@ -1,4 +1,4 @@
-import Module from "./bin/pg.module.js";
+import Module from "./pg.module.js";
 import {Allocator} from "../geometries/geometry-util.js";
 import {makePromise} from "../utils/utils.js";
 

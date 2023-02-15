@@ -1,7 +1,11 @@
 // import PgWorker from './pg-worker.js?worker';
 import {abortError} from '../managers/lock-manager.js';
 
-const workerUrl = '/public/core-modules/heightfield/procgen/pg-worker.js';
+// const workerUrl = '/public/core-modules/heightfield/procgen/pg-worker.js';
+const u = new URL(import.meta.url);
+u.host = globalThis?.location?.host;
+u.pathname += 'procgen/pg-worker.js';
+const workerUrl = u.href;
 
 //
 
