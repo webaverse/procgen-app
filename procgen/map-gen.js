@@ -4,7 +4,9 @@ import {
   makeRng,
 } from './misc-gen.js';
 import placeNames from './placeNames.js';
-import {shuffle} from '../util.js';
+import {
+  shuffle,
+} from '../utils/utils.js';
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -17,7 +19,9 @@ export const voxelPixelSize = 3;
 export const voxelWorldSize = 4;
 export const chunkWorldSize = numBlocksPerChunk * voxelWorldSize;
 export const chunkScreenSize = numBlocksPerChunk * voxelPixelSize;
-export {placeNames};
+export {
+  placeNames,
+};
 
 const sides = [
   'left',
