@@ -6,7 +6,12 @@ import {
   GRASS_COLOR_NAME
 } from "./constants.js";
 
-export const procgenAssetsBaseUrl = '/public/core-modules/heightfield/procgen-assets/';
+const USE_LOCAL_ASSETS = false;
+export const procgenAssetsBaseUrl = USE_LOCAL_ASSETS ?
+  '/procgen-assets/'
+:
+  'https://webaverse.github.io/procgen-assets/';
+
 
 // Directories Names
 const TERRAIN_TEXTURES_DIRECTORY_NAME = 'terrain/textures/';
