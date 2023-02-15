@@ -1,15 +1,15 @@
 import * as THREE from "three";
-import metaversefile from "metaversefile";
+// import metaversefile from "metaversefile";
 import {
   bufferSize,
   WORLD_BASE_HEIGHT,
   MIN_WORLD_HEIGHT,
   MAX_WORLD_HEIGHT,
 } from "../constants.js";
-
-const {useProcGenManager, useGeometryBuffering} = metaversefile;
-const {BufferedMesh, GeometryAllocator} = useGeometryBuffering();
-const procGenManager = useProcGenManager();
+import {
+  BufferedMesh,
+} from '../geometries/geometry-buffering.js';
+import procGenManager from '../procgen/procgen-manager.js';
 
 //
 
@@ -20,7 +20,20 @@ const localBox = new THREE.Box3();
 //
 
 export class BarrierMesh extends BufferedMesh {
-  constructor({instance, gpuTaskManager}) {
+  constructor({
+    instance,
+    gpuTaskManager,
+    // ctx,
+  }) {
+    // if (!ctx?.useProcGenManager || !ctx?.useGeometryBuffering) {
+    //   console.warn("missing context", ctx);
+    //   debugger;
+    // }
+    // this.ctx = ctx;
+    // const {useProcGenManager, useGeometryBuffering} = metaversefile;
+    // const {BufferedMesh, GeometryAllocator} = useGeometryBuffering();
+    // const procGenManager = useProcGenManager();
+
     const allocator = new GeometryAllocator(
       [
         {

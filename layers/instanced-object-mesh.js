@@ -35,8 +35,17 @@ const maxDrawCallsPerGeometry = 256;
 //
 
 export class InstancedObjectMesh extends THREE.Object3D {
-  constructor({instance, physics, urls, shadow}) {
+  constructor({instance, physics, urls, shadow, ctx}) {
     super();
+
+    if (!ctx) {
+      console.warn("missing ctx", {instance, physics, urls, shadow, ctx});
+      debugger;
+    }
+    if (physics) {
+      console.warn('extra physics', {physics, instance, urls, shadow, ctx});
+      debugger;
+    }
 
     this.urls = urls;
 
@@ -53,19 +62,24 @@ export class InstancedObjectMesh extends THREE.Object3D {
     this.spritesheetMesh = new SpritesheetMesh({
       instance,
       lodCutoff: spriteLodCutoff,
+      ctx,
     });
     this.add(this.spritesheetMesh);
 
-    this.physics = physics;
+    this.instance = instance;
   }
 
   update() {
     this.spritesheetMesh.update();
   }
 
-  addChunk(chunk, chunkResult) {
-    this.polygonMesh.addChunk(chunk, chunkResult);
-    this.spritesheetMesh.addChunk(chunk, chunkResult);
+  addChunk(chunk, chunkResult, renderer) {
+    if (!renderer) {
+      console.warn("missing renderer", {chunk, chunkResult, renderer});
+      debugger;
+    }
+    this.polygonMesh.addChunk(chunk, chunkResult, renderer);
+    this.spritesheetMesh.addChunk(chunk, chunkResult, renderer);
   }
 
   removeChunk(chunk) {
@@ -73,10 +87,14 @@ export class InstancedObjectMesh extends THREE.Object3D {
     this.spritesheetMesh.removeChunk(chunk);
   }
 
-  async waitForLoad() {
+  async waitForLoad(appCtx) {
+    if (!appCtx) {
+      console.warn("missing appCtx", {appCtx});
+      debugger;
+    }
     const [polygonPackage, spritesheetPackage] = await Promise.all([
-      PolygonPackage.loadUrls(this.urls, meshLodSpecs, this.physics),
-      SpritesheetPackage.loadUrls(this.urls),
+      PolygonPackage.loadUrls(this.urls, meshLodSpecs, this.instance, appCtx),
+      SpritesheetPackage.loadUrls(this.urls, appCtx),
     ]);
     this.polygonMesh.setPackage(polygonPackage);
     this.spritesheetMesh.setPackage(spritesheetPackage);
@@ -84,8 +102,17 @@ export class InstancedObjectMesh extends THREE.Object3D {
 }
 
 export class InstancedObjectGroup extends THREE.Object3D {
-  constructor({instance, urls, physics, shadow}) {
+  constructor({instance, urls, physics, shadow, ctx}) {
     super();
+
+    if (!ctx) {
+      console.warn('missing ctx', {instance, urls, physics, shadow, ctx});
+      debugger;
+    }
+    if (physics) {
+      console.warn('extra physics', {physics, instance, urls, shadow, ctx});
+      debugger;
+    }
 
     this.urls = urls;
     this.meshes = [];
@@ -96,7 +123,8 @@ export class InstancedObjectGroup extends THREE.Object3D {
         urls: [meshUrl],
         shadow,
         instance,
-        physics,
+        // physics,
+        ctx,
       });
       this.meshes.push(mesh);
       this.add(mesh);
@@ -110,14 +138,19 @@ export class InstancedObjectGroup extends THREE.Object3D {
     }
   }
 
-  addChunk(chunk, chunkResults) {
+  addChunk(chunk, chunkResults, renderer) {
+    if (!renderer) {
+      console.warn('missing renderer', {chunk, chunkResults, renderer});
+      debugger;
+    }
+
     if (chunkResults) {
       for (let i = 0; i < this.meshes.length; i++) {
         const mesh = this.meshes[i];
         const chunkResult = chunkResults[i];
         if(chunkResult) {
           const chunkResultInstances = chunkResult.instances;
-          mesh.addChunk(chunk, chunkResultInstances);
+          mesh.addChunk(chunk, chunkResultInstances, renderer);
         }
       }
     }
@@ -130,10 +163,14 @@ export class InstancedObjectGroup extends THREE.Object3D {
     }
   }
 
-  async waitForLoad() {
+  async waitForLoad(appCtx) {
+    if (!appCtx) {
+      console.warn('missing appCtx', {appCtx});
+      debugger;
+    }
     await Promise.all(
       this.meshes.map((mesh, i) => {
-        mesh.waitForLoad();
+        mesh.waitForLoad(appCtx);
       }),
     );
   }

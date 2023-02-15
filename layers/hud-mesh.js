@@ -7,14 +7,20 @@ const hudLodDistanceCutoff = 4;
 //
 
 export class HudMesh extends THREE.Object3D {
-  constructor({instance, urls}) {
+  constructor({instance, urls, ctx}) {
     super();
+
+    if (!ctx) {
+      console.warn('missing ctx', {instance, urls, ctx});
+      debugger;
+    }
 
     this.urls = urls;
 
     this.iconMesh = new IconMesh({
       instance,
       lodCutoff: hudLodDistanceCutoff,
+      ctx,
     });
     this.add(this.iconMesh);
   }

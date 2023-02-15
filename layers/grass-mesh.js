@@ -39,6 +39,11 @@ export class GrassMesh extends THREE.Object3D {
   constructor({instance, physics, urls, shadow}) {
     super();
 
+    if (physics) {
+      console.warn('extra physics', {physics, instance, urls, shadow});
+      debugger;
+    }
+
     this.urls = urls;
 
     this.polygonMesh = new GrassPolygonMesh({
@@ -51,22 +56,32 @@ export class GrassMesh extends THREE.Object3D {
     });
     this.add(this.polygonMesh);
 
-    this.physics = physics;
+    this.instance = instance;
   }
 
-  addChunk(chunk, chunkResult) {
-    this.polygonMesh.addChunk(chunk, chunkResult);
+  addChunk(chunk, chunkResult, renderer) {
+    if (!renderer) {
+      console.warn("missing renderer", {chunk, chunkResult, renderer});
+      debugger;
+    }
+    
+    this.polygonMesh.addChunk(chunk, chunkResult, renderer);
   }
 
   removeChunk(chunk) {
     this.polygonMesh.removeChunk(chunk);
   }
 
-  async waitForLoad() {
+  async waitForLoad(appCtx) {
+    if (!appCtx) {
+      console.warn("missing appCtx", {appCtx});
+      debugger;
+    }
     const polygonPackage = await PolygonPackage.loadUrls(
       this.urls,
       meshLodSpecs,
-      this.physics,
+      this.instance,
+      appCtx,
     );
     this.polygonMesh.setPackage(polygonPackage);
   }

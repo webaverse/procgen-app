@@ -1,4 +1,4 @@
-import metaversefile from 'metaversefile';
+// import metaversefile from 'metaversefile';
 import * as THREE from 'three';
 
 import {terrainTextureUrlSpecs} from '../assets.js';
@@ -9,15 +9,16 @@ import {
   MIN_WORLD_HEIGHT,
   WORLD_BASE_HEIGHT,
 } from '../constants.js';
-
+import procGenManager from '../procgen/procgen-manager.js';
 import TerrainPackage, {
   DIFFUSE_MAP,
   ENV_MAP,
   NOISE_MAP,
   NORMAL_MAP,
 } from '../meshes/terrain-package.js';
-
 import _createTerrainMaterial from './terrain-material.js';
+
+//
 
 const DIFFUSE_MAP_PATHS = terrainTextureUrlSpecs.terrainDiffuseMaps;
 const NORMAL_MAP_PATHS = terrainTextureUrlSpecs.terrainNormalMaps;
@@ -26,9 +27,16 @@ const NOISE_MAP_PATH = terrainTextureUrlSpecs.simplexMap;
 
 export const NUM_TERRAIN_MATERIALS = DIFFUSE_MAP_PATHS.length; // TODO : get this number from wasm
 
-const { useProcGenManager, useGeometryBuffering } = metaversefile;
-const { BufferedMesh, GeometryAllocator } = useGeometryBuffering();
-const procGenManager = useProcGenManager();
+// import { useProcGenManager, useGeometryBuffering } = metaversefile
+// const { BufferedMesh, GeometryAllocator } = useGeometryBuffering();
+import {
+  BufferedMesh,
+  GeometryAllocator,
+} from '../geometries/geometry-buffering.js';
+// import {
+//   ProcGenManager,
+// } from '../procgen/procgen-manager.js';
+// const procGenManager = ProcGenManager;
 
 //
 
@@ -44,7 +52,12 @@ const localBox = new THREE.Box3();
 //
 
 export class TerrainMesh extends BufferedMesh {
-  constructor({ instance, gpuTaskManager, physics }) {
+  constructor({ instance, gpuTaskManager, physics, ctx }) {
+    if (!ctx) {
+      console.warn('missing context', ctx);
+      debugger;
+    }
+
     const allocator = new GeometryAllocator(
       [
         {
@@ -107,6 +120,7 @@ export class TerrainMesh extends BufferedMesh {
         bufferSize,
         boundingType: 'box',
         // hasOcclusionCulling: true
+        ctx,
       }
     );
 
@@ -130,7 +144,12 @@ export class TerrainMesh extends BufferedMesh {
     this.geometryBindings = new Map();
   }
 
-  addChunk(chunk, chunkResult) {
+  addChunk(chunk, chunkResult, renderer) {
+    if (!renderer) {
+      console.warn('missing renderer', {renderer});
+      debugger;
+    }
+
     const key = procGenManager.getNodeHash(chunk);
     const task = this.gpuTaskManager.transact(() => {
       const _mapOffsettedIndices = (
@@ -175,70 +194,87 @@ export class TerrainMesh extends BufferedMesh {
           positionOffset,
           terrainGeometry.positions.length,
           terrainGeometry.positions,
-          0
+          0,
+          renderer
         );
         geometry.attributes.normal.update(
           normalOffset,
           terrainGeometry.normals.length,
           terrainGeometry.normals,
-          0
+          0,
+          renderer
         );
         /* geometry.attributes.biomes.update(
           biomesOffset,
           terrainGeometry.biomes.length,
           terrainGeometry.biomes,
-          0
+          0,
+          renderer
         ); */
         /* geometry.attributes.biomesWeights.update(
           biomesWeightsOffset,
           terrainGeometry.biomesWeights.length,
           terrainGeometry.biomesWeights,
-          0
+          0,
+          renderer
         ); */
         // console.log('biomes', geometry.attributes.biomesUvs1, geometry.attributes.biomesUvs2);
         geometry.attributes.biomesUvs1.update(
           biomesUvs1Offset,
           terrainGeometry.biomesUvs1.length,
           terrainGeometry.biomesUvs1,
-          0
+          0,
+          renderer
         );
         geometry.attributes.materials.update(
           materialsOffset,
           terrainGeometry.materials.length,
           terrainGeometry.materials,
-          0
+          0,
+          renderer
         );
         geometry.attributes.materialsWeights.update(
           materialsWeightsOffset,
           terrainGeometry.materialsWeights.length,
           terrainGeometry.materialsWeights,
-          0
+          0,
+          renderer
         );
         /* geometry.attributes.biomesUvs2.update(
           biomesUvs2Offset,
           terrainGeometry.biomesUvs2.length,
           terrainGeometry.biomesUvs2,
-          0
+          0,
+          renderer
         ); */
         /* geometry.attributes.seed.update(
           seedsOffset,
           terrainGeometry.seeds.length,
           terrainGeometry.seeds,
-          0
+          0,
+          renderer
         ); */
         /* geometry.attributes.skylights.update(
           skylightsOffset,
           terrainGeometry.skylights.length,
           terrainGeometry.skylights,
-          0
+          0,
+          renderer
         );
         geometry.attributes.aos.update(
           aosOffset,
           terrainGeometry.aos.length,
           terrainGeometry.aos,
-          0
+          0,
+          renderer
         ); */
-        geometry.index.update(indexOffset, terrainGeometry.indices.length);
+        geometry.index.update(
+          indexOffset,
+          terrainGeometry.indices.length,
+          geometry.index.array,
+          indexOffset,
+          renderer
+        );
       };
       const _handleTerrainMesh = (terrainGeometry) => {
         const { chunkSize } = this.instance;
@@ -348,6 +384,12 @@ export class TerrainMesh extends BufferedMesh {
   }
 
   removeChunk(chunk) {
+    // if (!this.instance?.getNodeHash) {
+    //   console.warn('bad procgen manager', {
+    //     instance: this.instance,
+    //   });
+    //   debugger;
+    // }
     const key = procGenManager.getNodeHash(chunk);
     {
       // console.log('chunk remove', key, chunk.min.toArray().join(','));
@@ -387,14 +429,20 @@ export class TerrainMesh extends BufferedMesh {
     this.visible = true;
   }
 
-  async waitForLoad() {
+  async waitForLoad(appCtx) {
+    if (!appCtx) {
+      console.warn('no appCtx', {
+        appCtx,
+      });
+      debugger;
+    }
     const paths = {
       diffNames: DIFFUSE_MAP_PATHS,
       normalNames: NORMAL_MAP_PATHS,
       envName: ENV_MAP_PATH,
       noiseName: NOISE_MAP_PATH,
     };
-    const terrainPackage = await TerrainPackage.loadUrls(paths);
+    const terrainPackage = await TerrainPackage.loadUrls(paths, appCtx);
 
     this.setPackage(terrainPackage);
   }

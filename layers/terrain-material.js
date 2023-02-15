@@ -1,14 +1,25 @@
-import metaversefile from "metaversefile";
+// import metaversefile from "metaversefile";
 import * as THREE from "three";
 
 import {MATERIALS_INFO} from "../assets.js";
-import {_disableOutgoingLights} from "../utils/utils.js";
+import {
+  _disableOutgoingLights,
+} from "../utils/three-utils.js";
 import {NUM_TERRAIN_MATERIALS} from "./terrain-mesh.js";
-
-const {useAtlasing} = metaversefile;
-const {calculateCanvasAtlasTexturePerRow} = useAtlasing();
+import {
+  calculateCanvasAtlasTexturePerRow,
+} from '../atlasing/atlasing.js';
 
 const _createTerrainMaterial = () => {
+  // if (!ctx?.useAtlasing) {
+  //   console.warn("useAtlasing not found", {
+  //     ctx,
+  //   });
+  //   debugger;
+  // }
+  // const {useAtlasing} = ctx;
+  // const {calculateCanvasAtlasTexturePerRow} = useAtlasing();
+
   const materialUniforms = {
     // texture atlases
     uDiffMap: {},
