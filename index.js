@@ -1,4 +1,4 @@
-import metaversefile from "metaversefile";
+// import metaversefile from "metaversefile";
 import * as THREE from "three";
 
 import {TerrainMesh} from "./layers/terrain-mesh.js";
@@ -9,25 +9,28 @@ import {GrassMesh} from "./layers/grass-mesh.js";
 import {HudMesh} from "./layers/hud-mesh.js";
 import {InstancedObjectGroup, InstancedObjectMesh} from "./layers/instanced-object-mesh.js";
 
+import * as procgen from './procgen/procgen.js';
+import procGenManager from './procgen/procgen-manager.js';
+import * as gpuTaskManager from './managers/gpu-task-manager.js';
+import * as generationTaskManager from './managers/generation-task-manager.js';
+import {
+  // GPUTask,
+  GPUTaskManager,
+} from './managers/gpu-task-manager.js';
+import {
+  GenerationTaskManager,
+} from './managers/generation-task-manager.js';
+// import {
+//   GenerationTask,
+// } from './managers/generation-task-manager.js';
+
 import {
   TerrainObjectsMesh,
-  TerrainObjectSpecs
+  TerrainObjectSpecs,
 } from "./meshes/terrain-objects-mesh.js";
-import {_addNoLightingShaderChunk} from "./utils/utils.js";
-
-const {
-  useApp,
-  useFrame,
-  useCamera,
-  useLocalPlayer,
-  usePhysics,
-  useProcGenManager,
-  useGPUTask,
-  useGenerationTask,
-} = metaversefile;
-
-const {GPUTaskManager} = useGPUTask();
-const {GenerationTaskManager} = useGenerationTask();
+import {
+  _addNoLightingShaderChunk,
+} from "./utils/three-utils.js";
 
 // urls
 const treeUrls = glbUrlSpecs.trees;
@@ -49,11 +52,42 @@ const localMatrix2 = new THREE.Matrix4();
 
 // main
 
-export default e => {
+export default ctx => {
+  const {
+    useApp,
+    useFrame,
+    useRenderer,
+    useCamera,
+    useLocalPlayer,
+    usePhysics,
+    // useProcGenManager,
+    // useGPUTask,
+    // useGenerationTask,
+  } = ctx;
+
+  if (
+    !useApp ||
+    !useFrame ||
+    !useRenderer ||
+    !useCamera ||
+    !useLocalPlayer ||
+    !usePhysics // ||
+    // !useProcGenManager ||
+    // !useGPUTask ||
+    // !useGenerationTask
+  ) {
+    console.warn("missing context", ctx);
+    debugger;
+  }
+  
+  // const {GPUTaskManager} = useGPUTask();
+  // const {GenerationTaskManager} = useGenerationTask();
+
   const app = useApp();
   const camera = useCamera();
-  const procGenManager = useProcGenManager();
+  // const procGenManager = useProcGenManager();
   const physics = usePhysics();
+  const renderer = useRenderer();
 
   // locals
 
@@ -61,7 +95,7 @@ export default e => {
 
   // initialization
 
-  e.waitUntil(
+  ctx.waitUntil(
     (async () => {
       const instance = procGenManager.getInstance("lol");
 
@@ -92,6 +126,7 @@ export default e => {
         instance,
         gpuTaskManager,
         physics,
+        ctx,
       });
       terrainMesh.frustumCulled = false;
       // ! terrainMesh.castShadow = true;
@@ -123,11 +158,12 @@ export default e => {
         hudMesh: new TerrainObjectSpecs(HudMesh, hudUrls, false),
       };
 
-      const terrainObjects = new TerrainObjectsMesh(
+      const terrainObjects = new TerrainObjectsMesh({
         instance,
-        physics,
-        TERRAIN_OBJECTS_MESHES,
-      );
+        // physics,
+        terrainObjectsMeshes: TERRAIN_OBJECTS_MESHES,
+        ctx,
+      });
       app.add(terrainObjects);
       terrainObjects.updateMatrixWorld();
 
@@ -135,6 +171,7 @@ export default e => {
         instance,
         gpuTaskManager,
         physics,
+        ctx,
       });
       liquidMesh.frustumCulled = false;
       app.add(liquidMesh);
@@ -162,9 +199,9 @@ export default e => {
           // console.log('got heightfield', heightfield);
 
           // heightfield
-          terrainMesh.addChunk(chunk, heightfield);
-          liquidMesh.addChunk(chunk, heightfield);
-          // barrierMesh.addChunk(chunk, heightfield);
+          terrainMesh.addChunk(chunk, heightfield, renderer);
+          liquidMesh.addChunk(chunk, heightfield, renderer);
+          // barrierMesh.addChunk(chunk, heightfield, renderer);
 
           const terrainObjectInstances = {
             treeMesh: treeInstances,
@@ -175,7 +212,7 @@ export default e => {
             grassMesh: grassInstances,
             hudMesh: poiInstances,
           };
-          terrainObjects.addChunks(chunk, terrainObjectInstances);
+          terrainObjects.addChunks(chunk, terrainObjectInstances, renderer);
         });
         generation.addEventListener("geometryremove", e => {
           // heightfield
@@ -236,11 +273,13 @@ export default e => {
 
       // load
       const _waitForLoad = async () => {
+        console.log('wait for load 1');
         await Promise.all([
-          terrainMesh.waitForLoad(),
-          terrainObjects.waitForLoad(),
-          liquidMesh.waitForLoad(),
+          terrainMesh.waitForLoad(ctx),
+          terrainObjects.waitForLoad(ctx),
+          liquidMesh.waitForLoad(ctx),
         ]);
+        console.log('wait for load 2');
       };
       await _waitForLoad();
 
