@@ -1,4 +1,4 @@
-import metaversefile from "metaversefile";
+// import metaversefile from "metaversefile";
 import * as THREE from "three";
 import {GRASS_COLORS_SHADER_CODE} from "../assets.js";
 import {
@@ -11,23 +11,31 @@ import {
   // bufferSize,
   WORLD_BASE_HEIGHT,
 } from "../constants.js";
-import {_disableOutgoingLights, _patchOnBeforeCompileFunction} from "../utils/utils.js";
-const {
-  useCamera,
-  useProcGenManager,
-  useGeometries,
-  useAtlasing,
-  useGeometryBatching,
-  useGeometryChunking,
-  useLoaders,
-  usePhysics,
-  useSpriting,
-} = metaversefile;
-const procGenManager = useProcGenManager();
-const {createTextureAtlas} = useAtlasing();
-const {InstancedBatchedMesh, InstancedGeometryAllocator} =
-  useGeometryBatching();
-const {gltfLoader} = useLoaders();
+import {
+  createTextureAtlas,
+} from "../atlasing/atlasing.js";
+import {
+  _disableOutgoingLights,
+  _patchOnBeforeCompileFunction,
+} from "../utils/three-utils.js";
+// const {
+//   useCamera,
+//   useProcGenManager,
+//   useGeometries,
+//   useAtlasing,
+//   useGeometryBatching,
+//   useGeometryChunking,
+//   useLoaders,
+// } = metaversefile;
+// import {
+//   ProcGenManager,
+// } from '../procgen/procgen-manager.js';
+// const procGenManager = ProcGenManager;
+import procGenManager from '../procgen/procgen-manager.js';
+import {
+  InstancedBatchedMesh,
+  InstancedGeometryAllocator,
+} from '../geometries/geometry-batching.js';
 
 //
 
@@ -67,7 +75,12 @@ const _renderPolygonGeometry = (
   attributes,
   positionIndex,
   instanceAttributes,
+  renderer,
 ) => {
+  if (!renderer) {
+    console.warn("no renderer", {renderer});
+    debugger;
+  }
   const numVerts = attributes[positionIndex].length;
   const step = instanceAttributes[positionIndex].itemSize;
   const textures = _collectTextures(drawCall, instanceAttributes);
@@ -91,7 +104,7 @@ const _renderPolygonGeometry = (
 
   for (let i = 0; i < instanceAttributes.length; i++) {
     const instanceAttribute = instanceAttributes[i];
-    drawCall.updateTexture(instanceAttribute.name, textures[i].offset, index * 4);
+    drawCall.updateTexture(instanceAttribute.name, textures[i].offset, index * 4, renderer);
   }
 };
 
@@ -147,13 +160,30 @@ const _setupTextureAttributes = (
 
 export class PolygonPackage {
   constructor(lodMeshes, textureNames) {
+    if (
+      !lodMeshes ||
+      !textureNames
+    ) {
+      console.warn('missing arguments', {lodMeshes, textureNames});
+      debugger;
+    }
+
     this.lodMeshes = lodMeshes;
     this.textureNames = textureNames;
   }
 
-  static async loadUrls(urls, meshLodSpecs, physics) {
+  static async loadUrls(urls, meshLodSpecs, instance, appCtx) {
+    if (!appCtx) {
+      console.warn('missing appCtx', {urls, meshLodSpecs, instance, appCtx});
+      debugger;
+    }
+    if (!instance?.meshoptSimplify) {
+      console.warn('missing physics.meshoptSimplify!', {urls, meshLodSpecs, instance, appCtx});
+      debugger;
+    }
     const _loadModel = u =>
       new Promise((accept, reject) => {
+        const {gltfLoader} = appCtx.useLoaders();
         gltfLoader.load(
           u,
           o => {
@@ -197,11 +227,12 @@ export class PolygonPackage {
             if (targetRatio === 1) {
               return mesh;
             } else {
-              const lodMesh = await physics.meshoptSimplify(
+              const lodMesh = await instance.meshoptSimplify(
                 mesh,
                 targetRatio,
                 targetError,
               );
+              // console.log('lod mesh result', lodMesh);
               return lodMesh;
             }
           })();
@@ -412,7 +443,11 @@ export class PolygonMesh extends InstancedBatchedMesh {
     this.allocatedChunks = new Map();
   }
 
-  addChunk(chunk, chunkResult) {
+  addChunk(chunk, chunkResult, renderer) {
+    if (!renderer) {
+      console.warn("no renderer", {chunk, chunkResult, renderer});
+      debugger;
+    }
     if (chunkResult) {
       const instances = chunkResult;
       if (chunk.lod < this.lodCutoff && instances.length > 0) {
@@ -444,7 +479,7 @@ export class PolygonMesh extends InstancedBatchedMesh {
           );
           const attributes = [ps, qs, scales, colors];
 
-          _renderPolygonGeometry(drawChunk, attributes, this.positionIndex, this.instanceAttributes);
+          _renderPolygonGeometry(drawChunk, attributes, this.positionIndex, this.instanceAttributes, renderer);
           drawChunks[i] = drawChunk;
         }
         const key = procGenManager.getNodeHash(chunk);
@@ -780,7 +815,12 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
     this.allocatedChunks = new Map();
   }
 
-  addChunk(chunk, instances) {
+  addChunk(chunk, instances, renderer) {
+    if (!renderer) {
+      console.warn('missing renderer', {chunk, instances});
+      debugger;
+    }
+
     if (instances) {
       if (chunk.lod < this.lodCutoff && instances.length > 0) {
         const {chunkSize} = this.instance;
@@ -815,7 +855,8 @@ export class GrassPolygonMesh extends InstancedBatchedMesh {
             drawChunk,
             attributes,
             this.positionIndex,
-            this.instanceAttributes
+            this.instanceAttributes,
+            renderer
           );
           drawChunks[i] = drawChunk;
         }

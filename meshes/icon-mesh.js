@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import metaversefile from "metaversefile";
+// import metaversefile from "metaversefile";
 import {
   // bufferSize,
   WORLD_BASE_HEIGHT,
@@ -7,11 +7,19 @@ import {
   MAX_WORLD_HEIGHT,
   maxAnisotropy,
 } from "../constants.js";
-const {useCamera, useGeometries, useGeometryChunking, useProcGenManager} =
-  metaversefile;
-const procGenManager = useProcGenManager();
+// const {useCamera, useGeometries, useGeometryChunking, useProcGenManager} =
+//   metaversefile;
+// import {
+//   ProcGenManager,
+// } from '../procgen/procgen-manager.js';
+// const procGenManager = ProcGenManager;
+import procGenManager from "../procgen/procgen-manager.js";
 // const {DoubleSidedPlaneGeometry} = useGeometries();
-const {ChunkedBatchedMesh, ChunkedGeometryAllocator} = useGeometryChunking();
+import {
+  ChunkedBatchedMesh,
+  ChunkedGeometryAllocator,
+} from '../geometries/geometry-chunking.js';
+// const {ChunkedBatchedMesh, ChunkedGeometryAllocator} = useGeometryChunking();
 
 //
 
@@ -75,7 +83,12 @@ export class IconPackage {
 const maxDrawCalls = 256;
 const maxInstancesPerDrawCall = 256;
 export class IconMesh extends ChunkedBatchedMesh {
-  constructor({instance, lodCutoff} = {}) {
+  constructor({instance, lodCutoff, ctx} = {}) {
+    if (!ctx) {
+      console.warn("missing ctx", ctx);
+      debugger;
+    }
+
     // allocator
     const baseGeometry = new THREE.PlaneGeometry(1, 1);
     const allocator = new ChunkedGeometryAllocator(
@@ -224,6 +237,8 @@ export class IconMesh extends ChunkedBatchedMesh {
     this.frustumCulled = false;
     this.visible = false;
 
+    this.ctx = ctx;
+
     this.instance = instance;
     this.lodCutoff = lodCutoff;
 
@@ -314,7 +329,7 @@ export class IconMesh extends ChunkedBatchedMesh {
   }
 
   update() {
-    const camera = useCamera();
+    const camera = this.ctx.useCamera();
 
     this.material.uniforms.cameraPos.value.copy(camera.position);
     this.material.uniforms.cameraPos.needsUpdate = true;

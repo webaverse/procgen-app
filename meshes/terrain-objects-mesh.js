@@ -8,16 +8,27 @@ export class TerrainObjectSpecs {
   }
 }
 export class TerrainObjectsMesh extends THREE.Object3D {
-  constructor(instance, physics, terrainObjectsMeshes) {
-    super(); // nothing
+  constructor({instance, physics, terrainObjectsMeshes, ctx}) {
+    super();
+
+    if (!ctx) {
+      console.warn("missing ctx", {instance, physics, terrainObjectsMeshes, ctx});
+      debugger;
+    }
+    if (physics) {
+      console.warn('extra physics', {physics, instance, terrainObjectsMeshes, ctx});
+      debugger;
+    }
+
     this.meshes = {};
 
     for (const [key, meshSpecs] of Object.entries(terrainObjectsMeshes)) {
       const mesh = new meshSpecs.construct({
         instance,
-        physics,
+        // physics,
         urls: meshSpecs.urls,
-        shadow: meshSpecs.shadow
+        shadow: meshSpecs.shadow,
+        ctx,
       });
       this.add(mesh);
       mesh.updateMatrixWorld();
@@ -25,18 +36,27 @@ export class TerrainObjectsMesh extends THREE.Object3D {
     }
   }
 
-  async waitForLoad() {
+  async waitForLoad(appCtx) {
+    if (!appCtx) {
+      console.warn("missing appCtx", {appCtx});
+      debugger;
+    }
     await Promise.all(
       this.children.map((child, i) => {
-        child.waitForLoad();
+        child.waitForLoad(appCtx);
       }),
     );
   }
 
-  addChunks(chunk, chunkResults) {
+  addChunks(chunk, chunkResults, renderer) {
+    if (!renderer) {
+      console.warn('missing renderer', {chunk, chunkResults, renderer});
+      debugger;
+    }
+    
     for (const [key, mesh] of Object.entries(this.meshes)) {
       const chunkResult = chunkResults[key];
-      mesh.addChunk(chunk, chunkResult);
+      mesh.addChunk(chunk, chunkResult, renderer);
     }
   }
 

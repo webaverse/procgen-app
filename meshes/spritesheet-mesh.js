@@ -7,23 +7,33 @@ import {
   MAX_WORLD_HEIGHT,
   maxAnisotropy,
 } from "../constants.js";
-const {
-  useCamera,
-  useProcGenManager,
-  useGeometries,
-  useAtlasing,
-  useGeometryBatching,
-  useGeometryChunking,
-  useLoaders,
-  usePhysics,
-  useSpriting,
-} = metaversefile;
-const procGenManager = useProcGenManager();
-const {createAppUrlSpriteSheet} = useSpriting();
+// const {
+//   useCamera,
+//   useProcGenManager,
+//   useGeometries,
+//   useAtlasing,
+//   useGeometryBatching,
+//   useGeometryChunking,
+//   useLoaders,
+//   usePhysics,
+//   useSpriting,
+// } = metaversefile;
+// import {
+//   ProcGenManager,
+// } from '../procgen/procgen-manager.js';
+// const procGenManager = ProcGenManager;
+import procGenManager from '../procgen/procgen-manager.js';
+import {
+  createAppUrlSpriteSheet,
+} from '../spriting/spriting.js';
 // const {DoubleSidedPlaneGeometry} = useGeometries();
-const {ChunkedBatchedMesh, ChunkedGeometryAllocator} = useGeometryChunking();
+// const {ChunkedBatchedMesh, ChunkedGeometryAllocator} = useGeometryChunking();
+import {
+  ChunkedBatchedMesh,
+  ChunkedGeometryAllocator,
+} from '../geometries/geometry-chunking.js';
 
-const camera = useCamera();
+// const camera = useCamera();
 
 //
 
@@ -40,7 +50,12 @@ export class SpritesheetPackage {
     this.offsets = offsets;
   }
 
-  static async loadUrls(urls) {
+  static async loadUrls(urls, appCtx) {
+    if (!appCtx) {
+      console.warn('missing appCtx', appCtx);
+      debugger;
+    }
+
     const canvas = document.createElement("canvas");
     canvas.width = canvasSize;
     canvas.height = canvasSize;
@@ -55,6 +70,7 @@ export class SpritesheetPackage {
           size: spritesheetSize,
           // size: 2048,
           numFrames,
+          ctx: appCtx,
         });
         const {result, worldWidth, worldHeight, worldOffset} = spritesheet;
 
@@ -101,7 +117,12 @@ const numFramesPerRow = Math.ceil(Math.sqrt(numFramesPow2));
 const maxDrawCalls = 256;
 const maxInstancesPerDrawCall = 1024;
 export class SpritesheetMesh extends ChunkedBatchedMesh {
-  constructor({instance, lodCutoff}) {
+  constructor({instance, lodCutoff, ctx}) {
+    if (!ctx) {
+      console.warn("no ctx passed in to SpritesheetMesh constructor", ctx);
+      debugger;
+    }
+
     const baseGeometry = new THREE.PlaneGeometry(1, 1);
     const allocator = new ChunkedGeometryAllocator(
       baseGeometry,
@@ -297,6 +318,8 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
     this.frustumCulled = false;
     this.visible = false;
 
+    this.ctx = ctx;
+
     this.instance = instance;
     this.lodCutoff = lodCutoff;
 
@@ -304,7 +327,12 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
     this.allocatedChunks = new Map();
   }
 
-  addChunk(chunk, chunkResult) {
+  addChunk(chunk, chunkResult, renderer) {
+    if (!renderer) {
+      console.warn('no renderer', {chunk, chunkResult, renderer});
+      debugger;
+    }
+
     if (chunkResult) {
       const instances = chunkResult;
 
@@ -349,9 +377,9 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
             }
           }
 
-          drawCall.updateTexture("p", pOffset, index * 4);
-          drawCall.updateTexture("offset", offsetOffset, index * 4);
-          drawCall.updateTexture("itemIndex", itemIndexOffset, index * 4);
+          drawCall.updateTexture("p", pOffset, index * 4, renderer);
+          drawCall.updateTexture("offset", offsetOffset, index * 4, renderer);
+          drawCall.updateTexture("itemIndex", itemIndexOffset, index * 4, renderer);
         };
 
         const {chunkSize} = this.instance;
@@ -412,6 +440,7 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
   }
 
   update() {
+    const camera = this.ctx.useCamera();
     localEuler.setFromQuaternion(camera.quaternion, "YXZ");
     localEuler.x = 0;
     localEuler.z = 0;
@@ -421,73 +450,5 @@ export class SpritesheetMesh extends ChunkedBatchedMesh {
 
     this.material.uniforms.cameraY.value = localEuler.y;
     this.material.uniforms.cameraY.needsUpdate = true;
-  }
-}
-
-//
-
-export class LitterMetaMesh extends THREE.Object3D {
-  constructor({
-    instance,
-    // gpuTaskManager,
-    physics,
-  }) {
-    super();
-
-    this.polygonMesh = new PolygonMesh({
-      instance,
-    });
-    this.add(this.polygonMesh);
-
-    this.spritesheetMesh = new SpritesheetMesh({
-      instance,
-    });
-    this.add(this.spritesheetMesh);
-
-    this.physics = physics;
-  }
-
-  update() {
-    this.spritesheetMesh.update();
-  }
-
-  addChunk(chunk, chunkResult) {
-    this.polygonMesh.addChunk(chunk, chunkResult);
-    this.spritesheetMesh.addChunk(chunk, chunkResult);
-  }
-
-  removeChunk(chunk) {
-    this.polygonMesh.removeChunk(chunk);
-    this.spritesheetMesh.removeChunk(chunk);
-  }
-
-  async loadUrls(urls) {
-    const [polygonPackage, spritesheetPackage] = await Promise.all([
-      PolygonPackage.loadUrls(urls, this.physics),
-      SpritesheetPackage.loadUrls(urls),
-    ]);
-    this.polygonMesh.setPackage(polygonPackage);
-    this.spritesheetMesh.setPackage(spritesheetPackage);
-
-    /* // XXX debugging
-    {
-      const allLodMeshes = [];
-      const {lodMeshes} = polygonPackage;
-      for (const lodMeshArray of lodMeshes) {
-        for (const lodMesh of lodMeshArray) {
-          // this.add(lodMesh);
-          allLodMeshes.push(lodMesh);
-        }
-      }
-      const meshSize = 3;
-      for (let i = 0; i < allLodMeshes.length; i++) {
-        const lodMesh = allLodMeshes[i];
-        lodMesh.position.x = (-allLodMeshes.length/2 + i) * meshSize;
-        lodMesh.position.y = 0.5;
-        lodMesh.position.z = 5;
-        this.add(lodMesh);
-        lodMesh.updateMatrixWorld();
-      }
-    } */
   }
 }

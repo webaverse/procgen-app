@@ -1,13 +1,9 @@
 import * as THREE from "three";
-import metaversefile from "metaversefile";
-const {useLoaders, useAtlasing} = metaversefile;
-
-const loaders = useLoaders();
-const {exrLoader} = loaders;
-
-const {CanvasTextureAtlas} = useAtlasing();
-
-const textureLoader = new THREE.TextureLoader();
+// import metaversefile from "metaversefile";
+// const {useLoaders, useAtlasing} = metaversefile;
+import {
+  CanvasTextureAtlas,
+} from "../atlasing/atlasing.js";
 
 const SUB_TEXTURE_SIZE = 1024;
 
@@ -16,74 +12,84 @@ export const NORMAL_MAP = "normal-map";
 export const NOISE_MAP = "simplex-noise";
 export const ENV_MAP = "environment-lighting";
 
-const _textureError = err => {
-  console.error("Terrain Package : Loading texture failed : ", err);
-};
-const _exrError = err => {
-  console.error("Terrain Package : Loading exr failed : ", err);
-};
-
-const _loadTexture = u =>
-  new Promise((accept, reject) => {
-    // TODO : use ktx2 loader instead
-    textureLoader.load(
-      u,
-      t => {
-        accept(t);
-      },
-      function onProgress() {},
-      _textureError,
-    );
-  });
-
-const _loadExr = u =>
-  new Promise((accept, reject) => {
-    exrLoader.load(
-      u,
-      t => {
-        accept(t);
-      },
-      function onProgress() {},
-      _exrError,
-    );
-  });
-
-const _bakeTerrainTextures = options => {
-  const {diffuseMapArray, normalMapArray, noiseTexture, evnMapTexture} =
-    options;
-
-  const textures = {};
-
-  const diffuseAtlas = new CanvasTextureAtlas(
-    diffuseMapArray,
-    SUB_TEXTURE_SIZE,
-    THREE.sRGBEncoding,
-  );
-  const normalAtlas = new CanvasTextureAtlas(
-    normalMapArray,
-    SUB_TEXTURE_SIZE,
-    THREE.LinearEncoding,
-  );
-
-  noiseTexture.wrapS = noiseTexture.wrapT = THREE.RepeatWrapping;
-
-  textures[DIFFUSE_MAP] = diffuseAtlas.atlasTexture;
-  textures[NORMAL_MAP] = normalAtlas.atlasTexture;
-  textures[NOISE_MAP] = noiseTexture;
-  textures[ENV_MAP] = evnMapTexture;
-
-  return textures;
-};
-
 class TerrainPackage {
   constructor(textures) {
     this.textures = textures;
   }
 
-  static async loadUrls(paths) {
-    const {diffNames, normalNames, envName, noiseName} = paths;
+  static async loadUrls(paths, appCtx) {
+    if (!appCtx) {
+      console.warn('missing appCtx', {paths, appCtx});
+      debugger;
+    }
+
+    const loaders = appCtx.useLoaders();
+    const {exrLoader} = loaders;
+    // const {CanvasTextureAtlas} = this.ctx.useAtlasing();
+
+    const textureLoader = new THREE.TextureLoader();
+
+    const _textureError = err => {
+      console.error("Terrain Package : Loading texture failed : ", err);
+    };
+    const _exrError = err => {
+      console.error("Terrain Package : Loading exr failed : ", err);
+    };
+    
+    const _loadTexture = u =>
+      new Promise((accept, reject) => {
+        // TODO : use ktx2 loader instead
+        textureLoader.load(
+          u,
+          t => {
+            accept(t);
+          },
+          function onProgress() {},
+          _textureError,
+        );
+      });
+    
+    const _loadExr = u =>
+      new Promise((accept, reject) => {
+        exrLoader.load(
+          u,
+          t => {
+            accept(t);
+          },
+          function onProgress() {},
+          _exrError,
+        );
+      });
+    
+    const _bakeTerrainTextures = options => {
+      const {diffuseMapArray, normalMapArray, noiseTexture, evnMapTexture} =
+        options;
+    
+      const textures = {};
+    
+      const diffuseAtlas = new CanvasTextureAtlas(
+        diffuseMapArray,
+        SUB_TEXTURE_SIZE,
+        THREE.sRGBEncoding,
+      );
+      const normalAtlas = new CanvasTextureAtlas(
+        normalMapArray,
+        SUB_TEXTURE_SIZE,
+        THREE.LinearEncoding,
+      );
+    
+      noiseTexture.wrapS = noiseTexture.wrapT = THREE.RepeatWrapping;
+    
+      textures[DIFFUSE_MAP] = diffuseAtlas.atlasTexture;
+      textures[NORMAL_MAP] = normalAtlas.atlasTexture;
+      textures[NOISE_MAP] = noiseTexture;
+      textures[ENV_MAP] = evnMapTexture;
+    
+      return textures;
+    };
 
     // * loading
+    const {diffNames, normalNames, envName, noiseName} = paths;
     const assetsArray = [
       Promise.all(diffNames.map(_loadTexture)),
       Promise.all(normalNames.map(_loadTexture)),
