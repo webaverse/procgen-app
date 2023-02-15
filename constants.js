@@ -20,3 +20,10 @@ export const WIND_EFFECT_OVER_GRASS = 0.4;
 export const WIND_SPEED = 0.5;
 
 export const GET_COLOR_PARAMETER_NAME = 'materialIndex';
+
+//
+
+export const defaultChunkSize = 16;
+
+export const startTextureAtlasSize = 512;
+export const maxTextureAtlasSize = 4096;
