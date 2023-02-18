@@ -12,18 +12,10 @@ import _createLiquidMaterial from './liquid-material.js';
 import WaterRenderer from '../liquid-effect/water-render.js';
 import procGenManager from '../procgen/procgen-manager.js';
 
-// const {useProcGenManager, useGeometryBuffering, useLocalPlayer, useInternals, useLightsManager} = metaversefile;
-// const {BufferedMesh, GeometryAllocator} = useGeometryBuffering();
 import {
   BufferedMesh,
   GeometryAllocator,
 } from '../geometries/geometry-buffering.js';
-// import {
-//   ProcGenManager,
-// } from '../procgen/procgen-manager.js'
-// const procGenManager = ProcGenManager;
-// const {renderer, camera, scene} = useInternals();
-// const lightsManager = useLightsManager();
 
 //
 const fakeMaterial = new THREE.MeshBasicMaterial({
@@ -498,8 +490,8 @@ export class LiquidMesh extends BufferedMesh {
     }
 
     const sunMoonRotationRadius = 500;
-    const lightsManager = this.ctx.useLightsManager();
-    for (const light of lightsManager.lights) {
+    const lightingManager = this.ctx.useLightingManager();
+    for (const light of lightingManager.lights) {
       if (light.isDirectionalLight) {
         this.material.uniforms.lightPos.value.copy(light.position).multiplyScalar(sunMoonRotationRadius);
         this.material.uniforms.lightIntensity.value = light.intensity;
