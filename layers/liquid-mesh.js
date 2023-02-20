@@ -39,9 +39,8 @@ const MAX_DAMPING = 4.2;
 const DAMPING_RATE = 1.03;
 const BREASTSTROKE = "breaststroke";
 const WATER_HEIGHT = 0;
-const SWIM_ACTION = "swim";
 const INITIAL_SWIM_ACTION = {
-  type: SWIM_ACTION,
+  type: 'swim',
   onSurface: false,
   swimDamping: NORMAL_DAMPING,
   animationType: BREASTSTROKE,
@@ -404,16 +403,21 @@ export class LiquidMesh extends BufferedMesh {
   }
 
   handleSwimAction(contactWater, player, waterSurfaceHeight) {
-    const swimAction = player.actionManager.getActionType(SWIM_ACTION);
+    const swimAction = player.actionManager.getActionType('swim');
     const hasSwim = !!swimAction;
 
     const _setSwimAction = () => {
-      !hasSwim && player.actionManger.addAction(structuredClone(INITIAL_SWIM_ACTION));
-      // console.log('would set swim action', INITIAL_SWIM_ACTION);
+      if (!hasSwim) {
+        player.actionManager.addAction(structuredClone(INITIAL_SWIM_ACTION));
+        // console.log('would set swim action', INITIAL_SWIM_ACTION);
+        localPlayer.actionManager.hasActionType('fallLoop') && localPlayer.actionManager.removeActionType('fallLoop');
+        localPlayer.actionManager.hasActionType('skydive') && localPlayer.actionManager.removeActionType('skydive');
+        localPlayer.actionManager.hasActionType('glider') && localPlayer.actionManager.removeActionType('glider');
+      }
     };
 
     const _removeSwimAction = () => {
-      hasSwim && player.actionManger.removeActionType(SWIM_ACTION);
+      hasSwim && player.actionManager.removeActionType('swim');
     };
 
     if (contactWater) {
